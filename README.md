@@ -1,56 +1,70 @@
-# Football Field Booking & Tournament Management System
+---
+# Hệ Thống App Đặt Sân Bóng Đá và Quản Lý Giải Đấu
 
-## Project Overview
-Hệ thống số hóa quy trình đặt sân bóng và quản lý giải đấu phong trào. Giải quyết các vấn đề về trùng lịch và quy trình thủ công.
+Dự án tập trung giải quyết các vấn đề thực tế trong bóng đá phong trào như quy trình đặt sân thủ công dễ gây trùng lịch, thiếu minh bạch về khung giờ trống và khó khăn trong việc quản lý đội hình, tìm đối thủ .
 
-## Tech Stack
-- Backend: Java, Spring Boot (Spring Data JPA, Spring Security, REST API)
-- Frontend: Java, JavaFX, SceneBuilder (FXML)
-- Database: MySQL / PostgreSQL
-- Build Tool: Maven
+## Công nghệ sử dụng
+* **Backend:** Java Spring Boot (Spring Data JPA, Spring Security, REST API).
+* **Frontend:** React.js (Sử dụng Axios cho API, Tailwind CSS cho giao diện).
+* **Database:** MySQL / PostgreSQL.
+* **Quản lý build:** Maven (Backend) & NPM (Frontend).
 
-## Project Structure
-```
-football-booking-project/
+## Cấu trúc thư mục (Web Architecture)
+
+```text
+soccer-booking-web/
 ├── backend/                        # Spring Boot Application
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/hust/it3180/
-│   │   │   │   ├── config/         # Security & App configuration
-│   │   │   │   ├── controllers/    # REST Endpoints (Booking, Field, User)
-│   │   │   │   ├── services/       # Business logic
-│   │   │   │   ├── repositories/   # Database access (JPA)
-│   │   │   │   ├── entities/       # Database models
-│   │   │   │   ├── dto/            # Data Transfer Objects
-│   │   │   │   └── FootballApp.java  # Main entry
+│   │   │   │   ├── config/         # Cấu hình Security (JWT), CORS, JPA
+│   │   │   │   ├── controllers/    # API Endpoints (Booking, Field, Tournament)
+│   │   │   │   ├── services/       # Logic nghiệp vụ (Kiểm tra trùng lịch, xếp hạng)
+│   │   │   │   ├── repositories/   # Tầng truy xuất dữ liệu
+│   │   │   │   ├── entities/       # Lớp ánh xạ Database (Sân, Đơn đặt, Giải đấu)
+│   │   │   │   └── dto/            # Data Transfer Objects
 │   │   │   └── resources/
-│   │   │       ├── application.properties
-│   │   │       └── static/         # Image uploads (fields, logos)
-│   │   └── test/                   # Unit tests for backend
+│   │   │       └── application.yml # Cấu hình Database & Server
+│   │   └── test/                   # Unit & Integration Tests
 │   └── pom.xml
-├── frontend/                       # JavaFX Application
+├── frontend/                       # React.js Application
+│   ├── public/                     # Tài nguyên tĩnh
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/hust/it3180/
-│   │   │   │   ├── controllers/    # UI logic (Link with FXML)
-│   │   │   │   ├── services/       # API Clients (To call Spring Boot)
-│   │   │   │   ├── models/         # Client-side data models
-│   │   │   │   ├── utils/          # Navigation & Helper classes
-│   │   │   │   └── App.java        # JavaFX Entry Point
-│   │   │   └── resources/
-│   │   │       ├── fxml/           # UI layout files (Scene Builder)
-│   │   │       ├── css/            # Styling for application
-│   │   │       └── images/         # Icons & Static UI assets
-│   │   └── test/                   # UI testing
-│   └── pom.xml
-├── docs/                           # Project Documentation
-│   ├── diagrams/                   # Use Case, ERD
-│   └── Idea_Proposal.pdf           # Original idea 
+│   │   ├── components/             # UI Components (Lịch, Card sân, Bảng xếp hạng)
+│   │   ├── pages/                  # Trang chủ, Quản lý sân, Quản lý giải đấu
+│   │   ├── services/               # API Clients kết nối Backend
+│   │   ├── store/                  # Quản lý trạng thái (Zustand hoặc Redux)
+│   │   └── utils/                  # Helper functions
+│   ├── package.json
+│   └── tailwind.config.js
+├── docs/                           # Tài liệu dự án
+│   ├── diagrams/                   # Sơ đồ Use Case, ERD .
+│   └── Idea_Proposal_IT3180.pdf    # Đề xuất ý tưởng gốc .
 └── README.md
 ```
-## Core Features Implementation
-- [x] Field Search & Filters: Tìm sân theo khu vực, giá, khung giờ.
-- [x] Online Booking: Đặt sân trực tuyến và xem lịch trống dạng Calendar.
-- [x] Manager Dashboard: Chủ sân quản lý đơn đặt và lịch thi đấu.
-- [ ] Tournament Management: Tự động sinh lịch thi đấu (Phase 2).
-- [ ] Reward System: Tích điểm và ưu đãi cho người dùng (Phase 2).
+
+##  Tính năng chính theo đề xuất
+
+### 1. Dành cho Người chơi & Đội bóng (Player/Team)
+* **Tìm kiếm & Bộ lọc:** Tìm sân theo khu vực, khung giờ, giá và mặt sân.
+* **Đặt sân trực tuyến:** Hỗ trợ đặt sân lẻ hoặc định kỳ theo tuần/tháng .
+* **Quản lý đội hình:** Theo dõi lịch thi đấu, kết quả và danh sách thành viên.
+* **Tìm đối thủ:** Chức năng "Ghép kèo" gợi ý các đội phù hợp về trình độ và khu vực .
+* **Đánh giá & Tích điểm:** Đánh giá chất lượng sân và tích lũy điểm thưởng để nhận ưu đãi.
+
+### 2. Dành cho Chủ sân (Manager)
+* **Số hóa lịch đặt:** Giao diện lịch (Calendar view) trực quan giúp theo dõi tỷ lệ lấp đầy khung giờ .
+* **Quản lý đơn hàng:** Duyệt/từ chối yêu cầu đặt sân, cấu hình chính sách hủy và đặt cọc.
+* **Cấu hình dịch vụ:** Quản lý danh sách dịch vụ đi kèm như nước uống, áo bib, thuê trọng tài.
+* **Tối ưu doanh thu:** Gợi ý điều chỉnh giá theo các khung giờ cao điểm hoặc giờ trống nhiều.
+
+### 3. Quản lý giải đấu (League Management)
+* **Tự động hóa:** Tự động sinh lịch thi đấu theo các thể thức vòng tròn hoặc loại trực tiếp.
+* **Thống kê:** Cập nhật bảng xếp hạng, danh sách ghi bàn (Top Scorers) và kiến tạo.
+
+## 🚀 Lộ trình hiện thực (Phạm vi môn học)
+Trong khuôn khổ môn học, nhóm ưu tiên hiện thực các tính năng cốt lõi:
+* [x] Quản lý thông tin sân bóng và hiển thị lịch trống.
+* [x] Chức năng tìm kiếm và đặt sân trực tuyến.
+* [x] Quản lý đơn đặt sân cho cả người chơi và chủ sân.
+* [x] Quản lý giải đấu chi tiết và ghép kèo (Giai đoạn mở rộng).
