@@ -37,7 +37,12 @@ soccer-booking-web/
 │   │   └── utils/                  # Helper functions
 │   ├── package.json
 │   └── tailwind.config.js
-├── docs/                           # Tài liệu dự án
+├── database/
+│    ├── schema.sql                 # File chạy để tạo bảng database 
+│    └── seed.sql                   # File để add dữ liệu mẫu
+│    └── database.md                # File hướng dẫn MD
+├── docs/                           # Tài liệu dự án                
+│   ├── erd/                        # Sơ đồ database                        
 │   ├── diagrams/                   # Sơ đồ Use Case, ERD .
 │   └── Idea_Proposal_IT3180.pdf    # Đề xuất ý tưởng gốc .
 └── README.md
@@ -62,7 +67,7 @@ soccer-booking-web/
 * **Tự động hóa:** Tự động sinh lịch thi đấu theo các thể thức vòng tròn hoặc loại trực tiếp.
 * **Thống kê:** Cập nhật bảng xếp hạng, danh sách ghi bàn (Top Scorers) và kiến tạo.
 
-## 🚀 Lộ trình hiện thực (Phạm vi môn học)
+##  Lộ trình hiện thực (Phạm vi môn học)
 Trong khuôn khổ môn học, nhóm ưu tiên hiện thực các tính năng cốt lõi:
 * [x] Quản lý thông tin sân bóng và hiển thị lịch trống.
 * [x] Chức năng tìm kiếm và đặt sân trực tuyến.
