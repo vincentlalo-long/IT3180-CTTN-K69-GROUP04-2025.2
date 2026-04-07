@@ -1,0 +1,222 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  left=2cm,
+  right=2cm,
+  top=2.5cm,
+  bottom=2.5cm
+}
+
+\title{\textbf{API SPECIFICATION: HỆ THỐNG WEB ĐẶT SÂN BÓNG ĐÁ VÀ QUẢN LÝ GIẢI ĐẤU}}
+\author{Dự án: Đặt Sân Bóng (React - Spring Boot)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{1. Cấu trúc và Quy ước chung (General Conventions)}
+
+\subsection*{1.1. Base URL \& Authentication}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Base URL dự kiến: \texttt{http://localhost:8080/api/v1}
+    \item Định dạng trao đổi dữ liệu: \textbf{JSON}
+    \item Xác thực: Sử dụng \textbf{JWT (Bearer Token)} truyền trong Header \texttt{Authorization}.
+\end{itemize}
+
+\subsection*{1.2. Quy ước Phân trang (Pagination)}
+Đối với các danh sách dài (Sân bóng, Đơn đặt sân, Giải đấu), API áp dụng phân trang để tối ưu tải dữ liệu về phía Frontend (React).
+\begin{itemize}[leftmargin=1.5cm]
+    \item Endpoint mẫu: \texttt{GET /api/v1/pitches?page=0\&size=10}
+    \item Response sẽ bao gồm metadata: \texttt{content} (dữ liệu mảng), \texttt{totalPages}, \texttt{totalElements}, \texttt{last} (kiểm tra trang cuối).
+\end{itemize}
+
+\subsection*{1.3. Cấu trúc Lỗi (Error Responses)}
+Một cấu trúc chuẩn khi có lỗi xảy ra hỗ trợ Frontend hiển thị cảnh báo dễ dàng hơn:
+\\
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3cm}|p{12.5cm}|}
+    \hline
+    \textbf{HTTP Status} & \textbf{Trường hợp sử dụng} \\
+    \hline
+    \texttt{400 Bad Request} & Dữ liệu gửi lên sai định dạng (thiếu thuộc tính, format sai, mật khẩu quá ngắn). \\
+    \hline
+    \texttt{401 Unauthorized} & Chưa đăng nhập, không có token truy cập hoặc Token đã hết hạn. \\
+    \hline
+    \texttt{403 Forbidden} & Sai quyền (VD: Player cố tình truy cập trang Manager). \\
+    \hline
+    \texttt{404 Not Found} & Tài nguyên không tồn tại (Sân bóng, giải đấu không tìm thấy). \\
+    \hline
+    \texttt{409 Conflict} & Xung đột dữ liệu (VD: Sân đã có người đặt trong cùng khung giờ). \\
+    \hline
+    \texttt{500 Internal Error} & Lỗi phát sinh từ phía Backend Server. \\
+    \hline
+\end{tabular}
+
+\section*{2. Nhóm API Xác thực (Authentication)}
+Các API dùng cho việc đăng ký, đăng nhập và phân quyền hệ thống (Manager/Player/Admin).
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{4cm}|p{5cm}|p{4.5cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Yêu cầu Body} \\
+    \hline
+    POST & \texttt{/auth/register} & Đăng ký tài khoản mới & \texttt{\{username, email, password, role\}} \\
+    \hline
+    POST & \texttt{/auth/login} & Đăng nhập hệ thống & \texttt{\{email, password\}} \\
+    \hline
+\end{tabular}
+\vspace{0.2cm}
+
+\textbf{Response mẫu (Login):}
+\begin{verbatim}
+{
+  "token": "eyJhbGciOiJIUzI1Ni...",
+  "type": "Bearer",
+  "role": "ROLE_PLAYER",
+  "username": "hieu_hust"
+}
+\end{verbatim}
+
+\section*{3. Nhóm API Upload Media}
+Upload ảnh riêng biệt bằng API trả về đường dẫn URL (tránh truyền Base64 vào database). Backend sẽ nhận file upload, có thể lưu vào \texttt{assets} cục bộ hoặc dịch vụ cloud (AWS S3/Cloudinary), và trả về đường link tuyệt đối (varchar).
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{4cm}|p{4.5cm}|p{5cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Content-Type} \\
+    \hline
+    POST & \texttt{/upload} & Upload ảnh sân, ảnh logo & \texttt{multipart/form-data} \\
+    \hline
+\end{tabular}
+\vspace{0.2cm}
+
+\textbf{Response mẫu:} 
+\begin{verbatim}
+{
+  "url": "http://storage.com/images/logo_team_1.png"
+}
+\end{verbatim}
+
+\section*{4. Nhóm API Quản lý Sân bóng - CRUD cho \textit{Manager}}
+Chủ sân thực hiện thêm, sửa, xóa các sân bóng mà mình sở hữu. Yêu cầu truyền token của Manager.
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{4.5cm}|p{5cm}|p{4cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Ghi chú} \\
+    \hline
+    POST & \texttt{/owner/pitches} & Thêm sân bóng mới & Body cấu trúc chi tiết sân \\
+    \hline
+    PUT & \texttt{/owner/pitches/\{id\}} & Cập nhật sân (giá, ảnh) & Ghi đè thông tin sân \\
+    \hline
+    DELETE & \texttt{/owner/pitches/\{id\}} & Xoá hoặc tạm ngưng sân & Xoá mềm (Soft Delete) \\
+    \hline
+    GET & \texttt{/owner/reports/revenue} & Lấy dữ liệu doanh thu & Cho biểu đồ Dashboard \\
+    \hline
+\end{tabular}
+
+\section*{5. Nhóm API Sân bóng (Pitches) cho \textit{Player}}
+Phục vụ chức năng tìm kiếm, xem trang liệt kê sân bóng bên phía Frontend. Có áp dụng phân trang (Pagination).
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{4.5cm}|p{4.5cm}|p{4.5cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Yêu cầu / Query} \\
+    \hline
+    GET & \texttt{/pitches} & Lấy ds sân (có lọc) & \texttt{page, size, location, type} \\
+    \hline
+    GET & \texttt{/pitches/\{id\}} & Xem chi tiết 1 sân & Dùng \texttt{id} trên URL \\
+    \hline
+    GET & \texttt{/pitches/\{id\}/slots} & Lấy lịch trống của sân & \texttt{date} \textit{(YYYY-MM-DD)} \\
+    \hline
+\end{tabular}
+
+\section*{6. Nhóm API Đặt sân (Bookings)}
+Xử lý giao dịch cốt lõi để tạo và quản lý booking, xử lý tránh Conflict 409 khi đặt trùng lịch.
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{4.5cm}|p{4.5cm}|p{4.5cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Ghi chú} \\
+    \hline
+    POST & \texttt{/bookings} & Tạo đơn đặt sân mới & Nếu lỗi trả về 409 Conflict \\
+    \hline
+    GET & \texttt{/bookings/my} & Lịch sử đặt của tôi & Có \texttt{page, size} \\
+    \hline
+    GET & \texttt{/owner/bookings} & DS đơn đặt gửi tới sân & Dành cho Manager \\
+    \hline
+    PATCH & \texttt{/owner/bookings/\{id\}} & Duyệt / Từ chối đơn & Body: \texttt{\{status: "APPROVED"\}} \\
+    \hline
+\end{tabular}
+\vspace{0.2cm}
+
+\textbf{Request Body mẫu (\texttt{POST /bookings}):}
+\begin{verbatim}
+{
+  "pitch_id": 1,
+  "booking_date": "2026-04-10",
+  "start_time": "17:00",
+  "end_time": "18:30",
+  "booking_type": "RECURRING",
+  "services": [
+    {"service_id": 1, "quantity": 10}
+  ]
+}
+\end{verbatim}
+
+\section*{7. Nhóm API Giải đấu \& Cộng đồng (Tournaments \& Matchmaking)}
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{5cm}|p{4cm}|p{4.5cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Ghi chú} \\
+    \hline
+    GET & \texttt{/tournaments} & Danh sách giải đấu & Có phân trang \texttt{page, size} \\
+    \hline
+    POST & \texttt{/tournaments/\{id\}/join} & Đăng ký tham gia giải & Yêu cầu thông tin đội \\
+    \hline
+    GET & \texttt{/matchmaking} & DS bài đăng "Tìm đối" & Lọc theo trình độ/khu vực \\
+    \hline
+    POST & \texttt{/matchmaking} & Tạo bài "Tìm đối/Kèo" & Dành cho Player/Đội \\
+    \hline
+\end{tabular}
+
+\section*{8. Nhóm API Đánh giá (Reviews)}
+Cho phép người dùng để lại phản hồi sau khi hoàn tất trận đấu. Yêu cầu tính toán Rating trung bình cho Pitches.
+
+\vspace{0.3cm}
+\noindent
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{1.5cm}|p{4.5cm}|p{4.5cm}|p{4.5cm}|}
+    \hline
+    \textbf{Method} & \textbf{Endpoint} & \textbf{Mô tả} & \textbf{Yêu cầu Body / Query} \\
+    \hline
+    GET & \texttt{/pitches/\{id\}/reviews} & lấy bình luận của sân & Có phân trang \texttt{page, size} \\
+    \hline
+    POST & \texttt{/reviews} & Gửi đánh giá dịch vụ & \texttt{\{pitch\_id, rating, comment\}} \\
+    \hline
+\end{tabular}
+
+\end{document}
