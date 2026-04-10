@@ -1,10 +1,15 @@
 services:
-  mysql:
-    image: 'mysql:latest'
+  mysql-db:
+    image: 'mysql:8.0'
+    container_name: football-mysql-container
+    restart: always
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=verysecret'
-      - 'MYSQL_USER=myuser'
+      - 'MYSQL_DATABASE=football_booking'
+      - 'MYSQL_ROOT_PASSWORD=mixisql123@'
     ports:
-      - '3306'
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
