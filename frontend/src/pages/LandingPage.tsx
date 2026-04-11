@@ -3,13 +3,12 @@ import { Bell, CircleUserRound } from "lucide-react";
 import heroImg from "../assets/images/hero-lamine.webp";
 import logoAmixi from "../assets/images/logo-amixi.png";
 
+
 const featureCards = [
   "Đặt sân trực tuyến",
   "Theo dõi lịch thi đấu",
   "Quản lý đơn đặt sân",
 ];
-
-const navLinks = ["Home", "Đặt sân", "Chợ kèo", "Hồ sơ"];
 
 export function LandingPage() {
   return (
@@ -34,15 +33,18 @@ export function LandingPage() {
           </div>
 
           <nav className="hidden items-center gap-10 text-lg font-semibold text-white lg:flex xl:gap-14">
-            {navLinks.map((item) => (
-              <Link
-                key={item}
-                to="/"
-                className="transition hover:text-white/75"
-              >
-                {item}
-              </Link>
-            ))}
+            <Link to="/" className="transition hover:text-white/75">
+              Home
+            </Link>
+            <Link to="/booking" className="transition hover:text-white/75">
+              Đặt sân
+            </Link>
+            <Link to="/match" className="transition hover:text-white/75">
+              Chợ kèo
+            </Link>
+            <Link to="/profile" className="transition hover:text-white/75">
+              Hồ sơ
+            </Link>
           </nav>
 
           <div className="flex items-center gap-3 sm:gap-4">
@@ -90,8 +92,9 @@ export function LandingPage() {
               <br />
               ĐÁ!
             </h2>
+            {/* Nút "Đặt sân ngay" → /booking */}
             <Link
-              to="/login"
+              to="/booking"
               className="inline-flex rounded-md border-4 border-[#2D0B0B] bg-white px-16 py-6 text-3xl font-bold text-[#1E160C] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.4)] transition-transform duration-200 hover:scale-105 hover:brightness-95 md:text-4xl"
             >
               Đặt sân ngay !
@@ -127,12 +130,9 @@ export function LandingPage() {
                     key={title}
                     className="flex h-[210px] flex-col justify-between rounded-[20px] border-2 border-black/55 bg-white/95 p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.4)]"
                   >
-                    <h4 className="text-xl font-bold text-[#0d0355]">
-                      {title}
-                    </h4>
+                    <h4 className="text-xl font-bold text-[#0d0355]">{title}</h4>
                     <p className="text-sm text-[#113520]">
-                      Dữ liệu realtime, dễ vận hành và đồng bộ xuyên suốt khu
-                      sân.
+                      Dữ liệu realtime, dễ vận hành và đồng bộ xuyên suốt khu sân.
                     </p>
                   </article>
                 ))}
@@ -148,22 +148,16 @@ export function LandingPage() {
 
               <div className="mt-5 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
                 <article className="h-[230px] rounded-[20px] border-2 border-black/55 bg-white/95 p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.4)]">
-                  <h4 className="text-xl font-bold text-[#0d0355]">
-                    Vận hành trực quầy
-                  </h4>
+                  <h4 className="text-xl font-bold text-[#0d0355]">Vận hành trực quầy</h4>
                   <p className="mt-2 text-sm text-[#113520]">
-                    Nhóm hỗ trợ check-in, xử lý ca, khóa sân bảo trì và điều
-                    phối lịch.
+                    Nhóm hỗ trợ check-in, xử lý ca, khóa sân bảo trì và điều phối lịch.
                   </p>
                 </article>
 
                 <article className="h-[230px] rounded-[20px] border-2 border-black/55 bg-white/95 p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.4)]">
-                  <h4 className="text-xl font-bold text-[#0d0355]">
-                    Điều hành chuỗi khu sân
-                  </h4>
+                  <h4 className="text-xl font-bold text-[#0d0355]">Điều hành chuỗi khu sân</h4>
                   <p className="mt-2 text-sm text-[#113520]">
-                    Theo dõi doanh thu, nhân sự và hiệu suất các khu sân trên
-                    cùng một màn hình.
+                    Theo dõi doanh thu, nhân sự và hiệu suất các khu sân trên cùng một màn hình.
                   </p>
                 </article>
               </div>
