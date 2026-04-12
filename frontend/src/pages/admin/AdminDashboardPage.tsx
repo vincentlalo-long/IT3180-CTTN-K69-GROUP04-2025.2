@@ -8,7 +8,7 @@ import {
   mockBookings,
   mockOrders,
 } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/FacilityContext";
+import { useFacilityContext } from "../../contexts/useFacilityContext";
 
 const formatCurrency = (amount: number): string => {
   if (amount >= 1_000_000_000) {

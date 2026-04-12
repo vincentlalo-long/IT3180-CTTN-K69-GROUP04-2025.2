@@ -8,7 +8,7 @@ import {
   type AdminTimeSlot,
   type BookingStatus,
 } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/FacilityContext";
+import { useFacilityContext } from "../../contexts/useFacilityContext";
 
 type SlotStatus = BookingStatus | "available";
 

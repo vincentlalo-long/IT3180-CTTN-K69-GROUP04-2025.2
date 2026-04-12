@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { TextInput } from "../../components/ui/TextInput";
 import { ALL_FACILITIES_ID, fields } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/FacilityContext";
+import { useFacilityContext } from "../../contexts/useFacilityContext";
 
 type SettingsTab = "facility-info" | "field-management" | "payment" | "staff";
 

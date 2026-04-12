@@ -1,7 +1,7 @@
 import { Bell, ChevronDown, Menu, Search, Settings } from "lucide-react";
 
 import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/FacilityContext";
+import { useFacilityContext } from "../../contexts/useFacilityContext";
 
 interface TopbarProps {
   onMenuToggle?: () => void;

@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useMemo, useState, type ReactNode } from "react";
 
 import {
   ALL_FACILITIES_ID,
@@ -19,7 +13,7 @@ interface FacilityContextValue {
   setSelectedFacilityId: (facilityId: string) => void;
 }
 
-const FacilityContext = createContext<FacilityContextValue | undefined>(
+export const FacilityContext = createContext<FacilityContextValue | undefined>(
   undefined,
 );
 
@@ -51,14 +45,4 @@ export function FacilityProvider({ children }: FacilityProviderProps) {
       {children}
     </FacilityContext.Provider>
   );
-}
-
-export function useFacilityContext() {
-  const contextValue = useContext(FacilityContext);
-
-  if (!contextValue) {
-    throw new Error("useFacilityContext must be used within FacilityProvider");
-  }
-
-  return contextValue;
 }

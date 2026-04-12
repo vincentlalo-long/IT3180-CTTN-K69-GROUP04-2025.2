@@ -5,7 +5,7 @@ import {
   type Order,
 } from "../../data/mockAdminData";
 import { useMemo, useState } from "react";
-import { useFacilityContext } from "../../contexts/FacilityContext";
+import { useFacilityContext } from "../../contexts/useFacilityContext";
 
 const HOURS_24 = 24 * 60 * 60 * 1000;
 

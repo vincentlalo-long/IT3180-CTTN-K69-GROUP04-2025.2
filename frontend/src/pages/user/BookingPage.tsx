@@ -14,7 +14,6 @@ type FieldCardProps = {
 };
 
 function BookingFieldCard({
-  id,
   imageUrl = fieldImage,
   ballLogoUrl = logoFootball,
   name,
@@ -44,7 +43,9 @@ function BookingFieldCard({
           className="h-12 w-12 rounded-full object-cover shadow shrink-0"
         />
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold text-[#0B582A] leading-tight">{name}</h3>
+          <h3 className="text-base font-bold text-[#0B582A] leading-tight">
+            {name}
+          </h3>
           <p className="text-[11px] text-gray-600 truncate">{address}</p>
           <p className="text-[11px] text-gray-600">{openTime}</p>
         </div>
@@ -70,7 +71,11 @@ export function BookingPage() {
       <header className="border-b border-white/15 bg-[#005E2E]/80 backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-5 px-6 py-4">
           <div className="flex items-center gap-3">
-            <img src={logoImage} alt="logo" className="h-10 w-auto object-contain" />
+            <img
+              src={logoImage}
+              alt="logo"
+              className="h-10 w-auto object-contain"
+            />
             <div>
               <p className="text-xs font-medium text-white/80">Công ty AMIXI</p>
               <p
@@ -83,29 +88,45 @@ export function BookingPage() {
           </div>
 
           <nav className="hidden items-center gap-10 text-lg font-semibold lg:flex">
-            <button onClick={() => navigate("/")} className="text-white transition hover:text-white/75">
+            <button
+              onClick={() => navigate("/")}
+              className="text-white transition hover:text-white/75"
+            >
               Home
             </button>
-            <button onClick={() => navigate("/booking")} className="text-[#84e30f] transition hover:text-[#84e30f]/80">
+            <button
+              onClick={() => navigate("/booking")}
+              className="text-[#84e30f] transition hover:text-[#84e30f]/80"
+            >
               Đặt sân
             </button>
-            <button onClick={() => navigate("/match")} className="text-white transition hover:text-white/75">
+            <button
+              onClick={() => navigate("/match")}
+              className="text-white transition hover:text-white/75"
+            >
               Chợ kèo
             </button>
-            <button onClick={() => navigate("/profile")} className="text-white transition hover:text-white/75">
+            <button
+              onClick={() => navigate("/profile")}
+              className="text-white transition hover:text-white/75"
+            >
               Hồ sơ
             </button>
           </nav>
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { /* TODO */ }}
+              onClick={() => {
+                /* TODO */
+              }}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20"
             >
               <Bell size={18} />
             </button>
             <button
-              onClick={() => { /* TODO */ }}
+              onClick={() => {
+                /* TODO */
+              }}
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20"
             >
               <CircleUserRound size={20} />
@@ -124,13 +145,17 @@ export function BookingPage() {
             />
           </div>
           <button
-            onClick={() => { /* TODO */ }}
+            onClick={() => {
+              /* TODO */
+            }}
             className="rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             Khu vực
           </button>
           <button
-            onClick={() => { /* TODO */ }}
+            onClick={() => {
+              /* TODO */
+            }}
             className="rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             Ngày đặt sân
