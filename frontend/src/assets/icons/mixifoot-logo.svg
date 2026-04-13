@@ -1,0 +1,17 @@
+<svg width="430" height="120" viewBox="0 0 430 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="430" height="120" rx="18" fill="url(#bg)" fill-opacity="0.14" />
+    <path
+        d="M58 28L66.7 44.4L84.8 47.3L72 60L74.9 78L58 69.6L41.1 78L44 60L31.2 47.3L49.3 44.4L58 28Z"
+        fill="#11A95B" />
+    <circle cx="58" cy="58" r="13" fill="#F6FFF9" />
+    <text x="98" y="46" fill="#F3F5F7" font-size="26" font-family="'Jersey 10', 'Inter', sans-serif">Cong
+        ty AMIXI</text>
+    <text x="98" y="90" fill="white" font-size="56" font-family="'Jersey 10', 'Inter', sans-serif"
+        letter-spacing="1.2">MIXIFOOT</text>
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="430" y2="120" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#323030" />
+            <stop offset="1" stop-color="#7C7676" />
+        </linearGradient>
+    </defs>
+</svg>
