@@ -5,7 +5,7 @@ import {
   type Order,
 } from "../../data/mockAdminData";
 import { useMemo, useState } from "react";
-import { useFacilityContext } from "../../contexts/useFacilityContext";
+import { useFacilityStore } from "../../store/useFacilityStore";
 
 const HOURS_24 = 24 * 60 * 60 * 1000;
 
@@ -30,7 +30,10 @@ const canCancelOrder = (matchDate: string): boolean => {
 };
 
 export function OrdersPage() {
-  const { selectedFacility, selectedFacilityId } = useFacilityContext();
+  const selectedFacility = useFacilityStore((state) => state.selectedFacility);
+  const selectedFacilityId = useFacilityStore(
+    (state) => state.selectedFacilityId,
+  );
   const [orders, setOrders] = useState<Order[]>(mockOrders);
 
   const visibleOrders = useMemo(

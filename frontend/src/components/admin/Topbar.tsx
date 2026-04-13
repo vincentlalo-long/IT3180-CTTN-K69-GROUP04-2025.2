@@ -1,19 +1,21 @@
 import { Bell, ChevronDown, Menu, Search, Settings } from "lucide-react";
 
 import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/useFacilityContext";
+import { useFacilityStore } from "../../store/useFacilityStore";
 
 interface TopbarProps {
   onMenuToggle?: () => void;
 }
 
 export function Topbar({ onMenuToggle }: TopbarProps) {
-  const {
-    facilities,
-    selectedFacility,
-    selectedFacilityId,
-    setSelectedFacilityId,
-  } = useFacilityContext();
+  const facilities = useFacilityStore((state) => state.facilities);
+  const selectedFacility = useFacilityStore((state) => state.selectedFacility);
+  const selectedFacilityId = useFacilityStore(
+    (state) => state.selectedFacilityId,
+  );
+  const setSelectedFacilityId = useFacilityStore(
+    (state) => state.setSelectedFacilityId,
+  );
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/15 bg-gradient-to-r from-[#005E2E] to-[#29721D] px-4 py-4 sm:px-6 lg:px-8">

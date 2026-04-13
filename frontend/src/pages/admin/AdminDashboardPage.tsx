@@ -8,7 +8,7 @@ import {
   mockBookings,
   mockOrders,
 } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/useFacilityContext";
+import { useFacilityStore } from "../../store/useFacilityStore";
 
 const formatCurrency = (amount: number): string => {
   if (amount >= 1_000_000_000) {
@@ -23,7 +23,10 @@ const formatCurrency = (amount: number): string => {
 };
 
 export function AdminDashboardPage() {
-  const { selectedFacility, selectedFacilityId } = useFacilityContext();
+  const selectedFacility = useFacilityStore((state) => state.selectedFacility);
+  const selectedFacilityId = useFacilityStore(
+    (state) => state.selectedFacilityId,
+  );
 
   const isAllFacilities = selectedFacilityId === ALL_FACILITIES_ID;
   const filteredFields = isAllFacilities

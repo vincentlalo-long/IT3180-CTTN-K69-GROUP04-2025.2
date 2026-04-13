@@ -8,7 +8,7 @@ import {
   type AdminTimeSlot,
   type BookingStatus,
 } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/useFacilityContext";
+import { useFacilityStore } from "../../store/useFacilityStore";
 
 type SlotStatus = BookingStatus | "available";
 
@@ -71,7 +71,10 @@ const slotStatusStyles: Record<
 };
 
 export function FieldSchedulePage() {
-  const { selectedFacility, selectedFacilityId } = useFacilityContext();
+  const selectedFacility = useFacilityStore((state) => state.selectedFacility);
+  const selectedFacilityId = useFacilityStore(
+    (state) => state.selectedFacilityId,
+  );
 
   const visibleFields =
     selectedFacilityId === ALL_FACILITIES_ID

@@ -1,14 +1,10 @@
+import type { Facility } from "../types/facility";
+
 export const ALL_FACILITIES_ID = "all";
 
 export type BookingStatus = "booked" | "in-progress" | "maintenance";
 export type FieldType = "Sân 5" | "Sân 7" | "Sân 11";
 export type SlotPriceTier = "off-peak" | "transition" | "golden";
-
-export interface Facility {
-  id: string;
-  name: string;
-  address: string;
-}
 
 export interface Field {
   id: string;

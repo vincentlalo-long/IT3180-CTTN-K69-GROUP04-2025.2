@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { TextInput } from "../../components/ui/TextInput";
 import { ALL_FACILITIES_ID, fields } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/useFacilityContext";
+import { useFacilityStore } from "../../store/useFacilityStore";
 
 type SettingsTab = "facility-info" | "field-management" | "payment" | "staff";
 
@@ -38,8 +38,11 @@ const openingTimeOptions = [
 ];
 
 export function SettingsPage() {
-  const { facilities, selectedFacility, selectedFacilityId } =
-    useFacilityContext();
+  const facilities = useFacilityStore((state) => state.facilities);
+  const selectedFacility = useFacilityStore((state) => state.selectedFacility);
+  const selectedFacilityId = useFacilityStore(
+    (state) => state.selectedFacilityId,
+  );
   const [activeTab, setActiveTab] = useState<SettingsTab>("facility-info");
   const [isSaving, setIsSaving] = useState(false);
 
