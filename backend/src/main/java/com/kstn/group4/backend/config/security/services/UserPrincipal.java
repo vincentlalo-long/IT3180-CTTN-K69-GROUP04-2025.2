@@ -18,7 +18,7 @@ public class UserPrincipal implements UserDetails {
     private String role;
 
     @JsonIgnore
-    private String password;
+    private final String password;
 
     private Collection<? extends GrantedAuthority> authorities;
 

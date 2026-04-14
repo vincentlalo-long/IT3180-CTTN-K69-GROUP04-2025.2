@@ -65,17 +65,26 @@ public class AuthController {
         return ResponseEntity.ok("Người dùng đã đăng ký thành công!");
     }
 
-    @PostMapping("/login")
+   @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
 
+        // Bước 1: Xác thực tài khoản (Email + Mật khẩu)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
+        // Bước 2: Lưu thông tin xác thực vào Context
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-
-        String jwt = jwtUtils.generateToken(authentication);
         UserPrincipal userDetails = (UserPrincipal) authentication.getPrincipal();
+
+        // Bước 3: KIỂM TRA ROLE
+        // So sánh role gửi lên từ Frontend với role thực tế trong Database
+        if (loginRequest.getRole() == null || !userDetails.getRole().equalsIgnoreCase(loginRequest.getRole())) {
+            return ResponseEntity.status(403) // 403 Forbidden
+                    .body("Lỗi: Tài khoản của bạn không có quyền đăng nhập với vai trò " + loginRequest.getRole());
+        }
+
+        // Bước 4: Tạo JWT Token nếu role hợp lệ
+        String jwt = jwtUtils.generateToken(authentication);
 
         return ResponseEntity.ok(new JwtResponse(
                 jwt,
@@ -83,4 +92,4 @@ public class AuthController {
                 userDetails.getEmail(),
                 userDetails.getRole()));
     }
-}
+    }
