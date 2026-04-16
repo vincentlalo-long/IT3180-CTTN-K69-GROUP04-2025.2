@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "echo \"No tests configured yet. Please set up testing framework (e.g., Vitest, Jest).\""
   },
   "dependencies": {
     "lucide-react": "^1.8.0",
@@ -33,4 +34,5 @@
     "typescript-eslint": "^8.58.0",
     "vite": "^8.0.4"
   }
+  
 }

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { AuthLayout } from "../../layouts/AuthLayout";
 import { LoginForm } from "./LoginForm";
+import { saveTokenToStorage } from "../../utils/tokenStorage";
 
 // Khai báo kiểu dữ liệu payload nhận được từ LoginForm
 interface LoginSubmitPayload {
@@ -34,10 +35,12 @@ export function LoginPage() {
     if (response.ok) {
       const data = await response.json();
       
-      // Đăng nhập thành công -> Lưu Token vào LocalStorage
-      localStorage.setItem("accessToken", data.token);
-      localStorage.setItem("userRole", data.role);
-      localStorage.setItem("userEmail", data.email);
+      // Đăng nhập thành công -> Lưu Token vào LocalStorage sử dụng utility
+      saveTokenToStorage(data.token, {
+        role: data.role,
+        email: data.email,
+        username: data.username,
+      });
       
       console.log("Đăng nhập thành công, Token:", data.token);
       

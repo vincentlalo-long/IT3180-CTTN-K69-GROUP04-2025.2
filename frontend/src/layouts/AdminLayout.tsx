@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 
 import { Sidebar } from "../components/admin/Sidebar";
 import { Topbar } from "../components/admin/Topbar";
-import { FacilityProvider } from "../contexts/FacilityContext";
+import { FacilityProvider } from "../contexts/FacilityProvider";
 
 export function AdminLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

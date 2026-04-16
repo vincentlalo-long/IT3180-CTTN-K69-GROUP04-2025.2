@@ -17,11 +17,22 @@ interface RegisterFormErrors {
   emailOrPhone?: string;
   password?: string;
   confirmPassword?: string;
+  global?: string;
+}
+
+interface RegisterSubmitPayload {
+  fullName: string;
+  emailOrPhone: string;
+  password: string;
+}
+
+interface RegisterFormProps {
+  onSubmit?: (payload: RegisterSubmitPayload) => Promise<void> | void;
 }
 
 const EMAIL_OR_PHONE_REGEX = /^(?:\+?\d[\d\s-]{7,}|[^\s@]+@[^\s@]+\.[^\s@]+)$/;
 
-export function RegisterForm() {
+export function RegisterForm({ onSubmit }: RegisterFormProps) {
   const navigate = useNavigate();
   const [values, setValues] = useState<RegisterFormValues>({
     fullName: "",
@@ -49,6 +60,10 @@ export function RegisterForm() {
 
       const nextErrors = { ...current };
       delete nextErrors[errorKey];
+      // Cũng xóa lỗi global khi user sửa form
+      if (nextErrors.global) {
+        delete nextErrors.global;
+      }
       return nextErrors;
     });
   };
@@ -98,9 +113,18 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
-      await new Promise<void>((resolve) => {
-        setTimeout(() => resolve(), 1500);
-      });
+      if (onSubmit) {
+        await onSubmit({
+          fullName: values.fullName.trim(),
+          emailOrPhone: values.emailOrPhone.trim(),
+          password: values.password,
+        });
+      } else {
+        // Mock delay nếu không có onSubmit callback
+        await new Promise<void>((resolve) => {
+          setTimeout(() => resolve(), 1500);
+        });
+      }
 
       setValues({
         fullName: "",
@@ -110,10 +134,11 @@ export function RegisterForm() {
       });
       setErrors({});
 
-      await new Promise<void>((resolve) => {
-        setTimeout(() => resolve(), 1000);
-      });
+      // Chuyển hướng đến trang đăng nhập
       navigate("/login");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Đăng ký thất bại. Vui lòng thử lại.";
+      setErrors({ global: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -172,6 +197,12 @@ export function RegisterForm() {
             Đăng ký
           </Button>
         </div>
+
+        {errors.global ? (
+          <p className="text-center text-sm font-medium text-red-300">
+            {errors.global}
+          </p>
+        ) : null}
       </div>
     </form>
   );
