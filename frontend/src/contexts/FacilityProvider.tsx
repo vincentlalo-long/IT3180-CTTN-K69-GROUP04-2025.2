@@ -8,7 +8,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   ALL_FACILITIES_ID,
   facilities,
-  type Facility,
 } from "../data/mockAdminData";
 import { FacilityContext, type FacilityContextValue } from "./FacilityContext";
 

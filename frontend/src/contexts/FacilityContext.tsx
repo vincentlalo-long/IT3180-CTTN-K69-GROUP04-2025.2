@@ -1,4 +1,4 @@
-import { createContext, type ReactNode } from "react";
+import { createContext } from "react";
 
 import { type Facility } from "../data/mockAdminData";
 
