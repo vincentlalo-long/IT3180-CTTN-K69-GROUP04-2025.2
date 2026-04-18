@@ -1,6 +1,4 @@
-CREATE DATABASE football_booking;
 
-USE football_booking;
 
 CREATE TABLE
     `users` (
@@ -42,6 +40,7 @@ CREATE TABLE
 CREATE TABLE
     `services` (
         `id` integer PRIMARY KEY,
+        `pitch_id` integer,
         `name` varchar(255) COMMENT 'Nước, áo bib, bóng, Trọng tài...',
         `price` decimal,
         `unit` varchar(255) COMMENT 'chai, bộ, quả...'
@@ -161,6 +160,8 @@ ALTER TABLE `pitches` ADD FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`);
 ALTER TABLE `bookings` ADD FOREIGN KEY (`player_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `bookings` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
+
+ALTER TABLE `services` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
 
 ALTER TABLE `booking_services` ADD FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`);
 

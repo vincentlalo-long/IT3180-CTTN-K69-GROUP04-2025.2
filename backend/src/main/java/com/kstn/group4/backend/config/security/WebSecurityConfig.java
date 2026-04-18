@@ -1,8 +1,9 @@
 package com.kstn.group4.backend.config.security;
 
 import com.kstn.group4.backend.config.security.jwt.AuthTokenFilter;
+import com.kstn.group4.backend.config.security.jwt.JwtTokenProvider;
 import com.kstn.group4.backend.config.security.services.UserDetailsServiceImplement;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,21 +20,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // Cho phép phân quyền chi tiết trên từng Method sau này
+@RequiredArgsConstructor
 public class WebSecurityConfig {
 
-    @Autowired
-    UserDetailsServiceImplement userDetailsService;
+    private final UserDetailsServiceImplement userDetailsService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 1. Khai báo Filter xử lý JWT
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
-        return new AuthTokenFilter();
+        return new AuthTokenFilter(jwtTokenProvider, userDetailsService);
     }
 
     // 2. Khai báo bộ giải mã mật khẩu BCrypt
@@ -64,7 +67,9 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không dùng Session
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/auth/**").permitAll() // Cho phép truy cập công khai API Login/Register
+                    .requestMatchers(HttpMethod.GET, "/public/**", "/pitches/**").permitAll()
                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll() // Cho phép xem tài liệu API
+                        .requestMatchers("/error").permitAll()
                                 .anyRequest().authenticated() // Tất cả yêu cầu khác phải có JWT hợp lệ
                 );
 
@@ -81,8 +86,8 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Domain của React
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173")); // Domain của React
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

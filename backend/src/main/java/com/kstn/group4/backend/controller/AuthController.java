@@ -7,7 +7,7 @@ import com.kstn.group4.backend.payload.LoginRequest;
 import com.kstn.group4.backend.payload.RegisterRequest;
 import com.kstn.group4.backend.entity.User;
 import com.kstn.group4.backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,18 +19,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    JwtTokenProvider jwtUtils;
+    private final JwtTokenProvider jwtUtils;
 
-    @Autowired
-    UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    PasswordEncoder encoder;
+    private final PasswordEncoder encoder;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequest signUpRequest) {
@@ -65,7 +62,7 @@ public class AuthController {
         return ResponseEntity.ok("Người dùng đã đăng ký thành công!");
     }
 
-   @PostMapping("/login")
+    @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
 
         // Bước 1: Xác thực tài khoản (Email + Mật khẩu)
