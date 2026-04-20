@@ -4,6 +4,7 @@ import com.kstn.group4.backend.dto.booking.BookingResponse;
 import com.kstn.group4.backend.dto.booking.CreateBookingRequest;
 import com.kstn.group4.backend.entity.Booking;
 import com.kstn.group4.backend.entity.Pitch;
+import com.kstn.group4.backend.entity.Role;
 import com.kstn.group4.backend.entity.User;
 import com.kstn.group4.backend.exception.BadRequestException;
 import com.kstn.group4.backend.exception.ConflictException;
@@ -24,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BookingService {
 
     private static final Set<String> ACTIVE_BOOKING_STATUSES = Set.of("pending", "approved");
-    private static final Set<String> ALLOWED_MANAGER_STATUSES = Set.of("approved", "rejected", "canceled");
+    private static final Set<String> ALLOWED_OWNER_STATUSES = Set.of("approved", "rejected", "canceled");
 
     private final BookingRepository bookingRepository;
     private final PitchRepository pitchRepository;
@@ -37,7 +38,7 @@ public class BookingService {
         User player = userRepository.findById(playerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy player với id: " + playerId));
 
-        if (player.getRole() == null || !"player".equalsIgnoreCase(player.getRole())) {
+        if (Role.fromValue(player.getRole()) != Role.PLAYER) {
             throw new ForbiddenOperationException("Chỉ player mới được tạo đặt sân");
         }
 
@@ -81,25 +82,25 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookingResponse> getManagerBookings(Integer managerId) {
-        return bookingRepository.findAllByManagerId(managerId)
+    public List<BookingResponse> getManagerBookings(Integer ownerId) {
+        return bookingRepository.findAllByManagerId(ownerId)
                 .stream()
                 .map(this::toBookingResponse)
                 .toList();
     }
 
     @Transactional
-    public BookingResponse updateBookingStatus(Integer managerId, Integer bookingId, String status) {
+    public BookingResponse updateBookingStatus(Integer ownerId, Integer bookingId, String status) {
         String normalizedStatus = status == null ? "" : status.trim().toLowerCase();
-        if (!ALLOWED_MANAGER_STATUSES.contains(normalizedStatus)) {
+        if (!ALLOWED_OWNER_STATUSES.contains(normalizedStatus)) {
             throw new BadRequestException("Trạng thái không hợp lệ. Chỉ chấp nhận: approved, rejected, canceled");
         }
 
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdWithPitchAndManager(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy booking với id: " + bookingId));
 
-        Integer ownerId = booking.getPitch().getManager().getId();
-        if (!managerId.equals(ownerId)) {
+        Integer bookingOwnerId = booking.getPitch().getManager().getId();
+        if (!ownerId.equals(bookingOwnerId)) {
             throw new ForbiddenOperationException("Bạn không có quyền cập nhật booking này");
         }
 

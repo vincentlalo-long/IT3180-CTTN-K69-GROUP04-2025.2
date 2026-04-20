@@ -25,14 +25,14 @@ public class ManagerBookingController {
     private final AuthenticatedUserService authenticatedUserService;
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<List<BookingResponse>> getManagerBookings() {
         Integer managerId = authenticatedUserService.getCurrentUserId();
         return ResponseEntity.ok(bookingService.getManagerBookings(managerId));
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<BookingResponse> updateBookingStatus(
             @PathVariable("id") Integer bookingId,
             @Valid @RequestBody UpdateBookingStatusRequest request

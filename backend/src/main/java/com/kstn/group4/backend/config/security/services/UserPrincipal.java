@@ -1,6 +1,7 @@
 package com.kstn.group4.backend.config.security.services;
 
 import com.kstn.group4.backend.entity.User;
+import com.kstn.group4.backend.entity.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,6 +14,7 @@ import java.util.List;
 
 public class UserPrincipal implements UserDetails {
     private Integer id;
+    private String principal;
     private String username;
     private String email;
     private String role;
@@ -22,9 +24,10 @@ public class UserPrincipal implements UserDetails {
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserPrincipal(Integer id, String username, String email, String password,
+    public UserPrincipal(Integer id, String principal, String username, String email, String password,
                            String role, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
+        this.principal = principal;
         this.username = username;
         this.email = email;
         this.password = password;
@@ -33,16 +36,18 @@ public class UserPrincipal implements UserDetails {
     }
 
     public static UserPrincipal build(User user) {
+        String normalizedRole = Role.fromValue(user.getRole()).name();
         List<GrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().toUpperCase())
+            new SimpleGrantedAuthority("ROLE_" + normalizedRole)
         );
 
         return new UserPrincipal(
                 user.getId(),
+                user.getEmail(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
-                user.getRole(),
+                normalizedRole,
                 authorities);
     }
 
@@ -59,7 +64,9 @@ public class UserPrincipal implements UserDetails {
     public String getPassword() { return password; }
 
     @Override
-    public String getUsername() { return username; }
+    public String getUsername() { return principal; }
+
+    public String getAppUsername() { return username; }
 
     @Override
     public boolean isAccountNonExpired() { return true; }

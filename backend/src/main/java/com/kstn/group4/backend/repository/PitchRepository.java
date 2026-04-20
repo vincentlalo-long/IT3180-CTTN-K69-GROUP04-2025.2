@@ -4,6 +4,7 @@ import com.kstn.group4.backend.entity.Pitch;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,10 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
     List<Pitch> findByManagerId(Integer managerId);
 
     Optional<Pitch> findByIdAndManagerId(Integer id, Integer managerId);
+
+    @EntityGraph(attributePaths = {"priceRules", "services"})
+    @Query("SELECT p FROM Pitch p WHERE p.id = :id")
+    Optional<Pitch> findByIdWithDetails(@Param("id") Integer id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Pitch p WHERE p.id = :id")

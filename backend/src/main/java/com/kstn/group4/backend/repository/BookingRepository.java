@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -13,14 +15,20 @@ import org.springframework.data.repository.query.Param;
 
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
+    @EntityGraph(attributePaths = {"pitch"})
     List<Booking> findByPlayerIdOrderByCreatedAtDesc(Integer playerId);
 
     @Query("""
             SELECT b FROM Booking b
-            WHERE b.pitch.manager.id = :managerId
+            JOIN FETCH b.pitch p
+            WHERE p.manager.id = :managerId
             ORDER BY b.createdAt DESC
             """)
     List<Booking> findAllByManagerId(@Param("managerId") Integer managerId);
+
+    @EntityGraph(attributePaths = {"pitch", "pitch.manager"})
+    @Query("SELECT b FROM Booking b WHERE b.id = :bookingId")
+    Optional<Booking> findByIdWithPitchAndManager(@Param("bookingId") Integer bookingId);
 
     @Query("""
             SELECT b FROM Booking b

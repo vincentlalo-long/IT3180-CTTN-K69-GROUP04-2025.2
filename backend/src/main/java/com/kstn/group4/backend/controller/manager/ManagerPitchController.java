@@ -32,7 +32,7 @@ public class ManagerPitchController {
     private final AuthenticatedUserService authenticatedUserService;
 
     @PostMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<PitchSummaryResponse> createPitch(@Valid @RequestBody ManagerCreatePitchRequest request) {
         Integer managerId = authenticatedUserService.getCurrentUserId();
         PitchSummaryResponse response = managerPitchService.createPitch(managerId, request);
@@ -40,14 +40,14 @@ public class ManagerPitchController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<List<PitchSummaryResponse>> getOwnedPitches() {
         Integer managerId = authenticatedUserService.getCurrentUserId();
         return ResponseEntity.ok(managerPitchService.getOwnedPitches(managerId));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<PitchSummaryResponse> updatePitch(
             @PathVariable("id") Integer pitchId,
             @Valid @RequestBody ManagerUpdatePitchRequest request
@@ -57,7 +57,7 @@ public class ManagerPitchController {
     }
 
     @PostMapping("/{id}/services")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<AddonServiceResponse> addService(
             @PathVariable("id") Integer pitchId,
             @Valid @RequestBody ManagerAddServiceRequest request
@@ -68,7 +68,7 @@ public class ManagerPitchController {
     }
 
     @PostMapping("/{id}/price-rules")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<PriceRuleResponse> addPriceRule(
             @PathVariable("id") Integer pitchId,
             @Valid @RequestBody ManagerAddPriceRuleRequest request

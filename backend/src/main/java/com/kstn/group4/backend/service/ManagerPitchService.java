@@ -10,6 +10,7 @@ import com.kstn.group4.backend.dto.pitch.PriceRuleResponse;
 import com.kstn.group4.backend.entity.AddonService;
 import com.kstn.group4.backend.entity.Pitch;
 import com.kstn.group4.backend.entity.PriceRule;
+import com.kstn.group4.backend.entity.Role;
 import com.kstn.group4.backend.entity.User;
 import com.kstn.group4.backend.exception.BadRequestException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
@@ -149,8 +150,8 @@ public class ManagerPitchService {
     }
 
     private void validateRole(String role) {
-        if (role == null || !"manager".equalsIgnoreCase(role)) {
-            throw new BadRequestException("Người dùng hiện tại không phải vai trò manager");
+        if (Role.fromValue(role) != Role.OWNER) {
+            throw new BadRequestException("Người dùng hiện tại không phải vai trò owner");
         }
     }
 }

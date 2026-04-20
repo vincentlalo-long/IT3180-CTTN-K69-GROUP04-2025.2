@@ -10,7 +10,7 @@ import eyeOffIcon from "../../assets/icons/eye-off.svg";
 import facebookIcon from "../../assets/icons/facebook.svg";
 import googleIcon from "../../assets/icons/google.svg";
 
-type LoginRole = "owner" | "user";
+type LoginRole = "OWNER" | "PLAYER" | "ADMIN";
 
 interface LoginFormValues {
   identifier: string;
@@ -97,12 +97,12 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   const handleAdminLogin = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    void submitWithRole("owner", "/admin");
+    void submitWithRole("OWNER", "/admin");
   };
 
   const handleUserLogin = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    void submitWithRole("user", "/");
+    void submitWithRole("PLAYER", "/");
   };
 
   return (

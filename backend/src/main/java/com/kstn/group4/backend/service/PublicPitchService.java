@@ -38,7 +38,7 @@ public class PublicPitchService {
 
         @Transactional(readOnly = true)
     public PitchDetailResponse getPitchDetail(Integer pitchId) {
-        Pitch pitch = pitchRepository.findById(pitchId)
+                Pitch pitch = pitchRepository.findByIdWithDetails(pitchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với id: " + pitchId));
 
         return PitchDetailResponse.builder()

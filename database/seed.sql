@@ -16,7 +16,7 @@ VALUES
         'manager_hanoi',
         'manager1@gmail.com',
         'password123',
-        'manager',
+        'OWNER',
         NOW ()
     ),
     (
@@ -24,7 +24,7 @@ VALUES
         'manager_saigon',
         'manager2@gmail.com',
         'password123',
-        'manager',
+        'OWNER',
         NOW ()
     ),
     (
@@ -32,7 +32,7 @@ VALUES
         'player_dung',
         'dung.player@gmail.com',
         'password123',
-        'player',
+        'PLAYER',
         NOW ()
     ),
     (
@@ -40,7 +40,7 @@ VALUES
         'player_nam',
         'nam.player@gmail.com',
         'password123',
-        'player',
+        'PLAYER',
         NOW ()
     ),
     (
@@ -48,7 +48,7 @@ VALUES
         'player_tu',
         'tu.player@gmail.com',
         'password123',
-        'player',
+        'PLAYER',
         NOW ()
     );
 

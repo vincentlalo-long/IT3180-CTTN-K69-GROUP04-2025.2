@@ -5,7 +5,7 @@ import { saveTokenToStorage } from "../../utils/tokenStorage";
 
 // Khai báo kiểu dữ liệu payload nhận được từ LoginForm
 interface LoginSubmitPayload {
-  role: "owner" | "user";
+  role: "OWNER" | "PLAYER" | "ADMIN";
   identifier: string;
   password: string;
 }
@@ -14,18 +14,17 @@ export function LoginPage() {
 
   // Hàm xử lý gọi API khi user ấn nút đăng nhập
   const handleLogin = async (payload: LoginSubmitPayload) => {
-    // 1. Chuyển đổi tên Role và các trường cho khớp với Backend Spring Boot
+    // 1. Chuẩn hóa dữ liệu gửi xuống backend
     console.log("Đã nhảy vào API!"); 
-    const backendRole = payload.role === "owner" ? "admin" : "player";
     
     const loginData = {
       email: payload.identifier, // Đổi identifier thành email
       password: payload.password,
-      role: backendRole
+      role: payload.role
     };
 
     // 2. Gửi request xuống Backend
-    const response = await fetch('http://localhost:8080/auth/login', {
+    const response = await fetch('http://localhost:8080/api/v1/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(loginData)

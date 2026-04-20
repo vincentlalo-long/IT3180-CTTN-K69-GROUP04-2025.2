@@ -12,7 +12,7 @@ spring:
     # Lưu ý: Nếu dùng Docker Compose Support, Spring có thể tự nhận diện, 
     url: jdbc:mysql://localhost:3306/football_booking?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: mixisql123@
+    password: ${DB_PASSWORD:mixisql123@}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # 3. JPA / Hibernate
@@ -47,13 +47,15 @@ server:
     context-path: /api/v1
 
 application:
+  cors:
+    allowed-origins:
+      - ${FRONTEND_ORIGIN:http://localhost:5173}
   security:
     jwt:
-      # Sẽ đổi sau khi deploy thật
-      secret-key: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
-      expiration: 86400000 
+      secret-key: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      expiration: ${JWT_EXPIRATION:86400000}
       refresh-token:
-        expiration: 604800000
+        expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
   level:

@@ -1,13 +1,12 @@
 package com.kstn.group4.backend.payload;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
-@Getter
-@Setter
-public class RegisterRequest {
-    private String username;
-    private String email;
-    private String password;
-    private String role;
+public record RegisterRequest(
+        @NotBlank String username,
+        @NotBlank @Email String email,
+        @NotBlank String password,
+        String role
+) {
 }
