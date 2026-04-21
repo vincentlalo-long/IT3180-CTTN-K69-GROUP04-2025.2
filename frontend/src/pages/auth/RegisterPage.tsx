@@ -25,7 +25,7 @@ export function RegisterPage() {
     };
 
     // Gửi request đăng ký xuống Backend
-    const response = await fetch("http://localhost:8080/auth/register", {
+    const response = await fetch("http://localhost:8080/api/v1/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(registerData),

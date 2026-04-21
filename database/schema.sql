@@ -1,204 +1,84 @@
+CREATE TABLE IF NOT EXISTS `users` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `username` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) UNIQUE,
+    `password` VARCHAR(255),
+    `role` VARCHAR(255),
+    `created_at` DATETIME,
+    `team_id` INT,
+    `phone_number` VARCHAR(20),
+    `avatar_url` VARCHAR(255),
+    PRIMARY KEY (`id`)
+);
 
+CREATE TABLE IF NOT EXISTS `pitches` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `manager_id` INT,
+    `name` VARCHAR(255),
+    `address` TEXT,
+    `pitch_type` VARCHAR(255),
+    `surface_type` VARCHAR(255),
+    `base_price` DECIMAL(38,2),
+    `image_url` VARCHAR(255),
+    `status` VARCHAR(255),
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_pitches_manager_id`
+        FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`)
+);
 
-CREATE TABLE
-    `users` (
-        `id` integer PRIMARY KEY,
-        `username` varchar(255) NOT NULL,
-        `email` varchar(255) UNIQUE,
-        `password` varchar(255),
-        `role` varchar(255) COMMENT 'manager hoặc player',
-        `created_at` timestamp,
-        `team_id` integer
-    );
+CREATE TABLE IF NOT EXISTS `bookings` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `player_id` INT,
+    `pitch_id` INT,
+    `booking_date` DATE,
+    `start_time` TIME,
+    `end_time` TIME,
+    `status` VARCHAR(255),
+    `booking_type` VARCHAR(255),
+    `total_price` DECIMAL(38,2),
+    `created_at` DATETIME,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_bookings_player_id`
+        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`),
+    CONSTRAINT `fk_bookings_pitch_id`
+        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`)
+);
 
-CREATE TABLE
-    `pitches` (
-        `id` integer PRIMARY KEY,
-        `manager_id` integer,
-        `name` varchar(255),
-        `address` text,
-        `pitch_type` varchar(255) COMMENT '5, 7, 11 người',
-        `surface_type` varchar(255) COMMENT 'Cỏ nhân tạo, tự nhiên',
-        `base_price` decimal,
-        `image_url` varchar(255)
-    );
+CREATE TABLE IF NOT EXISTS `price_rules` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `pitch_id` INT,
+    `day_of_week` VARCHAR(255),
+    `start_time` TIME,
+    `end_time` TIME,
+    `price` DECIMAL(38,2),
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_price_rules_pitch_id`
+        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`)
+);
 
-CREATE TABLE
-    `bookings` (
-        `id` integer PRIMARY KEY,
-        `player_id` integer,
-        `pitch_id` integer,
-        `booking_date` date,
-        `start_time` time,
-        `end_time` time,
-        `status` varchar(255) COMMENT 'pending, approved, rejected, canceled',
-        `booking_type` varchar(255) COMMENT 'one-time, recurring',
-        `total_price` decimal,
-        `created_at` timestamp
-    );
+CREATE TABLE IF NOT EXISTS `services` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `pitch_id` INT,
+    `name` VARCHAR(255),
+    `price` DECIMAL(38,2),
+    `unit` VARCHAR(255),
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_services_pitch_id`
+        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`)
+);
 
-CREATE TABLE
-    `services` (
-        `id` integer PRIMARY KEY,
-        `pitch_id` integer,
-        `name` varchar(255) COMMENT 'Nước, áo bib, bóng, Trọng tài...',
-        `price` decimal,
-        `unit` varchar(255) COMMENT 'chai, bộ, quả...'
-    );
+CREATE TABLE IF NOT EXISTS `pitch_reviews` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `pitch_id` INT NOT NULL,
+    `player_id` INT NOT NULL,
+    `rating` INT NOT NULL,
+    `content` TEXT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_pitch_reviews_pitch_id`
+        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`),
+    CONSTRAINT `fk_pitch_reviews_player_id`
+        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`)
+);
 
-CREATE TABLE
-    `booking_services` (
-        `booking_id` integer,
-        `service_id` integer,
-        `quantity` integer,
-        `subtotal` decimal
-    );
-
-CREATE TABLE
-    `teams` (
-        `id` integer PRIMARY KEY,
-        `captain_id` integer,
-        `name` varchar(255),
-        `logo` varchar(255)
-    );
-
-CREATE TABLE
-    `matchmaking_posts` (
-        `id` integer PRIMARY KEY,
-        `team_id` integer,
-        `match_time` timestamp,
-        `area` varchar(255),
-        `skill_level` varchar(255) COMMENT 'Yếu, Trung bình, Khá',
-        `status` varchar(255) COMMENT 'open, matched'
-    );
-
-CREATE TABLE
-    `tournaments` (
-        `id` integer PRIMARY KEY,
-        `organizer_id` integer,
-        `pitch_id` integer,
-        `name` varchar(255) NOT NULL,
-        `description` text,
-        `start_date` date,
-        `end_date` date,
-        `format` varchar(255) COMMENT 'vòng tròn, loại trực tiếp...',
-        `status` varchar(255) COMMENT 'upcoming, ongoing, completed'
-    );
-
-CREATE TABLE
-    `tournament_teams` (
-        `tournament_id` integer,
-        `team_id` integer,
-        `enrolled_at` timestamp,
-        `status` varchar(255) COMMENT 'pending, approved'
-    );
-
-CREATE TABLE
-    `matches` (
-        `id` integer PRIMARY KEY,
-        `tournament_id` integer,
-        `home_team_id` integer,
-        `away_team_id` integer,
-        `pitch_id` integer,
-        `match_time` timestamp,
-        `home_score` integer DEFAULT 0,
-        `away_score` integer DEFAULT 0,
-        `status` varchar(255) COMMENT 'scheduled, finished'
-    );
-
-CREATE TABLE
-    `match_statistics` (
-        `id` integer PRIMARY KEY,
-        `match_id` integer,
-        `player_id` integer,
-        `team_id` integer,
-        `goals` integer DEFAULT 0,
-        `assists` integer DEFAULT 0
-    );
-
-CREATE TABLE
-    `sponsors` (
-        `id` integer PRIMARY KEY,
-        `name` varchar(255) NOT NULL,
-        `logo_url` varchar(255),
-        `website_url` varchar(255),
-        `description` text
-    );
-
-CREATE TABLE
-    `tournament_sponsors` (
-        `tournament_id` integer,
-        `sponsor_id` integer,
-        `sponsor_level` varchar(255) COMMENT 'Kim cương, Vàng, Bạc, Đồng',
-        `contribution_amount` decimal COMMENT 'Số tiền hoặc giá trị vật chất tài trợ'
-    );
-
-CREATE TABLE
-    `reviews` (
-        `id` integer PRIMARY KEY,
-        `player_id` integer,
-        `pitch_id` integer,
-        `rating` integer COMMENT '1-5 sao',
-        `comment` text,
-        `created_at` timestamp
-    );
-
-CREATE TABLE
-    `price_rules` (
-        `id` integer PRIMARY KEY,
-        `pitch_id` integer,
-        `day_of_week` varchar(255) COMMENT 'Monday, Sunday...',
-        `start_time` time,
-        `end_time` time,
-        `price` decimal COMMENT 'Giá riêng cho khung giờ này'
-    );
-
-ALTER TABLE `users` ADD FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
-ALTER TABLE `pitches` ADD FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `bookings` ADD FOREIGN KEY (`player_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `bookings` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
-
-ALTER TABLE `services` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
-
-ALTER TABLE `booking_services` ADD FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`);
-
-ALTER TABLE `booking_services` ADD FOREIGN KEY (`service_id`) REFERENCES `services` (`id`);
-
-ALTER TABLE `teams` ADD FOREIGN KEY (`captain_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `matchmaking_posts` ADD FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
-ALTER TABLE `tournaments` ADD FOREIGN KEY (`organizer_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `tournaments` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
-
-ALTER TABLE `tournament_teams` ADD FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`);
-
-ALTER TABLE `tournament_teams` ADD FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
-ALTER TABLE `matches` ADD FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`);
-
-ALTER TABLE `matches` ADD FOREIGN KEY (`home_team_id`) REFERENCES `teams` (`id`);
-
-ALTER TABLE `matches` ADD FOREIGN KEY (`away_team_id`) REFERENCES `teams` (`id`);
-
-ALTER TABLE `matches` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
-
-ALTER TABLE `match_statistics` ADD FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`);
-
-ALTER TABLE `match_statistics` ADD FOREIGN KEY (`player_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `match_statistics` ADD FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`);
-
-ALTER TABLE `tournament_sponsors` ADD FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`);
-
-ALTER TABLE `tournament_sponsors` ADD FOREIGN KEY (`sponsor_id`) REFERENCES `sponsors` (`id`);
-
-ALTER TABLE `reviews` ADD FOREIGN KEY (`player_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `reviews` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
-
-ALTER TABLE `price_rules` ADD FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`);
+Made changes.
