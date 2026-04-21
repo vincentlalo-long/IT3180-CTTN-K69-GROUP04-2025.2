@@ -1,6 +1,4 @@
-import { useNavigate } from "react-router-dom";
-import { Bell, CircleUserRound, Search } from "lucide-react";
-import logoImage from "../../assets/images/logo-amixi.png";
+import { Search } from "lucide-react";
 import Hieugay from "../../assets/images/Hieugay.jpg";
 import { UserNavbar } from "../../components/user/UserNavbar.tsx";
 
@@ -14,8 +12,12 @@ function MatchCard() {
           className="h-16 w-16 rounded-full object-cover shadow shrink-0"
         />
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-gray-900 leading-tight">Đinh Thái Sơn</h3>
-          <p className="text-sm font-bold text-gray-900 leading-tight">Sân bóng Đền Lừ 3</p>
+          <h3 className="text-sm font-bold text-gray-900 leading-tight">
+            Đinh Thái Sơn
+          </h3>
+          <p className="text-sm font-bold text-gray-900 leading-tight">
+            Sân bóng Đền Lừ 3
+          </p>
           <p className="mt-0.5 text-xs text-gray-600">16h30 – 18h00</p>
         </div>
       </div>
@@ -24,8 +26,6 @@ function MatchCard() {
 }
 
 export function MatchPage() {
-  const navigate = useNavigate();
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
       {/* Header */}
@@ -41,19 +41,25 @@ export function MatchPage() {
             />
           </div>
           <button
-            onClick={() => { /* TODO */ }}
+            onClick={() => {
+              /* TODO */
+            }}
             className="rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             Khu vực
           </button>
           <button
-            onClick={() => { /* TODO */ }}
+            onClick={() => {
+              /* TODO */
+            }}
             className="rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             Trình độ
           </button>
           <button
-            onClick={() => { /* TODO */ }}
+            onClick={() => {
+              /* TODO */
+            }}
             className="rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             Ngày đặt sân
@@ -63,7 +69,7 @@ export function MatchPage() {
 
       {/* Match grid */}
       <main className="mx-auto max-w-[1280px] px-6 py-6">
-<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 8 }).map((_, index) => (
             <MatchCard key={index} />
           ))}

@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Bell, CircleUserRound, Search } from "lucide-react";
-import logoImage from "../../assets/images/logo-amixi.png";
+import { Search } from "lucide-react";
 import logoFootball from "../../assets/images/logo-ball.jpg";
 import fieldImage from "../../assets/images/Old_Trafford.jpg";
 import { UserNavbar } from "../../components/user/UserNavbar.tsx";
@@ -55,8 +54,6 @@ function BookingFieldCard({
 }
 
 export function BookingPage() {
-  const navigate = useNavigate();
-
   const fields = Array.from({ length: 9 }, (_, index) => ({
     id: index + 1,
     imageUrl: fieldImage,

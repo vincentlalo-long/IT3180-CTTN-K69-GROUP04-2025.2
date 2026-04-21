@@ -192,7 +192,7 @@ export function BookingField() {
       });
     });
     return states;
-  }, [selected, date, bookedSlots]);
+  }, [selected, date, bookedSlots, courts, timeSlots]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [yyyy, mm, dd] = e.target.value.split("-");
