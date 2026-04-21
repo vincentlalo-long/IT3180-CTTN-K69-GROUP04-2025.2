@@ -3,7 +3,7 @@ import { Bell, CircleUserRound, Search } from "lucide-react";
 import logoImage from "../../assets/images/logo-amixi.png";
 import logoFootball from "../../assets/images/logo-ball.jpg";
 import fieldImage from "../../assets/images/Old_Trafford.jpg";
-
+import { UserNavbar } from "../../components/user/UserNavbar.tsx";
 type FieldCardProps = {
   id: number;
   imageUrl?: string;
@@ -68,72 +68,7 @@ export function BookingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
-      <header className="border-b border-white/15 bg-[#005E2E]/80 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-5 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <img
-              src={logoImage}
-              alt="logo"
-              className="h-10 w-auto object-contain"
-            />
-            <div>
-              <p className="text-xs font-medium text-white/80">Công ty AMIXI</p>
-              <p
-                className="text-4xl leading-none tracking-widest text-white"
-                style={{ fontFamily: '"Jersey 10", sans-serif' }}
-              >
-                MIXIFOOT
-              </p>
-            </div>
-          </div>
-
-          <nav className="hidden items-center gap-10 text-lg font-semibold lg:flex">
-            <button
-              onClick={() => navigate("/")}
-              className="text-white transition hover:text-white/75"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => navigate("/booking")}
-              className="text-[#84e30f] transition hover:text-[#84e30f]/80"
-            >
-              Đặt sân
-            </button>
-            <button
-              onClick={() => navigate("/match")}
-              className="text-white transition hover:text-white/75"
-            >
-              Chợ kèo
-            </button>
-            <button
-              onClick={() => navigate("/profile")}
-              className="text-white transition hover:text-white/75"
-            >
-              Hồ sơ
-            </button>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                /* TODO */
-              }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20"
-            >
-              <Bell size={18} />
-            </button>
-            <button
-              onClick={() => {
-                /* TODO */
-              }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20"
-            >
-              <CircleUserRound size={20} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <UserNavbar />
 
       <div className="bg-[#005E2E]/40">
         <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-6 py-4">
