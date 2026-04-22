@@ -11,10 +11,13 @@
     "test": "echo \"No tests configured yet. Please set up testing framework (e.g., Vitest, Jest).\""
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.14.0"
+    "react-hook-form": "^7.73.1",
+    "react-router-dom": "^7.14.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -34,5 +37,4 @@
     "typescript-eslint": "^8.58.0",
     "vite": "^8.0.4"
   }
-  
 }
