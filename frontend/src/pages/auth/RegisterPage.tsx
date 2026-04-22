@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AuthLayout } from "../../layouts/AuthLayout";
 import { RegisterForm } from "./RegisterForm";
 import { saveTokenToStorage } from "../../utils/tokenStorage";
+import { registerUser } from "../../api/auth/authApi";
 
 // Khai báo kiểu dữ liệu payload nhận được từ RegisterForm
 interface RegisterSubmitPayload {
@@ -12,53 +13,22 @@ interface RegisterSubmitPayload {
 }
 
 export function RegisterPage() {
-  // Hàm xử lý gọi API khi user ấn nút đăng ký
   const handleRegister = async (payload: RegisterSubmitPayload) => {
-    console.log("Gọi API đăng ký");
-
-    // Chuyển đổi dữ liệu để khớp với Backend Spring Boot
     const registerData = {
-      username: payload.fullName, // Backend sử dụng username, frontend gọi là fullName
-      email: payload.emailOrPhone, // Email hoặc số điện thoại
+      username: payload.fullName,
+      email: payload.emailOrPhone,
       password: payload.password,
-      role: "player", // Người dùng mới mặc định là player
+      role: "PLAYER",
     };
 
-    // Gửi request đăng ký xuống Backend
-    const response = await fetch("http://localhost:8080/api/v1/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(registerData),
-    });
+    const data = await registerUser(registerData);
 
-    // Xử lý phản hồi từ Server
-    if (response.ok) {
-      const data = await response.json();
-
-      // 1. Nếu Backend trả về token sau đăng ký
-      if (data.token) {
-        // Lưu token và thông tin user vào localStorage
-        saveTokenToStorage(data.token, {
-          role: data.role || "player",
-          email: data.email || payload.emailOrPhone,
-          username: data.username || payload.fullName,
-        });
-
-        console.log("Đăng ký thành công, Token:", data.token);
-      } else {
-        // 2. Nếu Backend chồng trả về token, chuyển hướng đến trang đăng nhập
-        console.log("Đăng ký thành công, vui lòng đăng nhập");
-      }
-
-      // Chú ý: Không cần gọi navigate ở đây
-      // Vì file RegisterForm đã có navigate rồi
-    } else {
-      // Đăng ký thất bại
-      const errorMsg = await response.text();
-      console.error("Lỗi đăng ký:", errorMsg);
-
-      // Ném ra lỗi để file RegisterForm bắt được ở khối catch
-      throw new Error(errorMsg || "Đăng ký thất bại");
+    if (data.token) {
+      saveTokenToStorage(data.token, {
+        role: data.role || "PLAYER",
+        email: data.email || payload.emailOrPhone,
+        username: data.username || payload.fullName,
+      });
     }
   };
 
@@ -74,7 +44,6 @@ export function RegisterPage() {
           </p>
         </div>
 
-        {/* Truyền hàm handleRegister vào RegisterForm */}
         <RegisterForm onSubmit={handleRegister} />
 
         <p className="text-center text-sm text-white/85">

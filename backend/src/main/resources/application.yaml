@@ -29,7 +29,7 @@ spring:
   docker:
     compose:
       enabled: true
-      file: ./backend/compose.yaml # Đảm bảo đường dẫn này trỏ đúng đến file compose.yaml
+      file: ./compose.yaml # Đảm bảo đường dẫn này trỏ đúng đến file compose.yaml
       lifecycle-management: start_and_stop # Tự bật DB khi chạy App, tự tắt khi stop App
       readiness:
         tcp:
