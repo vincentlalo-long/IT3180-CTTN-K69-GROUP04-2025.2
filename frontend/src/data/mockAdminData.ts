@@ -6,6 +6,7 @@ export type SlotPriceTier = "off-peak" | "transition" | "golden";
 
 export interface Facility {
   id: string;
+  apiFacilityId: string;
   name: string;
   address: string;
 }
@@ -79,16 +80,19 @@ export const TIME_SLOT_PRICING: Record<AdminTimeSlot, TimeSlotPricing> = {
 export const facilities: Facility[] = [
   {
     id: "den-lu-3",
+    apiFacilityId: "1",
     name: "Khu sân Đền Lừ 3",
     address: "Hoàng Mai, Hà Nội",
   },
   {
     id: "dam-hong",
+    apiFacilityId: "2",
     name: "Khu sân Đầm Hồng",
     address: "Khương Đình, Hà Nội",
   },
   {
     id: "dai-tu",
+    apiFacilityId: "3",
     name: "Khu sân Đại Từ",
     address: "Đại Kim, Hà Nội",
   },

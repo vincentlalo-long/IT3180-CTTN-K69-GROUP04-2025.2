@@ -10,7 +10,7 @@ spring:
   # 2. Database Configuration
   datasource:
     # Lưu ý: Nếu dùng Docker Compose Support, Spring có thể tự nhận diện,
-    url: jdbc:mysql://localhost:3306/football_booking?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/football_booking?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: ${DB_PASSWORD:mixisql123@}
     driver-class-name: com.mysql.cj.jdbc.Driver

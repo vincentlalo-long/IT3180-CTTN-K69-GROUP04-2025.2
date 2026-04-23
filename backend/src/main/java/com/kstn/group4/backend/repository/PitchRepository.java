@@ -24,6 +24,26 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
 
     List<Pitch> findByManagerId(Integer managerId);
 
+    @Query("""
+            SELECT COUNT(p)
+            FROM Pitch p
+            WHERE p.manager.id = :managerId
+              AND UPPER(p.status) IN :activeStatuses
+            """)
+    int countActiveByManagerId(@Param("managerId") Integer managerId,
+                               @Param("activeStatuses") List<String> activeStatuses);
+
+    @Query("""
+            SELECT COUNT(p)
+            FROM Pitch p
+            WHERE p.id = :id
+              AND p.manager.id = :managerId
+              AND UPPER(p.status) IN :activeStatuses
+            """)
+    int countActiveByIdAndManagerId(@Param("id") Integer id,
+                                    @Param("managerId") Integer managerId,
+                                    @Param("activeStatuses") List<String> activeStatuses);
+
     Optional<Pitch> findByIdAndManagerId(Integer id, Integer managerId);
 
     @EntityGraph(attributePaths = {"priceRules", "services"})

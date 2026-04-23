@@ -81,4 +81,19 @@ CREATE TABLE IF NOT EXISTS `pitch_reviews` (
         FOREIGN KEY (`player_id`) REFERENCES `users` (`id`)
 );
 
-Made changes.
+CREATE TABLE IF NOT EXISTS `booking_payments` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `booking_id` INT NOT NULL,
+    `payer_id` INT NOT NULL,
+    `paid_amount` DECIMAL(38,2) NOT NULL,
+    `payment_method` VARCHAR(50) NOT NULL,
+    `payment_status` VARCHAR(50) NOT NULL,
+    `paid_at` DATETIME,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_booking_payments_booking_id`
+        FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`),
+    CONSTRAINT `fk_booking_payments_payer_id`
+        FOREIGN KEY (`payer_id`) REFERENCES `users` (`id`)
+);
+
