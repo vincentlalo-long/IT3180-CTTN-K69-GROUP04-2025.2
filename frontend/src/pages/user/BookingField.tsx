@@ -1,23 +1,32 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useReducer } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, ArrowLeft, X } from "lucide-react";
+import { getBookedSlots, bookSlots } from "../../api/user/userApi";
+
+function generateTimeSlots(): string[] {
+  const slots: string[] = [];
+  let startHour = 6;
+  let startMinute = 0;
+  while (true) {
+    const end = new Date(0, 0, 0, startHour, startMinute + 90);
+    const endHour = end.getHours();
+    const endMinute = end.getMinutes();
+    slots.push(
+      `${startHour.toString().padStart(2, "0")}:${startMinute
+        .toString()
+        .padStart(2, "0")} - ${endHour.toString().padStart(2, "0")}:${endMinute
+        .toString()
+        .padStart(2, "0")}`
+    );
+    if (endHour > 22 || (endHour === 22 && endMinute > 0) || endHour >= 23) break;
+    startHour = endHour;
+    startMinute = endMinute;
+  }
+  return slots;
+}
 
 const defaultCourts = ["Sân 1", "Sân 2", "Sân 3", "Sân 4"];
-const defaultTimeSlots = [
-  "8:00 - 9:30",
-  "9:30 - 11:00",
-  "15:00 - 16:30",
-  "16:30 - 18:00",
-  "18:00 - 19:30",
-];
-
-// Mock booked slots — thay bằng API thật sau
-const mockBookedSlots: Record<string, boolean> = {
-  "Sân 1-8:00 - 9:30": true,
-  "Sân 2-15:00 - 16:30": true,
-  "Sân 3-18:00 - 19:30": true,
-};
-
+const defaultTimeSlots = generateTimeSlots();
 const PRICE_PER_SLOT = 100_000;
 
 const parseTimeToHour = (timeStr: string): number => {
@@ -68,6 +77,24 @@ const getSlotClassName = (state: SlotState): string => {
   }
 };
 
+// --- Fetch state reducer ---
+type FetchAction =
+  | { type: "loading" }
+  | { type: "success" }
+  | { type: "error"; message: string };
+
+type FetchState = { loading: boolean; error: string | null };
+
+const fetchReducer = (state: FetchState, action: FetchAction): FetchState => {
+  switch (action.type) {
+    case "loading": return { loading: true, error: null };
+    case "success": return { loading: false, error: null };
+    case "error": return { loading: false, error: action.message };
+    default: return state;
+  }
+};
+
+// --- Confirm Modal ---
 interface ConfirmModalProps {
   selectedItems: { court: string; slot: string }[];
   date: string;
@@ -78,7 +105,6 @@ interface ConfirmModalProps {
 function ConfirmModal({ selectedItems, date, onConfirm, onCancel }: ConfirmModalProps) {
   const total = selectedItems.length * PRICE_PER_SLOT;
 
-  // Group by court
   const grouped = selectedItems.reduce<Record<string, string[]>>((acc, { court, slot }) => {
     if (!acc[court]) acc[court] = [];
     acc[court].push(slot);
@@ -88,7 +114,6 @@ function ConfirmModal({ selectedItems, date, onConfirm, onCancel }: ConfirmModal
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
-        {/* Header */}
         <div className="bg-[#2E9B3F] px-5 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">Xác nhận đặt sân</h2>
           <button
@@ -99,15 +124,12 @@ function ConfirmModal({ selectedItems, date, onConfirm, onCancel }: ConfirmModal
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-5 py-4 space-y-4">
-          {/* Date */}
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar size={15} className="text-[#2E9B3F]" />
             <span>Ngày đặt: <span className="font-semibold text-gray-800">{date}</span></span>
           </div>
 
-          {/* Slots grouped by court */}
           <div className="space-y-2">
             {Object.entries(grouped).map(([court, slots]) => (
               <div key={court} className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5">
@@ -124,10 +146,8 @@ function ConfirmModal({ selectedItems, date, onConfirm, onCancel }: ConfirmModal
             ))}
           </div>
 
-          {/* Divider */}
           <div className="border-t border-dashed border-gray-200" />
 
-          {/* Total */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-700">Tổng tiền</span>
             <span className="text-xl font-bold text-[#2E9B3F]">
@@ -135,13 +155,11 @@ function ConfirmModal({ selectedItems, date, onConfirm, onCancel }: ConfirmModal
             </span>
           </div>
 
-          {/* Note */}
           <p className="text-xs text-gray-400 text-center">
             Vui lòng thanh toán tại quầy khi đến sân
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3 px-5 pb-5">
           <button
             onClick={onCancel}
@@ -161,6 +179,7 @@ function ConfirmModal({ selectedItems, date, onConfirm, onCancel }: ConfirmModal
   );
 }
 
+// --- Main Component ---
 export function BookingField() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -169,11 +188,34 @@ export function BookingField() {
     return now.toLocaleDateString("en-GB").split("/").join("/");
   });
   const [showModal, setShowModal] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<Record<string, boolean>>({});
+  const [fetchState, dispatch] = useReducer(fetchReducer, { loading: false, error: null });
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Dùng mock data — khi có API thật thì thay bookedSlots bằng data fetch về
-  const bookedSlots = mockBookedSlots;
   const courts = defaultCourts;
   const timeSlots = defaultTimeSlots;
+
+  useEffect(() => {
+    let cancelled = false;
+    dispatch({ type: "loading" });
+
+    getBookedSlots(date)
+      .then((slots) => {
+        if (cancelled) return;
+        const booked: Record<string, boolean> = {};
+        slots.forEach(({ court, slot }) => {
+          booked[`${court}-${slot}`] = true;
+        });
+        setBookedSlots(booked);
+        dispatch({ type: "success" });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        dispatch({ type: "error", message: "Không thể tải dữ liệu đặt sân" });
+      });
+
+    return () => { cancelled = true; };
+  }, [date]);
 
   const getKey = (court: string, slot: string) => `${court}-${slot}`;
 
@@ -207,16 +249,38 @@ export function BookingField() {
       return { court: key.slice(0, idx), slot: key.slice(idx + 1) };
     });
 
-  const handleConfirm = () => {
-    // TODO: gọi API đặt sân ở đây
-    setShowModal(false);
-    setSelected({});
-    alert("Đặt sân thành công!");
+  const handleBooking = async (
+    items: { court: string; slot: string }[],
+    bookingDate: string
+  ) => {
+    const bookingData = { date: bookingDate, slots: items };
+    const res = await bookSlots(bookingData);
+    if (!res.success) {
+      throw new Error(res.message || "Đặt sân thất bại");
+    }
+  };
+
+  const handleConfirm = async () => {
+    try {
+      await handleBooking(selectedItems, date);
+      setShowModal(false);
+      setSelected({});
+      setDate((prev) => prev);
+      alert("Đặt sân thành công!");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Lỗi khi đặt sân!";
+      alert(msg);
+    }
   };
 
   const dateInputValue = (() => {
     const [d, m, y] = date.split("/");
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  })();
+
+  const todayInputValue = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   })();
 
   return (
@@ -231,7 +295,8 @@ export function BookingField() {
       )}
 
       <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D] p-6">
-        <div className="mx-auto max-w-240 overflow-hidden rounded-2xl bg-white shadow-lg">
+        <div className="mx-auto max-w-[960px] overflow-hidden rounded-2xl bg-white shadow-lg">
+
           {/* Header */}
           <div className="bg-[#2E9B3F] px-5 py-4">
             <div className="flex items-center justify-between">
@@ -242,17 +307,29 @@ export function BookingField() {
                 <ArrowLeft size={18} />
               </button>
               <h1 className="text-xl font-bold text-white">Đặt lịch trực quan</h1>
-              <label className="flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white hover:bg-white/20 cursor-pointer transition">
-                <input
-                  type="date"
-                  className="bg-transparent outline-none border-none text-white w-0 opacity-0 absolute"
-                  style={{ colorScheme: "dark" }}
-                  value={dateInputValue}
-                  onChange={handleDateChange}
-                />
-                <Calendar size={16} />
-                <span>{date}</span>
-              </label>
+              <div className="relative">
+                <button
+                  className="flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white hover:bg-white/20 cursor-pointer transition"
+                  onClick={() => setCalendarOpen((open) => !open)}
+                >
+                  <Calendar size={16} />
+                  <span>{date}</span>
+                </button>
+                {calendarOpen && (
+                  <div className="absolute right-0 mt-2 z-50 bg-white rounded-xl shadow-lg p-4">
+                    <input
+                      type="date"
+                      className="text-gray-800 border rounded px-2 py-1"
+                      value={dateInputValue}
+                      min={todayInputValue}
+                      onChange={(e) => {
+                        handleDateChange(e);
+                        setCalendarOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Legend */}
@@ -283,36 +360,44 @@ export function BookingField() {
 
           {/* Grid */}
           <div className="px-6 py-4">
-            <div className="grid grid-cols-4 mb-4">
-              {courts.map((court) => (
-                <div key={court} className="text-center text-base font-semibold text-gray-800">
-                  {court}
+            {fetchState.loading ? (
+              <div className="py-10 text-center text-gray-400">Đang tải dữ liệu...</div>
+            ) : fetchState.error ? (
+              <div className="py-10 text-center text-red-400">{fetchState.error}</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 mb-4">
+                  {courts.map((court) => (
+                    <div key={court} className="text-center text-base font-semibold text-gray-800">
+                      {court}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="flex flex-col gap-4">
-              {timeSlots.map((slot) => (
-                <div key={slot} className="grid grid-cols-4 gap-2">
-                  {courts.map((court) => {
-                    const key = getKey(court, slot);
-                    const state = slotStates[key];
-                    return (
-                      <button
-                        key={court}
-                        onClick={() => toggle(court, slot)}
-                        disabled={state === "booked" || state === "past"}
-                        className={getSlotClassName(state)}
-                      >
-                        {slot}
-                      </button>
-                    );
-                  })}
+                <div className="flex flex-col gap-4">
+                  {timeSlots.map((slot) => (
+                    <div key={slot} className="grid grid-cols-4 gap-2">
+                      {courts.map((court) => {
+                        const key = getKey(court, slot);
+                        const state = slotStates[key];
+                        return (
+                          <button
+                            key={court}
+                            onClick={() => toggle(court, slot)}
+                            disabled={state === "booked" || state === "past"}
+                            className={getSlotClassName(state)}
+                          >
+                            {slot}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
 
-          {/* Bottom bar — chỉ hiện khi có slot được chọn */}
+          {/* Bottom bar */}
           {selectedItems.length > 0 && (
             <div className="sticky bottom-0 border-t border-gray-100 bg-white px-6 py-4 flex items-center justify-between">
               <div>
