@@ -2,24 +2,21 @@ import {
   BellRing,
   ShieldCheck,
   UserRound,
-  Users,
   Volleyball,
   type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { NotificationTab } from "../../components/admin/settings/NotificationTab";
-import { PitchManagementTab } from "../../components/admin/settings/PitchManagementTab";
-import { ProfileTab } from "../../components/admin/settings/ProfileTab";
-import { SecurityTab } from "../../components/admin/settings/SecurityTab";
-import { UserManagementTab } from "../../components/admin/settings/UserManagementTab";
 import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
-import { useFacilityContext } from "../../contexts/useFacilityContext";
+import { ProfileTab } from "../../features/account/components/admin/ProfileTab";
+import { NotificationTab } from "../../features/account/components/admin/NotificationTab";
+import { SecurityTab } from "../../features/account/components/admin/SecurityTab";
+import { PitchManagementTab } from "../../features/venue/components/admin/PitchManagementTab";
+import { useVenueContext as useFacilityContext } from "../../features/venue/hooks/useVenueContext";
 
 type SettingsTabId =
   | "pitch-management"
   | "profile"
-  | "user-management"
   | "security"
   | "notifications";
 
@@ -44,12 +41,6 @@ const settingsTabs: SettingsTabItem[] = [
     helperText: "Quản lý hồ sơ tài khoản quản trị",
   },
   {
-    id: "user-management",
-    label: "Quản lý người dùng",
-    icon: Users,
-    helperText: "Danh sách nhân sự vận hành",
-  },
-  {
     id: "security",
     label: "Bảo mật",
     icon: ShieldCheck,
@@ -64,8 +55,11 @@ const settingsTabs: SettingsTabItem[] = [
 ];
 
 export function SettingsPage() {
-  const { facilities, selectedFacility, selectedFacilityId } =
-    useFacilityContext();
+  const {
+    facilities,
+    selectedVenue: selectedFacility,
+    selectedVenueId: selectedFacilityId,
+  } = useFacilityContext();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("pitch-management");
 
   const editableFacilityName = useMemo(() => {
@@ -82,8 +76,6 @@ export function SettingsPage() {
         return <PitchManagementTab facilityName={editableFacilityName} />;
       case "profile":
         return <ProfileTab />;
-      case "user-management":
-        return <UserManagementTab />;
       case "security":
         return <SecurityTab />;
       case "notifications":

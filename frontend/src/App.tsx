@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { AdminLayout } from "./layouts/AdminLayout.tsx";
+import { AdminLayout } from "./layouts/admin/AdminLayout.tsx";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage.tsx";
 import { FieldSchedulePage } from "./pages/admin/FieldSchedulePage";
 import { MatchmakingPage } from "./pages/admin/MatchmakingPage.tsx";

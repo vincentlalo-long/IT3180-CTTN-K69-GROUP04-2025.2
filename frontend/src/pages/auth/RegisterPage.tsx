@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 
 import { AuthLayout } from "../../layouts/AuthLayout";
-import { RegisterForm } from "./RegisterForm";
-import { saveTokenToStorage } from "../../utils/tokenStorage";
-import { registerUser } from "../../api/auth/authApi";
+import { RegisterForm } from "../../features/auth/components/RegisterForm";
+import { saveTokenToStorage } from "../../shared/utils/tokenStorage";
+import { registerUser } from "../../features/auth/api/authApi";
 
 // Khai báo kiểu dữ liệu payload nhận được từ RegisterForm
 interface RegisterSubmitPayload {
@@ -25,6 +25,7 @@ export function RegisterPage() {
 
     if (data.token) {
       saveTokenToStorage(data.token, {
+        type: data.type,
         role: data.role || "PLAYER",
         email: data.email || payload.emailOrPhone,
         username: data.username || payload.fullName,

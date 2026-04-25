@@ -1,35 +1,14 @@
 import { Search } from "lucide-react";
-import Hieugay from "../../assets/images/Hieugay.jpg";
-import { UserNavbar } from "../../components/player/UserNavbar.tsx";
-
-function MatchCard() {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-black/20 bg-[#EEF3D6] shadow-[0_4px_10px_rgba(0,0,0,0.35)]">
-      <div className="flex items-center gap-3 px-4 py-3">
-        <img
-          src={Hieugay}
-          alt="avatar"
-          className="h-16 w-16 rounded-full object-cover shadow shrink-0"
-        />
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-gray-900 leading-tight">
-            Đinh Thái Sơn
-          </h3>
-          <p className="text-sm font-bold text-gray-900 leading-tight">
-            Sân bóng Đền Lừ 3
-          </p>
-          <p className="mt-0.5 text-xs text-gray-600">16h30 – 18h00</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { MatchCard, usePlayerMatchList } from "../../features/matchmaking";
+import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 
 export function MatchPage() {
+  const { matches } = usePlayerMatchList();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
       {/* Header */}
-      <UserNavbar />
+      <PlayerNavBar />
       {/* Search bar */}
       <div className="bg-[#005E2E]/40">
         <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-6 py-4">
@@ -70,8 +49,8 @@ export function MatchPage() {
       {/* Match grid */}
       <main className="mx-auto max-w-[1280px] px-6 py-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <MatchCard key={index} />
+          {matches.map((match) => (
+            <MatchCard key={match.id} data={match} />
           ))}
         </div>
       </main>

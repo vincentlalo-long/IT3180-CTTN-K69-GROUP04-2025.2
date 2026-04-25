@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { AuthLayout } from "../../layouts/AuthLayout";
-import { LoginForm } from "./LoginForm";
-import { saveTokenToStorage } from "../../utils/tokenStorage";
-import { loginUser } from "../../api/auth/authApi";
+import { LoginForm } from "../../features/auth/components/LoginForm";
+import { saveTokenToStorage } from "../../shared/utils/tokenStorage";
+import { loginUser } from "../../features/auth/api/authApi";
 
 // Khai báo kiểu dữ liệu payload nhận được từ LoginForm
 interface LoginSubmitPayload {
@@ -25,6 +25,7 @@ export function LoginPage() {
     }
 
     saveTokenToStorage(data.token, {
+      type: data.type,
       role: data.role,
       email: data.email,
       username: data.username,
