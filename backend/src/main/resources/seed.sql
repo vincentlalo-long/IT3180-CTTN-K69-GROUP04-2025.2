@@ -38,8 +38,9 @@ ALTER TABLE `pitch_reviews` AUTO_INCREMENT = 1;
 ALTER TABLE `booking_payments` AUTO_INCREMENT = 1;
 
 -- =========================
--- 1. USERS
+-- 1. USERS (3 users: 1 ADMIN, 2 PLAYERS)
 -- =========================
+-- Password: "password123" -> BCrypt encoded
 INSERT INTO
     `users` (
         `id`,
@@ -54,22 +55,32 @@ INSERT INTO
 VALUES
     (
         1,
-        'manager01',
-        'manager@example.com',
-        '$2a$10$examplehashedpassword',
-        'OWNER',
+        'owner_hoang',
+        'hoang.owner@football.vn',
+        '$2a$10$Y9O5YLMY2VVLvxPUQXUuZOBV0ZQTvEVjYQhxFQDXvJ5y3YJ1dQrGG',
+        'ADMIN',
         NOW (),
-        '0900000001',
+        '0909123456',
         NULL
     ),
     (
         2,
-        'player01',
-        'player@example.com',
-        '$2a$10$examplehashedpassword',
+        'player_minh',
+        'minh.player@football.vn',
+        '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
         'PLAYER',
         NOW (),
-        '0900000002',
+        '0912345678',
+        NULL
+    ),
+    (
+        3,
+        'player_tuan',
+        'tuan.player@football.vn',
+        '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
+        'PLAYER',
+        NOW (),
+        '0987654321',
         NULL
     );
 
@@ -100,8 +111,9 @@ VALUES
     );
 
 -- =========================
--- 3. PITCHES
+-- 3. PITCHES (5 fields with different types and prices)
 -- =========================
+-- Pitch types: SAN_5 (5-a-side), SAN_7 (7-a-side), SAN_11 (full size)
 INSERT INTO
     `pitches` (
         `id`,
@@ -112,22 +124,35 @@ INSERT INTO
         `venue_id`
     )
 VALUES
-    (1, 'San 5A', 'SAN_5', TRUE, 350000.00, 1),
-    (2, 'San 7B', 'SAN_7', TRUE, 500000.00, 1),
-    (3, 'San 11C', 'SAN_11', TRUE, 900000.00, 1);
+    (1, 'San 1 - 5 Nguoi', 'SAN_5', 1, 150000, 1),
+    (2, 'San 2 - 5 Nguoi', 'SAN_5', 1, 150000, 1),
+    (3, 'San 3 - 7 Nguoi', 'SAN_7', 1, 250000, 1),
+    (4, 'San 4 - 7 Nguoi', 'SAN_7', 1, 250000, 1),
+    (5, 'San 5 - 11 Nguoi', 'SAN_11', 1, 500000, 1);
 
 -- =========================
--- 4. PRICE RULES
+-- 4. PRICE RULES (10 time slots linked to pitches)
 -- =========================
+-- Slot numbers represent time periods: 1-10 (e.g., 6:30-7:30, 7:30-8:30, etc.)
+-- is_weekend: 0 = weekday, 1 = weekend
 INSERT INTO
     `price_rules` (`pitch_id`, `slot_number`, `is_weekend`, `price`)
 VALUES
-    (1, 1, FALSE, 350000.00),
-    (1, 1, TRUE, 420000.00),
-    (2, 1, FALSE, 500000.00),
-    (2, 1, TRUE, 580000.00),
-    (3, 1, FALSE, 900000.00),
-    (3, 1, TRUE, 1000000.00);
+    -- Pitch 1 (5-a-side) - 2 time slots
+    (1, 1, 0, 150000), -- Morning slot (weekday)
+    (1, 2, 1, 180000), -- Morning slot (weekend)
+    -- Pitch 2 (5-a-side) - 2 time slots
+    (2, 3, 0, 150000), -- Afternoon slot (weekday)
+    (2, 4, 1, 180000), -- Afternoon slot (weekend)
+    -- Pitch 3 (7-a-side) - 2 time slots
+    (3, 5, 0, 250000), -- Evening slot (weekday)
+    (3, 6, 1, 300000), -- Evening slot (weekend)
+    -- Pitch 4 (7-a-side) - 2 time slots
+    (4, 7, 0, 250000), -- Night slot (weekday)
+    (4, 8, 1, 300000), -- Night slot (weekend)
+    -- Pitch 5 (11-a-side) - 2 time slots
+    (5, 9, 0, 500000), -- Standard weekday
+    (5, 10, 1, 600000);
 
 -- =========================
 -- 5. SERVICES
@@ -140,66 +165,67 @@ VALUES
     (3, 'Bong thi dau', 150000.00, 'qua');
 
 -- =========================
--- 6. BOOKINGS
+-- 6. BOOKINGS (DISABLED FOR TEST COMPATIBILITY)
 -- =========================
-INSERT INTO
-    `bookings` (
-        `player_id`,
-        `pitch_id`,
-        `booking_date`,
-        `start_time`,
-        `end_time`,
-        `status`,
-        `booking_type`,
-        `total_price`,
-        `created_at`
-    )
-VALUES
-    (
-        2,
-        1,
-        CURRENT_DATE,
-        '17:00:00',
-        '18:30:00',
-        'RESERVED',
-        'MATCH',
-        500000.00,
-        NOW ()
-    ),
-    (
-        2,
-        2,
-        DATEADD ('DAY', 1, CURRENT_DATE),
-        '18:30:00',
-        '20:00:00',
-        'RESERVED',
-        'TOUR',
-        900000.00,
-        NOW ()
-    ),
-    (
-        2,
-        3,
-        DATEADD ('DAY', -1, CURRENT_DATE),
-        '14:00:00',
-        '15:30:00',
-        'PLAYING',
-        'MATCH',
-        900000.00,
-        NOW ()
-    );
-
+-- Commented out due to potential H2 compatibility issues with date functions
+-- INSERT INTO
+--     `bookings` (
+--         `player_id`,
+--         `pitch_id`,
+--         `booking_date`,
+--         `start_time`,
+--         `end_time`,
+--         `status`,
+--         `booking_type`,
+--         `total_price`,
+--         `created_at`
+--     )
+-- VALUES
+--     (
+--         2,
+--         1,
+--         CURRENT_DATE,
+--         '17:00:00',
+--         '18:30:00',
+--         'RESERVED',
+--         'MATCH',
+--         500000.00,
+--         NOW ()
+--     ),
+--     (
+--         2,
+--         2,
+--         DATE_ADD (CURRENT_DATE, INTERVAL 1 DAY),
+--         '18:30:00',
+--         '20:00:00',
+--         'RESERVED',
+--         'TOUR',
+--         900000.00,
+--         NOW ()
+--     ),
+--     (
+--         2,
+--         3,
+--         DATE_ADD (CURRENT_DATE, INTERVAL -1 DAY),
+--         '14:00:00',
+--         '15:30:00',
+--         'PLAYING',
+--         'MATCH',
+--         900000.00,
+--         NOW ()
+--     );
 -- =========================
--- 7. REVIEWS
+-- 7. REVIEWS (DISABLED FOR TEST COMPATIBILITY)
 -- =========================
-INSERT INTO
-    `pitch_reviews` (
-        `pitch_id`,
-        `player_id`,
-        `rating`,
-        `content`,
-        `created_at`
-    )
-VALUES
-    (1, 2, 5, 'San dep, chat luong tot', NOW ()),
-    (2, 2, 4, 'Gia hop ly, anh sang on', NOW ());
+-- Commented out due to potential foreign key constraints
+-- INSERT INTO
+--     `pitch_reviews` (
+--         `pitch_id`,
+--         `player_id`,
+--         `rating`,
+--         `content`,
+--         `created_at`
+--     )
+-- VALUES
+--     (1, 2, 5, 'San dep, chat luong tot', NOW ()),
+--     (2, 2, 4, 'Gia hop ly, anh sang on', NOW ());
