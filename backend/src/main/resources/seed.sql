@@ -38,8 +38,11 @@ ALTER TABLE `pitch_reviews` AUTO_INCREMENT = 1;
 ALTER TABLE `booking_payments` AUTO_INCREMENT = 1;
 
 -- =========================
--- 1. USERS
+-- 1. USERS (3 users: 1 OWNER, 2 PLAYERS)
 -- =========================
+-- Password: "owner123" -> BCrypt encoded
+-- Password: "player123" -> BCrypt encoded
+-- Password: "player456" -> BCrypt encoded
 INSERT INTO
     `users` (
         `id`,
@@ -54,22 +57,32 @@ INSERT INTO
 VALUES
     (
         1,
-        'manager01',
-        'manager@example.com',
-        '$2a$10$examplehashedpassword',
-        'OWNER',
+        'owner_hoang',
+        'hoang.owner@football.vn',
+        '$2a$10$Y9O5YLMY2VVLvxPUQXUuZOBV0ZQTvEVjYQhxFQDXvJ5y3YJ1dQrGG',
+        'ROLE_OWNER',
         NOW (),
-        '0900000001',
+        '0909123456',
         NULL
     ),
     (
         2,
-        'player01',
-        'player@example.com',
-        '$2a$10$examplehashedpassword',
-        'PLAYER',
+        'player_minh',
+        'minh.player@football.vn',
+        '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
+        'ROLE_PLAYER',
         NOW (),
-        '0900000002',
+        '0912345678',
+        NULL
+    ),
+    (
+        3,
+        'player_tuan',
+        'tuan.player@football.vn',
+        '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
+        'ROLE_PLAYER',
+        NOW (),
+        '0987654321',
         NULL
     );
 
@@ -99,6 +112,51 @@ VALUES
         '23:00:00'
     );
 
+-- =========================
+-- 3. PITCHES (5 fields with different types and prices)
+-- =========================
+-- Pitch types: 5 (5-a-side), 7 (7-a-side), 11 (full size)
+INSERT INTO
+    `pitches` (
+        `id`,
+        `name`,
+        `pitch_type`,
+        `is_active`,
+        `base_price`,
+        `venue_id`
+    )
+VALUES
+    (1, 'San 1 - 5 Nguoi', '5', 1, 150000, 1),
+    (2, 'San 2 - 5 Nguoi', '5', 1, 150000, 1),
+    (3, 'San 3 - 7 Nguoi', '7', 1, 250000, 1),
+    (4, 'San 4 - 7 Nguoi', '7', 1, 250000, 1),
+    (5, 'San 5 - 11 Nguoi', '11', 1, 500000, 1);
+
+-- =========================
+-- 4. PRICE RULES (10 time slots linked to pitches)
+-- =========================
+-- Slot numbers represent time periods: 1-10 (e.g., 6:30-7:30, 7:30-8:30, etc.)
+-- is_weekend: 0 = weekday, 1 = weekend
+INSERT INTO
+    `price_rules` (`pitch_id`, `slot_number`, `is_weekend`, `price`)
+VALUES
+    -- Pitch 1 (5-a-side) - 2 time slots
+    (1, 1, 0, 150000), -- Morning slot (weekday)
+    (1, 2, 1, 180000), -- Morning slot (weekend)
+    -- Pitch 2 (5-a-side) - 2 time slots
+    (2, 3, 0, 150000), -- Afternoon slot (weekday)
+    (2, 4, 1, 180000), -- Afternoon slot (weekend)
+    -- Pitch 3 (7-a-side) - 2 time slots
+    (3, 5, 0, 250000), -- Evening slot (weekday)
+    (3, 6, 1, 300000), -- Evening slot (weekend)
+    -- Pitch 4 (7-a-side) - 2 time slots
+    (4, 7, 0, 250000), -- Night slot (weekday)
+    (4, 8, 1, 300000), -- Night slot (weekend)
+    -- Pitch 5 (11-a-side) - 2 time slots
+    (5, 9, 0, 500000), -- Standard weekday
+    (5, 10, 1, 600000);
+
+-- Standard weekend
 -- =========================
 -- 3. PITCHES
 -- =========================
