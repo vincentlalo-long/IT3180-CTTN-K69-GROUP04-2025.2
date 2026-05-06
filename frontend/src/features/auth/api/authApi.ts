@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { axiosInstance } from "../../../services/http";
+import { apiClient } from "@/shared/api/apiClient";
 import type {
   AuthResponse,
   JwtResponse,
@@ -36,7 +36,7 @@ function getApiErrorMessage(error: unknown): string {
 
 export async function loginUser(loginData: LoginRequest): Promise<JwtResponse> {
   try {
-    const response = await axiosInstance.post<JwtResponse>(
+    const response = await apiClient.post<JwtResponse>(
       `${AUTH_API_PREFIX}/login`,
       loginData,
     );
@@ -50,7 +50,7 @@ export async function registerUser(
   registerData: RegisterRequest,
 ): Promise<JwtResponse> {
   try {
-    const response = await axiosInstance.post<JwtResponse>(
+    const response = await apiClient.post<JwtResponse>(
       `${AUTH_API_PREFIX}/register`,
       registerData,
     );
@@ -64,7 +64,7 @@ export async function refreshToken(
   oldToken: string,
 ): Promise<JwtResponse | AuthResponse> {
   try {
-    const response = await axiosInstance.post<JwtResponse>(
+    const response = await apiClient.post<JwtResponse>(
       `${AUTH_API_PREFIX}/refresh-token`,
       undefined,
       {
