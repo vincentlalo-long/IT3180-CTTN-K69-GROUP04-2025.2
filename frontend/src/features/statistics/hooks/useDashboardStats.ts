@@ -1,7 +1,7 @@
 import { CalendarCheck2, ChartColumn, CircleDashed, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { axiosInstance } from "../../../services/http";
+import { apiClient } from "@/shared/api/apiClient";
 import {
   formatCurrency,
   formatVacancyRate,
@@ -28,7 +28,7 @@ export interface RecentOrderDto {
 async function getDashboardStats(
   facilityId: string | "ALL",
 ): Promise<DashboardStatsResponse> {
-  const { data } = await axiosInstance.get<DashboardStatsResponse>(
+  const { data } = await apiClient.get<DashboardStatsResponse>(
     "/admin/dashboard/stats",
     {
       params: {
@@ -43,7 +43,7 @@ async function getDashboardStats(
 async function getRecentOrders(
   facilityId: string | "ALL",
 ): Promise<RecentOrderDto[]> {
-  const { data } = await axiosInstance.get<RecentOrderDto[]>(
+  const { data } = await apiClient.get<RecentOrderDto[]>(
     "/admin/dashboard/recent-orders",
     {
       params: {

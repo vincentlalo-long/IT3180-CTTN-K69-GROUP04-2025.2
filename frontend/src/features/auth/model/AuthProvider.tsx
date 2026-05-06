@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   clearTokenFromStorage,
   getUserFromStorage,
-} from "../../../shared/utils/tokenStorage";
+} from "@/shared/utils/tokenStorage";
 import {
   AuthContext,
   type AuthContextValue,
