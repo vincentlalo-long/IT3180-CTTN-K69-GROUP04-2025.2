@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/player/bookings")
-@PreAuthorize("hasRole('PLAYER')")
+@PreAuthorize("hasAuthority('PLAYER')")
 public class PlayerBookingController {
 
 	private final BookingService bookingService;

@@ -18,7 +18,7 @@ import java.time.LocalDate;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/bookings")
-@PreAuthorize("hasRole('ADMIN')") 
+@PreAuthorize("hasAuthority('ADMIN')")
 public class AdminBookingController {
 
     private final BookingService bookingService;

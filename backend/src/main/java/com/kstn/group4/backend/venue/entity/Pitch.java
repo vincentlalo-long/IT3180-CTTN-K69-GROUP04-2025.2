@@ -52,5 +52,8 @@ public class Pitch {
     @OneToMany(mappedBy = "pitch", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PriceRule> priceRules = new ArrayList<>();
 
+    // One pitch contains many time slots (11 fixed slots per pitch: 06:00-23:00).
+    @OneToMany(mappedBy = "pitch", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TimeSlot> timeSlots = new ArrayList<>();
 
 }

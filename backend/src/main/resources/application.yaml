@@ -16,6 +16,7 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
@@ -26,13 +27,14 @@ spring:
       enabled: true
       file: ./compose.yaml
       lifecycle-management: start_and_stop
+      wait-for-services: true
 
   sql:
     init:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:seed.sql
-      continue-on-error: false
+      continue-on-error: true
 
 server:
   port: 8080
