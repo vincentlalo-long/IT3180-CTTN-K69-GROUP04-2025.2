@@ -5,8 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,6 +54,48 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle MethodArgumentTypeMismatchException - 400 Bad Request
+     * Occurs when request parameters don't match expected type (e.g., invalid date format)
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            WebRequest request
+    ) {
+        String message = String.format(
+                "Giá trị '%s' của tham số '%s' không hợp lệ. Dự kiến kiểu %s.",
+                ex.getValue(),
+                ex.getName(),
+                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown"
+        );
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                message,
+                "INVALID_PARAMETER",
+                request.getDescription(false)
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
+     * Handle DateTimeParseException - 400 Bad Request
+     * Occurs when date/time parsing fails
+     */
+    @ExceptionHandler(DateTimeParseException.class)
+    public ResponseEntity<Map<String, Object>> handleDateTimeParseException(
+            DateTimeParseException ex,
+            WebRequest request
+    ) {
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Định dạng ngày tháng không hợp lệ. Vui lòng sử dụng định dạng: yyyy-MM-dd",
+                "INVALID_DATE_FORMAT",
+                request.getDescription(false)
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    /**
      * Handle BusinessException - 400 Bad Request
      */
     @ExceptionHandler(BusinessException.class)
@@ -83,6 +127,24 @@ public class GlobalExceptionHandler {
                 request.getDescription(false)
         );
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    /**
+     * Handle UsernameNotFoundException - 401 Unauthorized
+     * Occurs when user is not found during authentication
+     */
+    @ExceptionHandler(org.springframework.security.core.userdetails.UsernameNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUsernameNotFoundException(
+            org.springframework.security.core.userdetails.UsernameNotFoundException ex,
+            WebRequest request
+    ) {
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Thông tin xác thực không hợp lệ",
+                "UNAUTHORIZED",
+                request.getDescription(false)
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
     /**

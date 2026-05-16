@@ -98,6 +98,23 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     );
 
     /**
+     * Find all confirmed bookings for a specific pitch on a given date.
+     * Used to check slot availability and pricing for single pitch view.
+     * Eagerly loads timeSlot and pitch to avoid LazyInitializationException.
+     * Excludes CANCELLED bookings from the result.
+     */
+    @Query("SELECT b FROM Booking b " +
+            "LEFT JOIN FETCH b.timeSlot " +
+            "LEFT JOIN FETCH b.pitch " +
+            "WHERE b.pitch.id = :pitchId " +
+            "AND b.bookingDate = :bookingDate " +
+            "AND b.status <> com.kstn.group4.backend.booking.entity.BookingStatus.CANCELLED")
+    List<Booking> findConfirmedByPitchIdAndBookingDate(
+            @Param("pitchId") Integer pitchId,
+            @Param("bookingDate") LocalDate bookingDate
+    );
+
+    /**
      * Find bookings by pitch ID with pagination and eager loading.
      */
     @Query("SELECT DISTINCT b FROM Booking b " +
@@ -116,6 +133,15 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             "WHERE b.bookingDate = :bookingDate " +
             "ORDER BY b.startTime")
     List<Booking> findByBookingDate(@Param("bookingDate") LocalDate bookingDate);
+
+    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+            "WHERE b.timeSlot.id = :timeSlotId " +
+            "AND b.bookingDate = :bookingDate " +
+            "AND b.status <> com.kstn.group4.backend.booking.entity.BookingStatus.CANCELLED")
+    boolean existsByTimeSlotIdAndBookingDate(
+            @Param("timeSlotId") Integer timeSlotId,
+            @Param("bookingDate") LocalDate bookingDate
+    );
 
     @Query("SELECT COUNT(b) > 0 FROM Booking b " +
             "WHERE b.pitch.id = :pitchId " +
