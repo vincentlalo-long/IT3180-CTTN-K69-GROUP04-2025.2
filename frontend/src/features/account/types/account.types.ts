@@ -11,4 +11,6 @@ export interface PlayerProfileInfo {
   name: string;
   phone: string;
   email: string;
+  avatarUrl?: string; // Thêm dòng này
+  role?: string;      // Thêm dòng này
 }
