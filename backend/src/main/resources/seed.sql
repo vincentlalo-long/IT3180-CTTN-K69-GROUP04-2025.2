@@ -59,7 +59,7 @@ VALUES
         'hoang.owner@football.vn',
         '$2a$10$Y9O5YLMY2VVLvxPUQXUuZOBV0ZQTvEVjYQhxFQDXvJ5y3YJ1dQrGG',
         'ADMIN',
-        NOW (),
+        NOW(),
         '0909123456',
         NULL
     ),
@@ -69,7 +69,7 @@ VALUES
         'minh.player@football.vn',
         '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
         'PLAYER',
-        NOW (),
+        NOW(),
         '0912345678',
         NULL
     ),
@@ -79,7 +79,7 @@ VALUES
         'tuan.player@football.vn',
         '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
         'PLAYER',
-        NOW (),
+        NOW(),
         '0987654321',
         NULL
     );
@@ -190,7 +190,7 @@ VALUES
 --         'RESERVED',
 --         'MATCH',
 --         500000.00,
---         NOW ()
+--         NOW()
 --     ),
 --     (
 --         2,
@@ -201,7 +201,7 @@ VALUES
 --         'RESERVED',
 --         'TOUR',
 --         900000.00,
---         NOW ()
+--         NOW()
 --     ),
 --     (
 --         2,
@@ -212,7 +212,7 @@ VALUES
 --         'PLAYING',
 --         'MATCH',
 --         900000.00,
---         NOW ()
+--         NOW()
 --     );
 -- =========================
 -- 7. REVIEWS (DISABLED FOR TEST COMPATIBILITY)
@@ -227,5 +227,5 @@ VALUES
 --         `created_at`
 --     )
 -- VALUES
---     (1, 2, 5, 'San dep, chat luong tot', NOW ()),
---     (2, 2, 4, 'Gia hop ly, anh sang on', NOW ());
+--     (1, 2, 5, 'San dep, chat luong tot', NOW()),
+--     (2, 2, 4, 'Gia hop ly, anh sang on', NOW());
