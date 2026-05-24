@@ -3,7 +3,7 @@ import {
   ADMIN_TIME_SLOTS,
   TIME_SLOT_PRICING,
   type AdminTimeSlot,
-} from "../../../../data/mockAdminData";
+} from "../../constants/booking.constants";
 import type { FieldScheduleRow, ScheduleSlot } from "../../types/booking.types";
 import { slotStatusStyles } from "../../constants/booking.constants";
 import { formatMoney, getRangeLabel } from "../../utils/booking.utils";
@@ -77,7 +77,7 @@ export function FieldScheduleTable({
                 <p className="mt-1 text-xs font-normal text-white/80">
                   {row.fieldType}
                 </p>
-                {selectedFacilityId === ALL_FACILITIES_ID ? (
+                {selectedFacilityId === ALL_FACILITIES_ID || selectedFacilityId === "all" ? (
                   <p className="mt-1 text-[11px] font-normal text-white/65">
                     {row.facilityName}
                   </p>
@@ -86,9 +86,8 @@ export function FieldScheduleTable({
 
               {ADMIN_TIME_SLOTS.map((timeSlot) => {
                 const slot = row.slots[timeSlot];
-                const statusMeta = slotStatusStyles[slot.status];
-                const isDetailSlot =
-                  slot.status === "booked" || slot.status === "in-progress";
+                const statusMeta = slotStatusStyles[slot?.status ?? "AVAILABLE"];
+                const isDetailSlot = slot?.status === "BOOKED";
 
                 return (
                   <td
@@ -110,7 +109,7 @@ export function FieldScheduleTable({
                       }`}
                     >
                       <p className="text-sm font-semibold leading-tight">
-                        {slot.customerName ?? statusMeta.label}
+                        {slot?.customerName ?? statusMeta.label}
                       </p>
                       <p className="mt-1 text-xs opacity-90">
                         {statusMeta.label}

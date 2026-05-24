@@ -42,4 +42,17 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
             "LEFT JOIN FETCH p.priceRules " +
             "WHERE p.id = :id")
     Optional<Pitch> findByIdWithDetails(@Param("id") Integer id);
+
+    @Query(value = "SELECT p.id as pitchId, p.name as pitchName, v.name as venueName, " +
+            "ts.id as timeSlotId, ts.start_time as startTime, ts.end_time as endTime, ts.is_active as isActive, " +
+            "b.status as bookingStatus, u.username as customerName, u.phone_number as customerPhone, " +
+            "bp.paid_amount as depositAmount " +
+            "FROM pitches p " +
+            "JOIN venues v ON p.venue_id = v.id " +
+            "JOIN time_slots ts ON ts.pitch_id = p.id " +
+            "LEFT JOIN bookings b ON b.time_slot_id = ts.id AND b.booking_date = :date " +
+            "LEFT JOIN users u ON b.player_id = u.id " +
+            "LEFT JOIN booking_payments bp ON bp.booking_id = b.id " +
+            "WHERE (:venueId IS NULL OR p.venue_id = :venueId)", nativeQuery = true)
+    List<PitchScheduleProjection> findPitchSchedulesNatively(@Param("venueId") Integer venueId, @Param("date") java.time.LocalDate date);
 }

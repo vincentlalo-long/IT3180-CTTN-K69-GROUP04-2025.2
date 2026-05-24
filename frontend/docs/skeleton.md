@@ -1,59 +1,31 @@
-# SKELETON FRONTEND (CẬP NHẬT)
-
-## 1. Cây thư mục `src/`
+# Bản đồ thư mục Frontend (Skeleton)
 
 ```text
-src/
-├─ App.tsx
-├─ main.tsx
-├─ index.css
-├─ assets/
-│  ├─ icons/
-│  │  ├─ eye-off.svg
-│  │  ├─ eye.svg
-│  │  ├─ facebook.svg
-│  │  ├─ google.svg
-│  │  └─ mixifoot-logo.svg
-│  └─ images/
-│     ├─ auth-background.jpg
-│     ├─ hero-lamine.webp
-│     ├─ logo-amixi.png
-│     └─ mixifoot-figure.png
-├─ components/
-│  ├─ admin/
-│  │  ├─ Sidebar.tsx
-│  │  ├─ StatCard.tsx
-│  │  └─ Topbar.tsx
-│  └─ ui/
-│     ├─ Button.tsx
-│     ├─ SocialIconButton.tsx
-│     └─ TextInput.tsx
-├─ contexts/
-│  └─ FacilityContext.tsx
-├─ data/
-│  └─ mockAdminData.ts
-├─ layouts/
-│  ├─ AdminLayout.tsx
-│  └─ AuthLayout.tsx
-└─ pages/
-   ├─ LandingPage.tsx
-   ├─ admin/
-   │  ├─ AdminDashboardPage.tsx
-   │  ├─ AdminFeatureLandingPage.tsx
-   │  ├─ FieldSchedulePage.tsx
-   │  └─ SettingsPage.tsx
-   └─ auth/
-      ├─ LoginForm.tsx
-      ├─ LoginPage.tsx
-      ├─ RegisterForm.tsx
-      └─ RegisterPage.tsx
+frontend/
+├── docs/                        # Tài liệu dự án. TUYỆT ĐỐI KHÔNG chứa code.
+├── public/                      # Static assets không cần bundler xử lý.
+├── src/
+│   ├── assets/                  # Ảnh, icon (cần xử lý qua Vite).
+│   ├── data/                    # Mock data tĩnh dùng tạm thời.
+│   ├── features/                # Chứa TẤT CẢ logic/nghiệp vụ (chia theo Feature-Sliced Design).
+│   │   ├── account/             # Nghiệp vụ: Cập nhật hồ sơ, bảo mật cá nhân.
+│   │   ├── auth/                # Nghiệp vụ: Đăng nhập, Đăng ký, Quản lý Session.
+│   │   ├── booking/             # Nghiệp vụ: Đặt lịch sân bóng của Player.
+│   │   ├── matchmaking/         # Nghiệp vụ: Tìm cáp kèo, đối tác thi đấu.
+│   │   ├── statistics/          # Nghiệp vụ: Thống kê dữ liệu cho Admin.
+│   │   ├── team/                # Nghiệp vụ: Quản lý đội hình, thành viên nhóm.
+│   │   └── venue/               # Nghiệp vụ: Quản lý cấu hình sân bãi, lịch kinh doanh (Admin).
+│   ├── layouts/                 # Layout bọc ngoài (Navbar, Sidebar). KHÔNG chứa logic nghiệp vụ.
+│   ├── pages/                   # Nơi map Route. Chỉ import component từ features/, KHÔNG tự viết logic.
+│   ├── shared/                  # Code dùng chung (UI basic, configs, helpers toàn cục).
+│   │   ├── api/                 # Cấu hình network cơ sở (Axios client...).
+│   │   ├── components/          # UI components cơ bản (Button, Input...).
+│   │   ├── types/               # Type TS chung toàn dự án.
+│   │   └── utils/               # Helper functions.
+│   ├── App.tsx                  # Gốc ứng dụng (Providers, Router definition).
+│   ├── index.css                # File CSS core (chứa setup Tailwind).
+│   └── main.tsx                 # Entry-point (mount React DOM).
+├── package.json                 # Quản lý thư viện.
+├── tailwind.config.js           # Cấu hình override Tailwind.
+└── vite.config.ts               # Cấu hình Vite & Path aliases.
 ```
-
-## 2. Ghi chú kiến trúc ngắn
-
-- Luồng User nằm ở `LandingPage`, `LoginPage`, `RegisterPage`.
-- Luồng Admin nằm trong `AdminLayout` với nested routes (`/admin/*`).
-- Dữ liệu giả lập tập trung tại `data/mockAdminData.ts`.
-- State toàn cục cho chọn khu sân dùng `contexts/FacilityContext.tsx`.
-- Các thành phần dùng chung ưu tiên ở `components/ui`.
-- Các thành phần đặc thù dashboard admin nằm ở `components/admin`.
