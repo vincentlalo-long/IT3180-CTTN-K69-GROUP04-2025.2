@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ALL_FACILITIES_ID } from "../../venue/model/VenueContext";
 import { useVenueContext as useFacilityContext } from "../../venue/hooks/useVenueContext";
 import {
   fetchOrdersByVenue,

@@ -42,6 +42,7 @@ export function VenueProvider({ children }: VenueProviderProps) {
     };
 
     fetchFacilities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value = useMemo<VenueContextValue>(() => {

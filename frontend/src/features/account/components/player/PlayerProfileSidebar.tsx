@@ -2,6 +2,7 @@ import type { PlayerProfileInfo } from "../../types/account.types";
 
 interface PlayerProfileSidebarProps {
   userInfo: PlayerProfileInfo;
+  avatarSrc?: string;
 }
 
 export function PlayerProfileSidebar({ userInfo }: PlayerProfileSidebarProps) {
@@ -15,10 +16,14 @@ export function PlayerProfileSidebar({ userInfo }: PlayerProfileSidebarProps) {
         />
       </div>
       <div className="w-full rounded-2xl bg-white/20 px-4 py-4 flex flex-col gap-2">
-        <div className="font-bold text-[#2E7D1E] text-lg truncate">{userInfo.name}</div>
+        <div className="font-bold text-[#2E7D1E] text-lg truncate">
+          {userInfo.name}
+        </div>
         <div className="text-sm text-gray-700 truncate">{userInfo.email}</div>
         {userInfo.phone && (
-          <div className="text-sm text-gray-700 truncate">SĐT: {userInfo.phone}</div>
+          <div className="text-sm text-gray-700 truncate">
+            SĐT: {userInfo.phone}
+          </div>
         )}
         {userInfo.role && (
           <div className="text-xs font-semibold text-[#2E7D1E] bg-white/60 rounded px-2 py-1 w-fit">
