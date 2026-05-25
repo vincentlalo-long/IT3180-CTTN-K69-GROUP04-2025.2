@@ -16,5 +16,5 @@ export const addMinutes = (time: string, minutes: number): string => {
 export const getRangeLabel = (startTime: AdminTimeSlot): string =>
   `${startTime} - ${addMinutes(startTime, 90)}`;
 
-export const formatCompactPrice = (amount: number): string =>
-  `${Math.round(amount / 1_000).toLocaleString("vi-VN")}k`;
+export const formatCompactPrice = (amount: number | null | undefined): string =>
+  `${Math.round((amount || 0) / 1_000).toLocaleString("vi-VN")}k`;
