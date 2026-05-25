@@ -76,15 +76,15 @@ public class VenueService {
 
     @Transactional(readOnly = true)
     public Page<AdminVenueResponseDTO> getVenuesByManager(Integer managerId, Pageable pageable) {
-        return venueRepository.findByManagerId(managerId, pageable)
-                .map(venue -> toAdminVenueResponse(venue, managerId));
+        return venueRepository.findAll(pageable)
+                .map(this::toAdminVenueResponseWithoutManager);
     }
 
     @Transactional(readOnly = true)
     public AdminVenueResponseDTO getVenueByManager(Integer venueId, Integer managerId) {
-        Venue venue = venueRepository.findByIdAndManagerId(venueId, managerId)
+        Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
-        return toAdminVenueResponse(venue, managerId);
+        return toAdminVenueResponseWithoutManager(venue);
     }
 
     public AdminVenueResponseDTO createVenueByManager(Venue request, Integer managerId) {
@@ -123,6 +123,19 @@ public class VenueService {
         venueRepository.delete(venue);
     }
 
+    @Transactional(readOnly = true)
+    public Page<AdminVenueResponseDTO> getAllVenuesForAdmin(Pageable pageable) {
+        return venueRepository.findAll(pageable)
+                .map(this::toAdminVenueResponseWithoutManager);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminVenueResponseDTO getVenueByIdForAdmin(Integer venueId) {
+        Venue venue = venueRepository.findById(venueId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
+        return toAdminVenueResponseWithoutManager(venue);
+    }
+
     private VenueDetailResponse toVenueDetailResponse(Venue venue) {
         List<VenueDetailResponse.PitchSummaryResponse> pitches = venue.getPitches() == null
                 ? List.of()
@@ -145,6 +158,20 @@ public class VenueService {
     private AdminVenueResponseDTO toAdminVenueResponse(Venue venue, Integer managerId) {
         long totalPitches = pitchRepository.countByVenueId(venue.getId());
         BigDecimal revenue = bookingRepository.sumRevenueByVenueIdAndManagerId(venue.getId(), managerId);
+
+        return new AdminVenueResponseDTO(
+                venue.getId(),
+                venue.getName(),
+                venue.getAddress(),
+                venue.getImageUrl(),
+                revenue,
+                totalPitches
+        );
+    }
+
+    private AdminVenueResponseDTO toAdminVenueResponseWithoutManager(Venue venue) {
+        long totalPitches = pitchRepository.countByVenueId(venue.getId());
+        BigDecimal revenue = BigDecimal.ZERO;
 
         return new AdminVenueResponseDTO(
                 venue.getId(),

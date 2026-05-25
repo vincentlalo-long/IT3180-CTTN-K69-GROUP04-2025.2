@@ -1,5 +1,11 @@
 import apiClient from "@/shared/api/apiClient";
 
+export interface SpringPageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+}
+
 export interface FieldDto {
   id: string;
   name: string;
@@ -13,8 +19,8 @@ export interface FieldDto {
  */
 export const getFields = async (): Promise<FieldDto[]> => {
   try {
-    const response = await apiClient.get<FieldDto[]>("/fields");
-    return response.data;
+    const response = await apiClient.get<SpringPageResponse<FieldDto>>("/admin/venues");
+    return response.data.content;
   } catch (error) {
     console.error("Error fetching fields:", error);
     throw error;

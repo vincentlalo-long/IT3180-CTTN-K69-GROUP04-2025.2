@@ -2,6 +2,8 @@ import { createContext } from "react";
 
 import type { Facility } from "../types/venue.types";
 
+export const ALL_FACILITIES_ID = "all";
+
 export interface VenueContextValue {
   facilities: Facility[];
   selectedVenueId: string;

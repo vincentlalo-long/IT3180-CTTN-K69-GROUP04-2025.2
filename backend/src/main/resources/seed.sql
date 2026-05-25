@@ -302,3 +302,22 @@ VALUES
 -- VALUES
 --     (1, 2, 5, 'San dep, chat luong tot', NOW()),
 --     (2, 2, 4, 'Gia hop ly, anh sang on', NOW());
+
+-- =========================
+-- 8. BOOKINGS FOR 2026-06-06 TEST DATA
+-- =========================
+-- 1. Booking thành công: Sân 1, 17:00 - 18:30 (time_slot_id = 8)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`) 
+VALUES (2, 1, '2026-06-06', '17:00:00', '18:30:00', 'CONFIRMED', 'SINGLE', 150000, NOW(), 8);
+
+-- 2. Booking thành công: Sân 2, 18:30 - 20:00 (time_slot_id = 20)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`) 
+VALUES (3, 2, '2026-06-06', '18:30:00', '20:00:00', 'CONFIRMED', 'SINGLE', 180000, NOW(), 20);
+
+-- 3. Slot Bảo trì (MAINTENANCE): Sân 3, 08:00 - 09:30 (time_slot_id = 24)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`) 
+VALUES (1, 3, '2026-06-06', '08:00:00', '09:30:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 24);
+
+-- 4. Slot Bảo trì (MAINTENANCE): Sân 3, 09:30 - 11:00 (time_slot_id = 25)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`) 
+VALUES (1, 3, '2026-06-06', '09:30:00', '11:00:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 25);

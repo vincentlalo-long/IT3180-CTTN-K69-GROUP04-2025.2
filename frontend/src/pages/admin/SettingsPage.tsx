@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
+import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { ProfileTab } from "../../features/account/components/admin/ProfileTab";
 import { NotificationTab } from "../../features/account/components/admin/NotificationTab";
 import { SecurityTab } from "../../features/account/components/admin/SecurityTab";

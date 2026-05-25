@@ -1,4 +1,4 @@
-import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
+import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import {
   OrderManagementTable,
   useOrderManagement,

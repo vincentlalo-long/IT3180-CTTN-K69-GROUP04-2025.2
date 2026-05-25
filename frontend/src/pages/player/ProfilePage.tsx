@@ -27,7 +27,9 @@ export function ProfilePage() {
   if (loadingUser) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D] flex items-center justify-center">
-        <div className="text-white text-lg font-semibold">Đang tải thông tin tài khoản...</div>
+        <div className="text-white text-lg font-semibold">
+          Đang tải thông tin tài khoản...
+        </div>
       </div>
     );
   }
@@ -52,7 +54,7 @@ export function ProfilePage() {
       {/* Content */}
       <main className="mx-auto max-w-[1280px] px-6 py-8">
         <div className="flex gap-5">
-          <PlayerProfileSidebar avatarSrc={Linh} />
+          <PlayerProfileSidebar userInfo={userInfo} avatarSrc={Linh} />
 
           {/* Right column */}
           <div className="flex-1 rounded-2xl bg-white/90 px-8 py-6">
