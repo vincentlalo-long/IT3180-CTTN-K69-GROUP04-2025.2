@@ -78,7 +78,7 @@ public class VenuePlayerService {
                 .mapToObj(slotNumber -> {
                     LocalTime startTime = calculateStartTime(slotNumber);
                     LocalTime endTime = startTime.plusMinutes(SLOT_DURATION_MINUTES);
-                    BigDecimal price = findPrice(priceRules, slotNumber, weekend);
+                    BigDecimal price = findPrice(priceRules, slotNumber, weekend, pitch.getBasePrice());
                     String status = pitchBookings.containsKey(startTime) ? "BOOKED" : "AVAILABLE";
 
                     return new SlotStatus(slotNumber, startTime, endTime, price, status);
@@ -99,12 +99,17 @@ public class VenuePlayerService {
         return lookup;
     }
 
-    private BigDecimal findPrice(List<PriceRule> priceRules, Integer slotNumber, boolean weekend) {
+    private BigDecimal findPrice(
+            List<PriceRule> priceRules,
+            Integer slotNumber,
+            boolean weekend,
+            BigDecimal basePrice
+    ) {
         return priceRules.stream()
                 .filter(rule -> slotNumber.equals(rule.getSlotNumber()) && weekend == Boolean.TRUE.equals(rule.getIsWeekend()))
                 .map(PriceRule::getPrice)
                 .findFirst()
-                .orElse(null);
+                .orElse(basePrice);
     }
 
     private LocalTime calculateStartTime(int slotNumber) {

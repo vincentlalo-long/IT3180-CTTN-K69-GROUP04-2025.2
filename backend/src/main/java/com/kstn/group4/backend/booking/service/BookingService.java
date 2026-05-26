@@ -266,7 +266,10 @@ public class BookingService {
         BigDecimal totalPrice = priceRuleRepository
                 .findByPitchIdAndSlotNumberAndIsWeekend(request.getPitchId(), request.getSlotNumber(), isWeekend)
                 .map(PriceRule::getPrice)
-                .orElseThrow(() -> new BusinessException("Chưa có giá cho ca này", "PRICE_NOT_SET"));
+                .orElseGet(() -> pitch.getBasePrice());
+        if (totalPrice == null) {
+            throw new BusinessException("Chua co gia cho ca nay", "PRICE_NOT_SET");
+        }
         BigDecimal depositAmount = calculateDepositAmount(totalPrice);
 
         Booking booking = new Booking();

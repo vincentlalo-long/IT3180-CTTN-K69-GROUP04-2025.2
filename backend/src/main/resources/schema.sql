@@ -50,6 +50,18 @@ CREATE TABLE IF NOT EXISTS `price_rules` (
         UNIQUE (`pitch_id`, `slot_number`, `is_weekend`)
 );
 
+CREATE TABLE IF NOT EXISTS `time_slots` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `pitch_id` INT NOT NULL,
+    `slot_number` INT NOT NULL,
+    `start_time` TIME NOT NULL,
+    `end_time` TIME NOT NULL,
+    `is_active` BIT(1) NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_time_slots_pitch_id`
+        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`)
+);
+
 CREATE TABLE IF NOT EXISTS `services` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `pitch_id` INT,
@@ -72,11 +84,14 @@ CREATE TABLE IF NOT EXISTS `bookings` (
     `booking_type` VARCHAR(255),
     `total_price` DECIMAL(38,2),
     `created_at` DATETIME,
+    `time_slot_id` INT,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_bookings_player_id`
         FOREIGN KEY (`player_id`) REFERENCES `users` (`id`),
     CONSTRAINT `fk_bookings_pitch_id`
-        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`)
+        FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`),
+    CONSTRAINT `fk_bookings_time_slot_id`
+        FOREIGN KEY (`time_slot_id`) REFERENCES `time_slots` (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `pitch_reviews` (
@@ -108,4 +123,3 @@ CREATE TABLE IF NOT EXISTS `booking_payments` (
     CONSTRAINT `fk_booking_payments_payer_id`
         FOREIGN KEY (`payer_id`) REFERENCES `users` (`id`)
 );
-
