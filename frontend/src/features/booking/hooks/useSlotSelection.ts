@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TimeSlotRange } from "@/features/venue/types/venue.types";
 
 const isSameSlot = (left: TimeSlotRange, right: TimeSlotRange) =>
@@ -11,12 +11,13 @@ interface UseSlotSelectionOptions {
 export function useSlotSelection(options: UseSlotSelectionOptions = {}) {
   const { resetKey = [] } = options;
   const [selectedSlots, setSelectedSlots] = useState<TimeSlotRange[]>([]);
+  const resetKeySignature = useMemo(() => JSON.stringify(resetKey), [resetKey]);
 
   // Reset selection when dependencies change (date, pitch, etc.)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedSlots([]);
-  }, resetKey);
+  }, [resetKeySignature]);
 
   const toggleSlot = useCallback((slot: TimeSlotRange) => {
     setSelectedSlots((prev) => {
@@ -39,4 +40,3 @@ export function useSlotSelection(options: UseSlotSelectionOptions = {}) {
     setSelectedSlots,
   };
 }
-

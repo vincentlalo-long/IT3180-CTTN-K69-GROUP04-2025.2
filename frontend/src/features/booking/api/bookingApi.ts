@@ -1,26 +1,22 @@
 import apiClient from "@/shared/api/apiClient";
-<<<<<<< HEAD
 import type { SpringPageResponse } from "@/features/venue/api/venueApi";
-=======
->>>>>>> feat/render-dynamic-slots
 import type {
   CreateBookingRequest,
   PlayerBookingResponse,
 } from "@/features/booking/types/booking.types";
 
-<<<<<<< HEAD
 export interface AdminBookingSummaryResponse {
   id: number;
   customerName: string;
   customerPhone: string;
   venueName: string;
   pitchName: string;
-  bookingDate: string;   // "2026-04-18"
-  startTime: string;     // "17:00:00"
-  endTime: string;       // "18:30:00"
+  bookingDate: string; // "2026-04-18"
+  startTime: string; // "17:00:00"
+  endTime: string; // "18:30:00"
   totalPrice: number;
   depositAmount: number;
-  status: string;        // "RESERVED" | "BOOKED" | "PLAYING" | "COMPLETED" | "CANCELLED"
+  status: string; // "RESERVED" | "BOOKED" | "PLAYING" | "COMPLETED" | "CANCELLED"
 }
 
 /**
@@ -59,8 +55,6 @@ export const updateOrderStatusApi = async (
   });
 };
 
-=======
->>>>>>> feat/render-dynamic-slots
 export const createBooking = async (
   payload: CreateBookingRequest,
 ): Promise<PlayerBookingResponse> => {
@@ -70,7 +64,3 @@ export const createBooking = async (
   );
   return response.data;
 };
-<<<<<<< HEAD
-=======
-
->>>>>>> feat/render-dynamic-slots
