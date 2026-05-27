@@ -1,13 +1,7 @@
 import type { PlayerBookingHistoryItem } from "../types/account.types";
+import apiClient from "@/shared/api/apiClient";
 
-export const getPlayerBookings = async (): Promise<
-  PlayerBookingHistoryItem[]
-> => {
-  const response = await fetch("/api/user/bookings");
-
-  if (!response.ok) {
-    throw new Error("Không thể tải lịch sử đặt sân.");
-  }
-
-  return (await response.json()) as PlayerBookingHistoryItem[];
+export const getPlayerBookings = async (): Promise<PlayerBookingHistoryItem[]> => {
+  const response = await apiClient.get("/user/bookings");
+  return response.data as PlayerBookingHistoryItem[];
 };

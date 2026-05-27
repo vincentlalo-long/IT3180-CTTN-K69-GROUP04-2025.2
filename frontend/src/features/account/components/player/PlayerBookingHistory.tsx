@@ -1,5 +1,4 @@
 import { Calendar } from "lucide-react";
-
 import type { PlayerBookingHistoryItem } from "../../types/account.types";
 
 interface PlayerBookingHistoryProps {
@@ -58,10 +57,10 @@ export function PlayerBookingHistory({
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-bold
-                          ${item.status === "pending" ? "bg-yellow-100 text-yellow-700" : ""}
-                          ${item.status === "confirmed" ? "bg-green-100 text-green-700" : ""}
-                          ${item.status === "cancelled" ? "bg-red-100 text-red-700" : ""}
-                        `}
+                      ${item.status === "pending" ? "bg-yellow-100 text-yellow-700" : ""}
+                      ${item.status === "confirmed" ? "bg-green-100 text-green-700" : ""}
+                      ${item.status === "cancelled" ? "bg-red-100 text-red-700" : ""}
+                    `}
                   >
                     {item.status === "pending" && "Chờ xác nhận"}
                     {item.status === "confirmed" && "Đã xác nhận"}

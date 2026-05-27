@@ -1,6 +1,5 @@
 import { Check, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
-
 import type { PlayerProfileInfo } from "../../types/account.types";
 
 interface PlayerProfileFormProps {

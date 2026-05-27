@@ -1,90 +1,64 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import apiClient from "@/shared/api/apiClient";
-import { getPlayerBookings } from "../api/account.api";
-import type {
-  PlayerBookingHistoryItem,
-  PlayerProfileInfo,
-} from "../types/account.types";
+
+type ProfileEventListener = () => void;
+const listeners: ProfileEventListener[] = [];
+
+export function emitProfileEvent() {
+  listeners.forEach((fn) => fn());
+}
+
+export function subscribeProfileEvent(fn: ProfileEventListener) {
+  listeners.push(fn);
+  return () => {
+    const idx = listeners.indexOf(fn);
+    if (idx !== -1) listeners.splice(idx, 1);
+  };
+}
+
+export interface PlayerProfileInfo {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  avatarUrl?: string;
+  role?: string;
+}
 
 export function usePlayerProfile() {
-  const [isEditing, setIsEditing] = useState(false);
   const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
-  const [history, setHistory] = useState<PlayerBookingHistoryItem[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
 
-  // Fetch user info khi đã đăng nhập
-  useEffect(() => {
-    let isMounted = true;
+  const fetchUser = useCallback(() => {
     setLoadingUser(true);
     setUserError(null);
-    apiClient.get("/user/profile")
+    apiClient
+      .get("/user/profile")
       .then((res) => {
-        if (isMounted) setUserInfo(res.data);
+        setUserInfo(res.data);
+        setLoadingUser(false);
       })
       .catch((err) => {
-        if (isMounted) {
-          if (err.response && err.response.status === 401) {
-            setUserError("Unauthenticated");
-          } else {
-            setUserError("Không thể tải thông tin tài khoản");
-          }
-        }
-      })
-      .finally(() => {
-        if (isMounted) setLoadingUser(false);
+        if (!err.response) setUserError("Không có kết nối mạng.");
+        else if (err.response.status === 401) setUserError("Token hết hạn hoặc chưa đăng nhập.");
+        else if (err.response.status === 404) setUserError("Không tìm thấy thông tin người dùng.");
+        else setUserError("Lỗi server hoặc không xác định.");
+        setLoadingUser(false);
       });
-    return () => { isMounted = false; };
   }, []);
 
+  // Effect 1: fetch lần đầu khi mount
   useEffect(() => {
-    if (!showHistory) return;
-    let isMounted = true;
-    const loadHistory = async () => {
-      setLoadingHistory(true);
-      setHistoryError(null);
-      try {
-        const data = await getPlayerBookings();
-        if (isMounted) setHistory(data);
-      } catch (error) {
-        if (isMounted) {
-          setHistoryError(
-            error instanceof Error ? error.message : "Lỗi không xác định",
-          );
-        }
-      } finally {
-        if (isMounted) setLoadingHistory(false);
-      }
-    };
-    loadHistory();
-    return () => { isMounted = false; };
-  }, [showHistory]);
+    fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const toggleEditing = () => setIsEditing((v) => !v);
-  const toggleHistory = () => setShowHistory((v) => !v);
-  const updateUserInfo = <Key extends keyof PlayerProfileInfo>(
-    key: Key,
-    value: PlayerProfileInfo[Key],
-  ) => {
-    setUserInfo((currentValue) =>
-      currentValue ? { ...currentValue, [key]: value } : currentValue
-    );
-  };
+  // Effect 2: subscribe event emitter
+  useEffect(() => {
+    const unsub = subscribeProfileEvent(fetchUser);
+    return unsub;
+  }, [fetchUser]);
 
-  return {
-    isEditing,
-    userInfo,
-    loadingUser,
-    userError,
-    history,
-    loadingHistory,
-    historyError,
-    showHistory,
-    toggleEditing,
-    toggleHistory,
-    updateUserInfo,
-  };
+  return { userInfo, loadingUser, userError, refetch: fetchUser };
 }
