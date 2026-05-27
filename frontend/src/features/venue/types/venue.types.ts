@@ -7,6 +7,7 @@ export interface VenueResponseDTO {
   name: string;
   address: string;
   imageUrl: string;
+  minPrice: BigDecimal | number;
 }
 
 export interface VenueSummaryResponse {
@@ -99,4 +100,5 @@ export interface VenueItem {
   name: string;
   address: string;
   openTime: string;
+  minPrice?: number;
 }

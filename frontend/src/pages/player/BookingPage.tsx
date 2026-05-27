@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import { VenueCard, useVenueList } from "../../features/venue";
+import { VenueCard, VenueSkeleton, useVenueList } from "../../features/venue";
 import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 
 export function BookingPage() {
@@ -39,12 +39,26 @@ export function BookingPage() {
 
       <main className="mx-auto max-w-[1280px] px-6 py-6">
         {isLoading ? (
-          <div className="flex justify-center py-20 text-white font-medium">
-            Đang tải danh sách sân...
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <VenueSkeleton key={idx} />
+            ))}
           </div>
         ) : error ? (
-          <div className="flex justify-center py-20 text-rose-200 font-medium">
-            Lỗi: {error}
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="rounded-full bg-rose-500/20 p-4 mb-4">
+              <Search size={48} className="text-rose-200" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Không thể tải danh sách sân</h2>
+            <p className="text-rose-100/70 max-w-md">
+              {error}. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-6 px-6 py-2 bg-white text-emerald-700 rounded-full font-bold hover:bg-emerald-50 transition"
+            >
+              Thử lại
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">

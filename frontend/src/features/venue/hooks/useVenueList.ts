@@ -24,6 +24,7 @@ export function useVenueList() {
             imageUrl: v.imageUrl,
             ballLogoUrl: logoFootball,
             openTime: "Giờ mở cửa: Cả ngày", // Default value as it's not in the simple DTO
+            minPrice: typeof v.minPrice === "string" ? parseFloat(v.minPrice) : v.minPrice,
           }));
           setVenues(transformedVenues);
         }
