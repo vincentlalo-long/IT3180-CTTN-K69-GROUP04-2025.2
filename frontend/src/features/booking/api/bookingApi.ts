@@ -1,5 +1,6 @@
 import apiClient from "@/shared/api/apiClient";
 import type { SpringPageResponse } from "@/features/venue/api/venueApi";
+import { logApiError } from "@/shared/utils/apiError";
 import type {
   CreateBookingRequest,
   PlayerBookingResponse,
@@ -36,7 +37,7 @@ export const fetchOrdersByVenue = async (
     >("/admin/bookings", { params });
     return response.data.content;
   } catch (error) {
-    console.error("Error fetching orders:", error);
+    logApiError("fetchOrdersByVenue", error, { venueId });
     throw error;
   }
 };

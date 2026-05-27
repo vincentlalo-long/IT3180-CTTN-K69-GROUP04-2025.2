@@ -6,6 +6,7 @@ import {
   updateOrderStatusApi,
   type AdminBookingSummaryResponse,
 } from "../api/bookingApi";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 export function useOrderManagement() {
   const {
@@ -15,14 +16,20 @@ export function useOrderManagement() {
 
   const [orders, setOrders] = useState<AdminBookingSummaryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadOrders = useCallback(async () => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const data = await fetchOrdersByVenue(selectedFacilityId);
       setOrders(data);
     } catch (error) {
-      console.error("Failed to load orders:", error);
+      const message = getApiErrorMessage(
+        error,
+        "Khong the tai danh sach don dat san.",
+      );
+      setErrorMessage(message);
       setOrders([]);
     } finally {
       setIsLoading(false);
@@ -34,20 +41,28 @@ export function useOrderManagement() {
   }, [loadOrders]);
 
   const handleConfirmDeposit = async (orderId: number) => {
+    setErrorMessage(null);
     try {
       await updateOrderStatusApi(orderId, "CONFIRMED", "Xác nhận cọc");
       await loadOrders();
     } catch (error) {
-      console.error("Failed to confirm deposit:", error);
+      logApiError("useOrderManagement.handleConfirmDeposit", error, {
+        orderId,
+      });
+      setErrorMessage(getApiErrorMessage(error, "Khong the xac nhan coc."));
     }
   };
 
   const handleCancelOrder = async (orderId: number) => {
+    setErrorMessage(null);
     try {
       await updateOrderStatusApi(orderId, "CANCELLED", "Hủy đơn");
       await loadOrders();
     } catch (error) {
-      console.error("Failed to cancel order:", error);
+      logApiError("useOrderManagement.handleCancelOrder", error, {
+        orderId,
+      });
+      setErrorMessage(getApiErrorMessage(error, "Khong the huy don dat san."));
     }
   };
 
@@ -58,5 +73,6 @@ export function useOrderManagement() {
     selectedFacilityId,
     selectedFacility,
     isLoading,
+    errorMessage,
   };
 }

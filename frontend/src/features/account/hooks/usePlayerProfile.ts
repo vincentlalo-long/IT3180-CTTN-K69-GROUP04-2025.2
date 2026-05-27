@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import apiClient from "@/shared/api/apiClient";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 type ProfileEventListener = () => void;
 const listeners: ProfileEventListener[] = [];
@@ -40,10 +41,8 @@ export function usePlayerProfile() {
         setLoadingUser(false);
       })
       .catch((err) => {
-        if (!err.response) setUserError("Không có kết nối mạng.");
-        else if (err.response.status === 401) setUserError("Token hết hạn hoặc chưa đăng nhập.");
-        else if (err.response.status === 404) setUserError("Không tìm thấy thông tin người dùng.");
-        else setUserError("Lỗi server hoặc không xác định.");
+        logApiError("usePlayerProfile.fetchUser", err);
+        setUserError(getApiErrorMessage(err, "Không thể tải thông tin tài khoản."));
         setLoadingUser(false);
       });
   }, []);

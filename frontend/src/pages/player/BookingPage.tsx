@@ -60,6 +60,16 @@ export function BookingPage() {
               Thử lại
             </button>
           </div>
+        ) : venues.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="rounded-full bg-white/10 p-4 mb-4">
+              <Search size={48} className="text-white/60" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Không có cụm sân nào</h2>
+            <p className="text-white/70 max-w-md">
+              Hiện tại hệ thống chưa có cụm sân nào hoạt động. Vui lòng quay lại sau.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {venues.map((venue) => (

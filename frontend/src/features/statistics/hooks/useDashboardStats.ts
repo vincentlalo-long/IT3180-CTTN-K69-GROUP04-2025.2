@@ -2,6 +2,7 @@ import { CalendarCheck2, ChartColumn, CircleDashed, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { apiClient } from "@/shared/api/apiClient";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 import {
   formatCurrency,
   formatVacancyRate,
@@ -109,10 +110,13 @@ export function useDashboardStats(
           return;
         }
 
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Không thể tải dữ liệu dashboard";
+        const message = getApiErrorMessage(
+          error,
+          "Không thể tải dữ liệu dashboard",
+        );
+        logApiError("useDashboardStats.fetchDashboardData", error, {
+          dashboardFacilityId,
+        });
         setErrorMessage(message);
         setDashboardStats(null);
         setRecentOrders([]);

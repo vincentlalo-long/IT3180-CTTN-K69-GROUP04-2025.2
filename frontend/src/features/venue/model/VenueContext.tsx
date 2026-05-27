@@ -9,6 +9,8 @@ export interface VenueContextValue {
   selectedVenueId: string;
   selectedVenue: Facility | null;
   setSelectedVenueId: (venueId: string) => void;
+  isLoadingFacilities: boolean;
+  facilityError: string | null;
 }
 
 export const VenueContext = createContext<VenueContextValue | undefined>(

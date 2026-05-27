@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 
 import { getVenueAvailability } from "@/features/venue/api/venueApi";
+import { getApiErrorMessage } from "@/shared/utils/apiError";
 import type {
   PitchAvailabilityResponse,
   SlotStatusResponse,
@@ -46,7 +47,7 @@ export function useAvailableSlots(
       setAvailability(data);
       setLastUpdated(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load slots");
+      setError(getApiErrorMessage(err, "Khong the tai khung gio."));
     } finally {
       setLoading(false);
     }

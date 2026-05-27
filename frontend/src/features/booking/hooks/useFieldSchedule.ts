@@ -3,7 +3,12 @@ import { useVenueContext as useFacilityContext } from "../../venue/hooks/useVenu
 import type { FieldScheduleRow, ScheduleSlot } from "../types/booking.types";
 import { getAdminFieldSchedules } from "../api/booking.api";
 import { formatMoney, getRangeLabel } from "../utils/booking.utils";
-import { ADMIN_TIME_SLOTS, type AdminTimeSlot } from "../constants/booking.constants";
+import {
+  ADMIN_TIME_SLOTS,
+  ALL_FACILITIES_ID,
+  type AdminTimeSlot,
+} from "../constants/booking.constants";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 export function useFieldSchedule() {
   const {
@@ -23,11 +28,14 @@ export function useFieldSchedule() {
     const fetchSchedules = async () => {
       setIsLoading(true);
       setError(null);
+      setFieldScheduleRows([]);
       try {
-        const venueIdConstraint =
-          selectedFacilityId === "all" || selectedFacilityId === "ALL"
-            ? null
-            : selectedFacilityId;
+        const isAllFacilitiesSelected =
+          selectedFacilityId === ALL_FACILITIES_ID ||
+          selectedFacilityId === "ALL";
+        const venueIdConstraint = isAllFacilitiesSelected
+          ? null
+          : selectedFacilityId;
             
         const data = await getAdminFieldSchedules(venueIdConstraint, selectedDate);
         
@@ -65,11 +73,13 @@ export function useFieldSchedule() {
 
         setFieldScheduleRows(rows);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Đã xảy ra lỗi khi lấy lịch sân");
-        }
+        const message = getApiErrorMessage(err, "Khong the lay lich san.");
+        logApiError("useFieldSchedule.fetchSchedules", err, {
+          selectedFacilityId,
+          selectedDate,
+        });
+        setError(message);
+        setFieldScheduleRows([]);
       } finally {
         setIsLoading(false);
       }

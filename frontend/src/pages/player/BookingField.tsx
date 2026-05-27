@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 
 import {
   DateSelector,
@@ -17,6 +16,7 @@ import type {
 } from "@/features/venue/types/venue.types";
 import { createBooking } from "@/features/booking/api/bookingApi";
 import type { SlotDisplayItem } from "@/features/booking/components/player/SlotsGrid";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 const normalizeTime = (value: string) => value.slice(0, 5);
 
@@ -27,24 +27,6 @@ const toSlotRange = (slot: SlotStatusResponse): TimeSlotRange => ({
 
 const sortSlots = (left: TimeSlotRange, right: TimeSlotRange) =>
   left.startTime.localeCompare(right.startTime);
-
-const extractErrorMessage = (err: unknown): string => {
-  if (axios.isAxiosError(err) && err.response?.data) {
-    const data = err.response.data as Record<string, unknown>;
-    if (data.message) {
-      return String(data.message);
-    }
-    if (data.error) {
-      return `${data.error}: ${data.message || ""}`.trim();
-    }
-  }
-
-  if (err instanceof Error) {
-    return err.message;
-  }
-
-  return "Dat san that bai.";
-};
 
 export function BookingField() {
   const navigate = useNavigate();
@@ -119,6 +101,8 @@ export function BookingField() {
     setSubmitError(null);
     setSubmitSuccess(null);
 
+    const bookingDate = format(selectedDate, "yyyy-MM-dd");
+
     try {
       const timeSlotIds = selectedSlots
         .map((slot) => {
@@ -137,7 +121,6 @@ export function BookingField() {
         return;
       }
 
-      const bookingDate = format(selectedDate, "yyyy-MM-dd");
       await Promise.all(
         timeSlotIds.map((timeSlotId) =>
           createBooking({
@@ -152,7 +135,13 @@ export function BookingField() {
       clearSlots();
       refresh();
     } catch (err) {
-      setSubmitError(extractErrorMessage(err));
+      logApiError("BookingField.handleSubmit", err, {
+        venueId,
+        selectedPitchId,
+        bookingDate,
+        selectedSlotCount: selectedSlots.length,
+      });
+      setSubmitError(getApiErrorMessage(err, "Dat san that bai."));
     } finally {
       setIsSubmitting(false);
     }
@@ -237,7 +226,10 @@ export function BookingField() {
         {!loading && !error && pitch && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Dang xem: <span className="font-semibold text-gray-900 dark:text-slate-100">{pitch.pitchName}</span>
+              Dang xem:{" "}
+              <span className="font-semibold text-gray-900 dark:text-slate-100">
+                {pitch.pitchName}
+              </span>
             </div>
             <SlotsGrid slots={slotItems} onSlotToggle={toggleSlot} />
           </div>

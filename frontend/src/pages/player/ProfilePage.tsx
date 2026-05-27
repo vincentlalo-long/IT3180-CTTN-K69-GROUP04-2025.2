@@ -10,6 +10,7 @@ import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect, useCallback } from "react";
 import { getPlayerBookings } from "../../features/account/api/account.api";
 import { subscribeProfileEvent } from "../../features/account/hooks/usePlayerProfile";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 export function ProfilePage() {
   const { userInfo, loadingUser, userError, refetch } = usePlayerProfile();
@@ -30,9 +31,8 @@ export function ProfilePage() {
         setLoadingHistory(false);
       })
       .catch((err) => {
-        if (!err.response) setHistoryError("Không có kết nối mạng.");
-        else if (err.response.status === 401) setHistoryError("Token hết hạn hoặc chưa đăng nhập.");
-        else setHistoryError("Lỗi server hoặc không xác định.");
+        logApiError("ProfilePage.fetchHistory", err);
+        setHistoryError(getApiErrorMessage(err, "Không thể tải lịch sử đặt sân."));
         setLoadingHistory(false);
       });
   }, []);

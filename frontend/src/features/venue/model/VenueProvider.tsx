@@ -7,6 +7,7 @@ import {
 } from "./VenueContext";
 import { getFields } from "../api/venueApi";
 import type { Facility } from "../types/venue.types";
+import { getApiErrorMessage } from "@/shared/utils/apiError";
 
 interface VenueProviderProps {
   children: ReactNode;
@@ -16,9 +17,13 @@ export function VenueProvider({ children }: VenueProviderProps) {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [selectedVenueId, setSelectedVenueId] =
     useState<string>(ALL_FACILITIES_ID);
+  const [isLoadingFacilities, setIsLoadingFacilities] = useState(true);
+  const [facilityError, setFacilityError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFacilities = async () => {
+      setIsLoadingFacilities(true);
+      setFacilityError(null);
       try {
         const fields = await getFields();
         const formattedFacilities: Facility[] = fields.map((field) => ({
@@ -37,7 +42,14 @@ export function VenueProvider({ children }: VenueProviderProps) {
           setSelectedVenueId(formattedFacilities[0].id);
         }
       } catch (error) {
-        console.error("Error fetching facilities:", error);
+        const message = getApiErrorMessage(
+          error,
+          "Khong the tai danh sach khu san.",
+        );
+        setFacilities([]);
+        setFacilityError(message);
+      } finally {
+        setIsLoadingFacilities(false);
       }
     };
 
@@ -57,8 +69,10 @@ export function VenueProvider({ children }: VenueProviderProps) {
       selectedVenueId,
       selectedVenue,
       setSelectedVenueId,
+      isLoadingFacilities,
+      facilityError,
     };
-  }, [facilities, selectedVenueId]);
+  }, [facilities, facilityError, isLoadingFacilities, selectedVenueId]);
 
   return (
     <VenueContext.Provider value={value}>{children}</VenueContext.Provider>
