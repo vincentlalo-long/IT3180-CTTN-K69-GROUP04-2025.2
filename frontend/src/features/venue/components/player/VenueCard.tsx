@@ -13,7 +13,7 @@ export function VenueCard({ data }: VenueCardProps) {
 
   return (
     <button
-      onClick={() => navigate("/booking/:fieldId")}
+      onClick={() => navigate(`/booking/${data.id}`)}
       className="overflow-hidden rounded-2xl border-2 border-black/60 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition hover:scale-[1.01] hover:brightness-95 text-left w-full"
     >
       <div

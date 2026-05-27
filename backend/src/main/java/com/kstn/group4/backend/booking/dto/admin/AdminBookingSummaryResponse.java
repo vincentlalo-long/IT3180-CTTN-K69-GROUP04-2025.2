@@ -14,6 +14,7 @@ public record AdminBookingSummaryResponse(
         LocalDate bookingDate,  // Ngày đá
         LocalTime startTime,    // Giờ bắt đầu
         LocalTime endTime,      // Giờ kết thúc
+        BigDecimal depositAmount,  // Tiền cọc (50% tổng)
         BigDecimal totalPrice,  // Giá tiền
         String status            // Trạng thái đơn (BOOKED, PLAYING,...)
 ) {

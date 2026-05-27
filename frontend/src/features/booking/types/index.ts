@@ -1,4 +1,4 @@
-export type { Order } from "../../../data/mockAdminData";
+export type { AdminBookingSummaryResponse } from "../api/bookingApi";
 export type {
   FieldScheduleRow,
   PitchPhysicalStatus,

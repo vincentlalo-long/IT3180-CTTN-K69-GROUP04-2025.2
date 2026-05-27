@@ -86,7 +86,7 @@ public class VenuePlayerService {
         List<Booking> bookings = bookingRepository.findConfirmedByPitchIdAndBookingDate(pitchId, date);
         List<PriceRule> priceRules = pitch.getPriceRules() == null ? List.of() : pitch.getPriceRules();
 
-        // Create map: timeSlotId → Booking (for O(1) lookup)
+        // Create map: timeSlotId -> Booking (for O(1) lookup)
         Map<Integer, Booking> slotBookingMap = new HashMap<>();
         for (Booking booking : bookings) {
             if (booking.getTimeSlot() != null && booking.getTimeSlot().getId() != null) {
@@ -112,7 +112,7 @@ public class VenuePlayerService {
                         return null;
                     }
 
-                    BigDecimal price = findPrice(priceRules, timeSlot.getSlotNumber(), isWeekend);
+                    BigDecimal price = findPrice(priceRules, timeSlot.getSlotNumber(), isWeekend, pitch.getBasePrice());
 
                     return new SlotDetailResponse(
                             timeSlot.getId(),
@@ -153,9 +153,10 @@ public class VenuePlayerService {
                 .map(timeSlot -> {
                     Booking booking = slotBookingMap.get(timeSlot.getId());
                     String status = booking != null ? "BOOKED" : "AVAILABLE";
-                    BigDecimal price = findPrice(priceRules, timeSlot.getSlotNumber(), weekend);
+                    BigDecimal price = findPrice(priceRules, timeSlot.getSlotNumber(), weekend, pitch.getBasePrice());
 
                     return new SlotStatus(
+                            timeSlot.getId(),
                             timeSlot.getSlotNumber(),
                             timeSlot.getStartTime(),
                             timeSlot.getEndTime(),
@@ -189,12 +190,17 @@ public class VenuePlayerService {
         return lookup;
     }
 
-    private BigDecimal findPrice(List<PriceRule> priceRules, Integer slotNumber, boolean weekend) {
+    private BigDecimal findPrice(
+            List<PriceRule> priceRules,
+            Integer slotNumber,
+            boolean weekend,
+            BigDecimal basePrice
+    ) {
         return priceRules.stream()
                 .filter(rule -> slotNumber.equals(rule.getSlotNumber()) && weekend == Boolean.TRUE.equals(rule.getIsWeekend()))
                 .map(PriceRule::getPrice)
                 .findFirst()
-                .orElse(null);
+                .orElse(basePrice);
     }
 
 

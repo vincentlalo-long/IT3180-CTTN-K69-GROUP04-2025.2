@@ -1,6 +1,6 @@
 import { Bell, ChevronDown, Menu, Search, Settings } from "lucide-react";
 
-import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
+import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { useVenueContext as useFacilityContext } from "../../features/venue/hooks/useVenueContext";
 
 interface AdminTopBarProps {

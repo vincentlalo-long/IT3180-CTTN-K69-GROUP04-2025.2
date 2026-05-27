@@ -1,15 +1,35 @@
-import { fields } from "../../../../data/mockAdminData";
-import type { Order } from "../../types";
-import {
-  canCancelOrder,
-  formatCompactPrice,
-  getStatusClass,
-} from "../../utils/booking.utils";
+import type { AdminBookingSummaryResponse } from "../../api/bookingApi";
+import { formatCompactPrice } from "../../utils/booking.utils";
+
+const STATUS_LABELS: Record<string, string> = {
+  BOOKED: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận cọc",
+  PLAYING: "Đang đá",
+  CANCELLED: "Đã hủy",
+};
+
+const STATUS_CLASSES: Record<string, string> = {
+  BOOKED: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
+  CONFIRMED: "border border-lime-100/85 bg-lime-300/45 text-[#123915]",
+  PLAYING: "border border-sky-100/75 bg-sky-300/30 text-sky-50",
+  CANCELLED: "border border-rose-100/80 bg-rose-400/35 text-rose-50",
+};
 
 interface OrderManagementTableProps {
-  orders: Order[];
-  onConfirmDeposit: (id: string) => void;
-  onCancelOrder: (id: string) => void;
+  orders: AdminBookingSummaryResponse[];
+  onConfirmDeposit: (id: number) => void;
+  onCancelOrder: (id: number) => void;
+}
+
+function formatTime(time: string): string {
+  // "17:00:00" -> "17:00"
+  return time.slice(0, 5);
+}
+
+function formatDate(dateStr: string): string {
+  // "2026-04-18" -> "18/04/2026"
+  const [year, month, day] = dateStr.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 export function OrderManagementTable({
@@ -43,12 +63,16 @@ export function OrderManagementTable({
       </thead>
       <tbody>
         {orders.map((order, index) => {
-          const field = fields.find((item) => item.id === order.fieldId);
-          const cancelable = canCancelOrder(order.matchDate);
-          const cancelTitle = cancelable
-            ? "Hủy đơn"
-            : "Không thể hủy trong vòng 24h trước giờ đá";
-          const disableCancel = !cancelable || order.status === "Đã hủy";
+          const statusLabel = STATUS_LABELS[order.status] ?? order.status;
+          const statusClass =
+            STATUS_CLASSES[order.status] ??
+            "border border-white/40 bg-white/15 text-white/80";
+
+          const shiftLabel = `${formatTime(order.startTime)} - ${formatTime(order.endTime)}, ${formatDate(order.bookingDate)}`;
+          const isBooked = order.status === "BOOKED";
+          const isCancelled = order.status === "CANCELLED";
+          const disableCancel = isCancelled;
+
           const rowToneClass =
             index % 2 === 0 ? "bg-[#0d5a2f]/60" : "bg-[#0a4d29]/60";
           const rowHoverClass = "hover:bg-[#146f3d]/70";
@@ -60,18 +84,23 @@ export function OrderManagementTable({
               <td
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass} rounded-l-lg border-l border-white/15 font-medium text-white`}
               >
-                {order.id.toUpperCase()}
+                #{order.id}
               </td>
               <td
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass}`}
               >
-                {order.customerName}
+                <p className="font-medium text-white">{order.customerName}</p>
+                <p className="mt-0.5 text-xs text-white/65">
+                  {order.customerPhone}
+                </p>
               </td>
               <td
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass}`}
               >
-                <p className="font-medium text-white">{field?.name ?? "N/A"}</p>
-                <p className="mt-0.5 text-xs text-white/75">{order.shift}</p>
+                <p className="font-medium text-white">
+                  {order.pitchName} — {order.venueName}
+                </p>
+                <p className="mt-0.5 text-xs text-white/75">{shiftLabel}</p>
               </td>
               <td
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass} font-medium text-lime-100`}
@@ -83,16 +112,16 @@ export function OrderManagementTable({
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass}`}
               >
                 <span
-                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClass(order.status)}`}
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
                 >
-                  {order.status}
+                  {statusLabel}
                 </span>
               </td>
               <td
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass} rounded-r-lg border-r border-white/15`}
               >
                 <div className="flex items-center gap-2">
-                  {order.status === "Chờ cọc" ? (
+                  {isBooked ? (
                     <button
                       type="button"
                       onClick={() => onConfirmDeposit(order.id)}
@@ -107,7 +136,7 @@ export function OrderManagementTable({
                   <button
                     type="button"
                     title={
-                      order.status === "Đã hủy" ? "Đơn đã hủy" : cancelTitle
+                      isCancelled ? "Đơn đã hủy" : "Hủy đơn"
                     }
                     disabled={disableCancel}
                     onClick={() => onCancelOrder(order.id)}

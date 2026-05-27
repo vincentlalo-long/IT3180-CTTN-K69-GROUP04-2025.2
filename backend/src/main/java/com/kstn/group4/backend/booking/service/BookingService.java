@@ -122,6 +122,7 @@ public class BookingService {
     /**
      * Map Booking entity to AdminBookingSummaryResponse DTO.
      * Handles null references safely to prevent NullPointerException.
+     * Calculates depositAmount as 50% of totalPrice.
      */
     private AdminBookingSummaryResponse toAdminSummaryResponse(Booking booking) {
         String customerName = booking.getPlayer() != null && booking.getPlayer().getUsername() != null
@@ -142,6 +143,9 @@ public class BookingService {
                 ? booking.getStatus().name()
                 : "N/A";
 
+        BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal depositAmount = totalPrice.divide(new BigDecimal("2"), RoundingMode.HALF_UP);
+
         return AdminBookingSummaryResponse.builder()
                 .id(booking.getId())
                 .customerName(customerName)
@@ -150,7 +154,8 @@ public class BookingService {
                 .bookingDate(booking.getBookingDate())
                 .startTime(booking.getStartTime())
                 .endTime(booking.getEndTime())
-                .totalPrice(booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO)
+                .depositAmount(depositAmount)
+                .totalPrice(totalPrice)
                 .status(status)
                 .build();
     }
@@ -282,7 +287,10 @@ public class BookingService {
         BigDecimal totalPrice = priceRuleRepository
                 .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), isWeekend)
                 .map(PriceRule::getPrice)
-                .orElseThrow(() -> new BusinessException("Chưa có giá cho ca này", "PRICE_NOT_SET"));
+                .orElseGet(pitch::getBasePrice);
+        if (totalPrice == null) {
+            throw new BusinessException("Chua co gia cho ca nay", "PRICE_NOT_SET");
+        }
 
         BigDecimal depositAmount = calculateDepositAmount(totalPrice);
 

@@ -3,6 +3,8 @@ package com.kstn.group4.backend.booking.controller;
 import com.kstn.group4.backend.booking.dto.admin.AdminBookingSummaryResponse;
 import com.kstn.group4.backend.booking.dto.admin.AdminBookingDetailResponse;
 import com.kstn.group4.backend.booking.dto.admin.AdminUpdateBookingRequest;
+import com.kstn.group4.backend.booking.dto.admin.PitchScheduleDto;
+import com.kstn.group4.backend.booking.service.BookingAdminService;
 import com.kstn.group4.backend.booking.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +25,15 @@ import java.time.LocalDate;
 public class AdminBookingController {
 
     private final BookingService bookingService;
+    private final BookingAdminService bookingAdminService;
+
+    @GetMapping("/schedules")
+    public ResponseEntity<List<PitchScheduleDto>> getPitchSchedules(
+            @RequestParam(required = false) Long venueId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ResponseEntity.ok(bookingAdminService.getPitchSchedules(venueId, date));
+    }
 
     /**
      * Lấy danh sách booking (Admin thấy tên khách, SĐT khách ngay tại list để tiện xử lý)

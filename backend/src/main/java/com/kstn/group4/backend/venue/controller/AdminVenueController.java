@@ -33,7 +33,7 @@ public class AdminVenueController {
             @AuthenticationPrincipal UserPrincipal principal,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(venueService.getVenuesByManager(principal.getId(), pageable));
+        return ResponseEntity.ok(venueService.getAllVenuesForAdmin(pageable));
     }
 
     @GetMapping("/{venueId}")
@@ -41,7 +41,7 @@ public class AdminVenueController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Integer venueId
     ) {
-        return ResponseEntity.ok(venueService.getVenueByManager(venueId, principal.getId()));
+        return ResponseEntity.ok(venueService.getVenueByIdForAdmin(venueId));
     }
 
     @PostMapping
