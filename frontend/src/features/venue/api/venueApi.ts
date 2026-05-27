@@ -1,4 +1,5 @@
 import apiClient from "@/shared/api/apiClient";
+import { logApiError } from "@/shared/utils/apiError";
 import type {
   VenueAvailabilityResponse,
   VenueResponseDTO,
@@ -26,7 +27,7 @@ export const getFields = async (): Promise<FieldDto[]> => {
     const response = await apiClient.get<SpringPageResponse<FieldDto>>("/admin/venues");
     return response.data.content;
   } catch (error) {
-    console.error("Error fetching fields:", error);
+    logApiError("getFields", error);
     throw error;
   }
 };
@@ -39,7 +40,7 @@ export const getVenues = async (): Promise<VenueResponseDTO[]> => {
     const response = await apiClient.get<SpringPageResponse<VenueResponseDTO>>("/player/venues");
     return response.data.content;
   } catch (error) {
-    console.error("Error fetching active venues:", error);
+    logApiError("getVenues", error);
     throw error;
   }
 };
@@ -58,7 +59,7 @@ export const getVenueAvailability = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching venue availability:", error);
+    logApiError("getVenueAvailability", error, { venueId, date });
     throw error;
   }
 };

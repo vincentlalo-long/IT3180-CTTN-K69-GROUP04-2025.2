@@ -10,8 +10,15 @@ export function FieldSchedulePage() {
     selectedDate,
     setSelectedDate,
     isLoading,
-    error
+    error,
   } = useFieldSchedule();
+
+  const isAllFacilitiesSelected = selectedFacilityId === ALL_FACILITIES_ID;
+  const shouldShowLoadingState = isLoading && fieldScheduleRows.length === 0;
+  const shouldShowErrorState = !isLoading && Boolean(error);
+  const shouldShowEmptyState =
+    !isLoading && !error && fieldScheduleRows.length === 0;
+  const shouldShowTable = !isLoading && !error && fieldScheduleRows.length > 0;
 
   return (
     <section className="space-y-5">
@@ -19,7 +26,7 @@ export function FieldSchedulePage() {
         <div>
           <h2 className="text-xl font-semibold text-white">Quản lý lịch sân</h2>
           <p className="mt-1 text-sm text-white/80">
-            {selectedFacilityId === ALL_FACILITIES_ID || selectedFacilityId === "all"
+            {isAllFacilitiesSelected
               ? "Đang hiển thị lịch của toàn bộ khu sân trong hệ thống."
               : `Đang hiển thị lịch của ${selectedFacility?.name}.`}
           </p>
@@ -35,27 +42,39 @@ export function FieldSchedulePage() {
             </span>
           </div>
         </div>
-        
+
         <div>
-           <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-white/40 focus:ring-1 focus:ring-white/40"
-           />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-white/40 focus:ring-1 focus:ring-white/40"
+          />
         </div>
       </header>
 
-      {isLoading ? (
-        <div className="text-center py-10 text-white/70">Đang tải dữ liệu...</div>
-      ) : error ? (
+      {shouldShowLoadingState ? (
+        <div className="text-center py-10 text-white/70">
+          Đang tải dữ liệu...
+        </div>
+      ) : null}
+
+      {shouldShowErrorState ? (
         <div className="text-center py-10 text-red-400">{error}</div>
-      ) : (
+      ) : null}
+
+      {shouldShowEmptyState ? (
+        <div className="text-center py-10 text-white/70">
+          Không có lịch sân cho ngày đã chọn.
+        </div>
+      ) : null}
+
+      {shouldShowTable ? (
         <FieldScheduleTable
           rows={fieldScheduleRows}
           onSlotClick={handleClickSlot}
         />
-      )}
+      ) : null}
     </section>
   );
 }

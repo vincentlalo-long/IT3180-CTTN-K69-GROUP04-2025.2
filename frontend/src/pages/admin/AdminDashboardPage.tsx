@@ -16,6 +16,8 @@ export function AdminDashboardPage() {
       selectedFacility?.apiFacilityId,
       selectedFacility?.name,
     );
+  const shouldShowEmptyStats =
+    !isLoading && !errorMessage && statCards.length === 0;
 
   return (
     <section className="space-y-6 lg:space-y-8">
@@ -40,26 +42,32 @@ export function AdminDashboardPage() {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-[146px] animate-pulse rounded-2xl border border-white/15 bg-[#005E2E]/45 p-5"
-              >
-                <div className="h-4 w-24 rounded bg-white/12" />
-                <div className="mt-4 h-8 w-32 rounded bg-white/12" />
-                <div className="mt-6 h-7 w-40 rounded-full bg-white/12" />
-              </div>
-            ))
-          : statCards.map((stat) => (
-              <StatCard
-                key={stat.title}
-                title={stat.title}
-                value={stat.value}
-                icon={stat.icon}
-                trend={stat.trend}
-              />
-            ))}
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-[146px] animate-pulse rounded-2xl border border-white/15 bg-[#005E2E]/45 p-5"
+            >
+              <div className="h-4 w-24 rounded bg-white/12" />
+              <div className="mt-4 h-8 w-32 rounded bg-white/12" />
+              <div className="mt-6 h-7 w-40 rounded-full bg-white/12" />
+            </div>
+          ))
+        ) : shouldShowEmptyStats ? (
+          <div className="sm:col-span-2 xl:col-span-4 rounded-2xl border border-dashed border-white/20 bg-[#005E2E]/30 p-6 text-center text-sm text-white/80">
+            Chưa có dữ liệu thống kê cho khu sân đang chọn.
+          </div>
+        ) : (
+          statCards.map((stat) => (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              trend={stat.trend}
+            />
+          ))
+        )}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[2fr_1fr]">

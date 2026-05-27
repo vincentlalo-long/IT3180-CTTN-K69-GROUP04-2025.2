@@ -7,13 +7,71 @@ interface AdminTopBarProps {
   onMenuToggle?: () => void;
 }
 
+interface FacilityStatusState {
+  displayName: string;
+  statusMessage: string | null;
+  statusToneClass: string;
+  shouldDisableSelect: boolean;
+}
+
+const resolveFacilityStatus = (
+  facilityName: string | null | undefined,
+  hasFacilities: boolean,
+  isLoadingFacilities: boolean,
+  facilityError: string | null,
+): FacilityStatusState => {
+  if (facilityError) {
+    return {
+      displayName: "Không tải được khu sân",
+      statusMessage: facilityError,
+      statusToneClass: "text-rose-100/80",
+      shouldDisableSelect: true,
+    };
+  }
+
+  if (isLoadingFacilities) {
+    return {
+      displayName: "Đang tải khu sân",
+      statusMessage: "Đang tải danh sách khu sân...",
+      statusToneClass: "text-admin-text-secondary",
+      shouldDisableSelect: true,
+    };
+  }
+
+  if (!hasFacilities) {
+    return {
+      displayName: "Chưa có khu sân",
+      statusMessage: "Chưa có khu sân nào trong hệ thống.",
+      statusToneClass: "text-admin-text-secondary",
+      shouldDisableSelect: true,
+    };
+  }
+
+  return {
+    displayName: facilityName ?? "Tất cả khu sân",
+    statusMessage: null,
+    statusToneClass: "text-admin-text-secondary",
+    shouldDisableSelect: false,
+  };
+};
+
 export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
   const {
     facilities,
     selectedVenue: selectedFacility,
     selectedVenueId: selectedFacilityId,
     setSelectedVenueId: setSelectedFacilityId,
+    isLoadingFacilities,
+    facilityError,
   } = useFacilityContext();
+
+  const hasFacilities = facilities.length > 0;
+  const facilityStatus = resolveFacilityStatus(
+    selectedFacility?.name,
+    hasFacilities,
+    isLoadingFacilities,
+    facilityError,
+  );
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/15 bg-gradient-to-r from-[#005E2E] to-[#29721D] px-4 py-4 sm:px-6 lg:px-8">
@@ -45,15 +103,23 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
                 Đang xem
               </p>
               <p className="truncate text-sm font-semibold text-white">
-                {selectedFacility?.name ?? "Tất cả khu sân"}
+                {facilityStatus.displayName}
               </p>
+              {facilityStatus.statusMessage ? (
+                <p
+                  className={`mt-1 text-[11px] ${facilityStatus.statusToneClass}`}
+                >
+                  {facilityStatus.statusMessage}
+                </p>
+              ) : null}
             </div>
             <ChevronDown size={16} className="text-admin-text-secondary" />
             <select
               aria-label="Chọn khu sân"
               value={selectedFacilityId}
               onChange={(event) => setSelectedFacilityId(event.target.value)}
-              className="absolute inset-0 cursor-pointer opacity-0 [&>option]:bg-white [&>option]:text-[#103314]"
+              disabled={facilityStatus.shouldDisableSelect}
+              className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed [&>option]:bg-white [&>option]:text-[#103314]"
             >
               <option value={ALL_FACILITIES_ID}>Tất cả khu sân</option>
               {facilities.map((facility) => (

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import logoFootball from "../../../assets/images/logo-ball.jpg";
 import { getVenues } from "../api/venueApi";
 import type { VenueItem } from "../types/venue.types";
+import { getApiErrorMessage } from "@/shared/utils/apiError";
 
 export function useVenueList() {
   const [venues, setVenues] = useState<VenueItem[]>([]);
@@ -30,7 +31,7 @@ export function useVenueList() {
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to fetch venues");
+          setError(getApiErrorMessage(err, "Không thể tải danh sách sân."));
         }
       } finally {
         if (isMounted) {
