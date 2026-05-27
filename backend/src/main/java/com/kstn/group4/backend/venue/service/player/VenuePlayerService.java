@@ -211,11 +211,18 @@ public class VenuePlayerService {
     }
 
     private VenueResponseDTO toVenueResponseDTO(Venue venue) {
+        BigDecimal minPrice = venue.getPitches().stream()
+                .filter(pitch -> Boolean.TRUE.equals(pitch.getIsActive()))
+                .map(Pitch::getBasePrice)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
         return new VenueResponseDTO(
                 venue.getId(),
                 venue.getName(),
                 venue.getAddress(),
-                venue.getImageUrl()
+                venue.getImageUrl(),
+                minPrice
         );
     }
 }
