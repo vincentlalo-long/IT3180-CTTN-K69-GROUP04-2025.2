@@ -2,7 +2,8 @@ import type { PitchTypeOption } from "../utils/pitchManagement.utils";
 
 export interface PitchManagementSlotPrice {
   slotLabel: string;
-  price: number;
+  weekdayPrice: number;
+  weekendPrice: number;
 }
 
 export interface PitchManagementFormData {

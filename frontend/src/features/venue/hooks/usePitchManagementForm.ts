@@ -19,8 +19,16 @@ import type {
   PitchManagementFormData,
   PitchManagementTabProps,
 } from "../types/pitchManagement.types";
+import type { PitchDetailResponse } from "../types/venue.types";
 
-export function usePitchManagementForm({ facilityName }: PitchManagementTabProps) {
+export function usePitchManagementForm({
+  facilityName,
+  selectedPitch,
+  formMode,
+}: PitchManagementTabProps & {
+  selectedPitch: PitchDetailResponse | null;
+  formMode: "CREATE" | "EDIT" | null;
+}) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -52,25 +60,72 @@ export function usePitchManagementForm({ facilityName }: PitchManagementTabProps
       selectedArea: initialSelectedArea,
       newAreaName: facilityName ?? "",
       newAreaAddress: "",
-      pitchName: "Sân số 1",
+      pitchName: "",
       pitchType: "7vs7",
       description: "",
       imageFile: null,
       slotPrices: timeSlots.map((slotLabel) => ({
         slotLabel,
-        price: defaultSlotPrice,
+        weekdayPrice: defaultSlotPrice,
+        weekendPrice: defaultSlotPrice,
       })),
     },
     mode: "onBlur",
   });
 
   useEffect(() => {
-    reset((currentValues) => ({
-      ...currentValues,
-      selectedArea: initialSelectedArea,
-      newAreaName: facilityName ?? currentValues.newAreaName,
-    }));
-  }, [facilityName, initialSelectedArea, reset]);
+    if (formMode === "CREATE") {
+      reset({
+        selectedArea: initialSelectedArea,
+        newAreaName: facilityName ?? "",
+        newAreaAddress: "",
+        pitchName: "",
+        pitchType: "7vs7",
+        description: "",
+        imageFile: null,
+        slotPrices: timeSlots.map((slotLabel) => ({
+          slotLabel,
+          weekdayPrice: defaultSlotPrice,
+          weekendPrice: defaultSlotPrice,
+        })),
+      });
+      setPreviewUrl(null);
+      setPreviewName("");
+    } else if (formMode === "EDIT" && selectedPitch) {
+      reset({
+        selectedArea: initialSelectedArea,
+        newAreaName: facilityName ?? "",
+        newAreaAddress: "",
+        pitchName: selectedPitch.name,
+        pitchType:
+          selectedPitch.pitchType === "5"
+            ? "5vs5"
+            : selectedPitch.pitchType === "11"
+              ? "11vs11"
+              : "7vs7",
+        description: "Mô tả sân " + selectedPitch.name,
+        imageFile: null,
+        slotPrices: timeSlots.map((slotLabel, index) => {
+          const matchedSlot = selectedPitch.slotPrices?.[index];
+          return {
+            slotLabel,
+            weekdayPrice: matchedSlot
+              ? Number(matchedSlot.weekdayPrice)
+              : defaultSlotPrice,
+            weekendPrice: matchedSlot
+              ? Number(matchedSlot.weekendPrice)
+              : defaultSlotPrice,
+          };
+        }),
+      });
+    } else {
+      reset((currentValues) => ({
+        ...currentValues,
+        selectedArea: initialSelectedArea,
+        newAreaName: facilityName ?? currentValues.newAreaName,
+      }));
+    }
+  }, [facilityName, initialSelectedArea, reset, formMode, selectedPitch]);
 
   useEffect(() => {
     return () => {
@@ -115,6 +170,10 @@ export function usePitchManagementForm({ facilityName }: PitchManagementTabProps
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
+    setValue("imageFile", file, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     updatePreviewFromFile(file);
   };
 
@@ -144,24 +203,16 @@ export function usePitchManagementForm({ facilityName }: PitchManagementTabProps
 
     setApplyPriceError(null);
     timeSlots.forEach((_, index) => {
-      setValue(`slotPrices.${index}.price`, parsedPrice, {
+      setValue(`slotPrices.${index}.weekdayPrice`, parsedPrice, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue(`slotPrices.${index}.weekendPrice`, parsedPrice, {
         shouldDirty: true,
         shouldValidate: true,
       });
     });
   };
-
-  const onSubmit = handleSubmit(async () => {
-    setIsSaving(true);
-    setSavedMessage(null);
-
-    await new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 900);
-    });
-
-    setIsSaving(false);
-    setSavedMessage("Đã lưu thông tin sân thành công.");
-  });
 
   return {
     areaDropdownOptions,
@@ -175,7 +226,9 @@ export function usePitchManagementForm({ facilityName }: PitchManagementTabProps
     isCreatingNewArea,
     isDragActive,
     isSaving,
-    onSubmit,
+    handleSubmit,
+    setIsSaving,
+    setSavedMessage,
     previewName,
     previewUrl,
     savedMessage,

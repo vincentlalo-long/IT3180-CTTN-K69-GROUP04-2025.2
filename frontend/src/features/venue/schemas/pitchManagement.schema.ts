@@ -21,7 +21,8 @@ export const pitchManagementSchema = z
     slotPrices: z.array(
       z.object({
         slotLabel: z.string(),
-        price: z.number().min(0, "Giá không được âm."),
+        weekdayPrice: z.number().min(0, "Giá không được âm."),
+        weekendPrice: z.number().min(0, "Giá không được âm."),
       }),
     ),
   })
@@ -45,11 +46,18 @@ export const pitchManagementSchema = z
     }
 
     value.slotPrices.forEach((slot, index) => {
-      if (!Number.isFinite(slot.price)) {
+      if (!Number.isFinite(slot.weekdayPrice)) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["slotPrices", index, "price"],
-          message: "Giá ca phải là số hợp lệ.",
+          path: ["slotPrices", index, "weekdayPrice"],
+          message: "Giá ngày thường phải là số hợp lệ.",
+        });
+      }
+      if (!Number.isFinite(slot.weekendPrice)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["slotPrices", index, "weekendPrice"],
+          message: "Giá cuối tuần phải là số hợp lệ.",
         });
       }
     });
