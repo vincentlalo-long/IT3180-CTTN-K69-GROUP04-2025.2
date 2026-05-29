@@ -5,3 +5,4 @@ dist/
 build/
 *.class
 bin/
+/backend/uploads/

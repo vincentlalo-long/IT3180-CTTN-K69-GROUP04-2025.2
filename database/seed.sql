@@ -1,72 +1,216 @@
-SET NAMES 'utf8mb4';
+SET
+    NAMES 'utf8mb4';
 
--- KHONG seed bang users theo yeu cau.
--- Can dam bao da co users truoc do:
---   manager_id = 1 (ADMIN)
---   player_id  = 2 (PLAYER)
-
--- Clear du lieu theo thu tu khoa ngoai
+-- =========================
+-- CLEAR DATA
+-- =========================
 DELETE FROM `booking_payments`;
+
 DELETE FROM `pitch_reviews`;
+
 DELETE FROM `bookings`;
+
+DELETE FROM `time_slots`;
+
 DELETE FROM `services`;
+
 DELETE FROM `price_rules`;
+
 DELETE FROM `pitches`;
+
 DELETE FROM `venues`;
 
--- 1) Seed 1 Venue (manager_id map toi user da dang ky)
-INSERT INTO `venues` (
-	`id`, `name`, `address`, `description`, `image_url`, `manager_id`, `open_time`, `close_time`
-) VALUES
-(
-	1,
-	'Cum san Bong Da Yen Hoa',
-	'123 Nguyen Chi Thanh, Cau Giay, Ha Noi',
-	'Cum san phuc vu cho phong trao va giai dau ban chuyen',
-	'https://images.unsplash.com/photo-1574629810360-7efbbe195018',
-	1,
-	'06:30:00',
-	'23:00:00'
-);
+DELETE FROM `users`;
 
--- 2) Seed 3 Pitches
-INSERT INTO `pitches` (`id`, `name`, `pitch_type`, `is_active`, `base_price`, `venue_id`) VALUES
-(1, 'San 5A',  'SAN_5',  b'1', 350000.00, 1),
-(2, 'San 7B',  'SAN_7',  b'1', 500000.00, 1),
-(3, 'San 11C', 'SAN_11', b'1', 900000.00, 1);
+-- reset auto increment
+ALTER TABLE `users` AUTO_INCREMENT = 1;
 
--- 3) Seed Price Rules (moi san 2 rule: ngay thuong/cuoi tuan cho slot 1)
-INSERT INTO `price_rules` (`pitch_id`, `slot_number`, `is_weekend`, `price`) VALUES
-(1, 1, b'0', 350000.00),
-(1, 1, b'1', 420000.00),
-(2, 1, b'0', 500000.00),
-(2, 1, b'1', 580000.00),
-(3, 1, b'0', 900000.00),
-(3, 1, b'1', 1000000.00);
+ALTER TABLE `venues` AUTO_INCREMENT = 1;
 
--- 4) Seed Services
-INSERT INTO `services` (`pitch_id`, `name`, `price`, `unit`) VALUES
-(1, 'Nuoc khoang', 10000.00, 'chai'),
-(2, 'Thue ao bib', 25000.00, 'bo'),
-(3, 'Bong thi dau', 150000.00, 'qua');
+ALTER TABLE `pitches` AUTO_INCREMENT = 1;
 
--- 5) Seed >=10 Bookings de demo Dashboard
--- Luu y: status theo BookingStatus enum hien tai: RESERVED, CANCELLED, PLAYING.
-INSERT INTO `bookings` (
-	`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`
-) VALUES
-(2, 1, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '06:30:00', '08:00:00', 'PLAYING',   'MATCH',    350000.00, DATE_SUB(NOW(), INTERVAL 7 DAY)),
-(2, 2, DATE_SUB(CURDATE(), INTERVAL 6 DAY), '08:00:00', '09:30:00', 'PLAYING',   'TRAINING', 500000.00, DATE_SUB(NOW(), INTERVAL 6 DAY)),
-(2, 3, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '09:30:00', '11:00:00', 'CANCELLED', 'MATCH',    900000.00, DATE_SUB(NOW(), INTERVAL 5 DAY)),
-(2, 1, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '11:00:00', '12:30:00', 'PLAYING',   'FRIENDLY', 350000.00, DATE_SUB(NOW(), INTERVAL 4 DAY)),
-(2, 2, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '12:30:00', '14:00:00', 'CANCELLED', 'MATCH',    500000.00, DATE_SUB(NOW(), INTERVAL 3 DAY)),
-(2, 3, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '14:00:00', '15:30:00', 'PLAYING',   'TOUR',     900000.00, DATE_SUB(NOW(), INTERVAL 2 DAY)),
-(2, 1, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:30:00', '17:00:00', 'PLAYING',   'MATCH',    350000.00, DATE_SUB(NOW(), INTERVAL 1 DAY)),
-(2, 2, CURDATE(),                            '17:00:00', '18:30:00', 'RESERVED',  'MATCH',    500000.00, NOW()),
-(2, 3, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '18:30:00', '20:00:00', 'RESERVED',  'TOUR',     900000.00, NOW()),
-(2, 1, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '20:00:00', '21:30:00', 'CANCELLED', 'FRIENDLY', 350000.00, NOW());
+ALTER TABLE `price_rules` AUTO_INCREMENT = 1;
 
--- 6) Seed reviews (optional cho demo)
-INSERT INTO `pitch_reviews` (`pitch_id`, `player_id`, `rating`, `content`, `created_at`) VALUES
-(1, 2, 5, 'San dep, chat luong tot', NOW()),
-(2, 2, 4, 'Gia hop ly, anh sang on', NOW());
+ALTER TABLE `services` AUTO_INCREMENT = 1;
+
+ALTER TABLE `time_slots` AUTO_INCREMENT = 1;
+
+ALTER TABLE `bookings` AUTO_INCREMENT = 1;
+
+ALTER TABLE `pitch_reviews` AUTO_INCREMENT = 1;
+
+ALTER TABLE `booking_payments` AUTO_INCREMENT = 1;
+
+-- =========================
+-- 1. USERS (3 users: 1 ADMIN, 2 PLAYERS)
+-- =========================
+-- Password: "password123" -> BCrypt encoded
+INSERT INTO
+    `users` (
+    `id`,
+    `username`,
+    `email`,
+    `password`,
+    `role`,
+    `created_at`,
+    `phone_number`,
+    `avatar_url`
+)
+VALUES
+    (
+        1,
+        'owner_hoang',
+        'hoang.owner@football.vn',
+        '$2a$10$Y9O5YLMY2VVLvxPUQXUuZOBV0ZQTvEVjYQhxFQDXvJ5y3YJ1dQrGG',
+        'ADMIN',
+        NOW(),
+        '0909123456',
+        NULL
+    ),
+    (
+        2,
+        'player_minh',
+        'minh.player@football.vn',
+        '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
+        'PLAYER',
+        NOW(),
+        '0912345678',
+        NULL
+    ),
+    (
+        3,
+        'player_tuan',
+        'tuan.player@football.vn',
+        '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG',
+        'PLAYER',
+        NOW(),
+        '0987654321',
+        NULL
+    );
+
+-- =========================
+-- 2. VENUE
+-- =========================
+INSERT INTO
+    `venues` (
+    `id`,
+    `name`,
+    `address`,
+    `description`,
+    `image_url`,
+    `manager_id`,
+    `open_time`,
+    `close_time`
+)
+VALUES
+    (
+        1,
+        'Cum san Bong Da Yen Hoa',
+        '123 Nguyen Chi Thanh, Cau Giay, Ha Noi',
+        'Cum san phuc vu cho phong trao va giai dau ban chuyen',
+        'https://images.unsplash.com/photo-1574629810360-7efbbe195018',
+        1,
+        '06:30:00',
+        '23:00:00'
+    );
+
+-- =========================
+-- 3. PITCHES (5 fields with different types and prices)
+-- =========================
+-- Pitch types: SAN_5 (5-a-side), SAN_7 (7-a-side), SAN_11 (full size)
+INSERT INTO
+    `pitches` (
+    `id`,
+    `name`,
+    `pitch_type`,
+    `is_active`,
+    `base_price`,
+    `venue_id`
+)
+VALUES
+    (1, 'San 1 - 5 Nguoi', 'SAN_5', 1, 150000, 1),
+    (2, 'San 2 - 5 Nguoi', 'SAN_5', 1, 150000, 1),
+    (3, 'San 3 - 7 Nguoi', 'SAN_7', 1, 250000, 1),
+    (4, 'San 4 - 7 Nguoi', 'SAN_7', 1, 250000, 1),
+    (5, 'San 5 - 11 Nguoi', 'SAN_11', 1, 500000, 1);
+
+-- =========================
+-- 4. PRICE RULES
+-- =========================
+INSERT INTO
+    `price_rules` (`pitch_id`, `slot_number`, `is_weekend`, `price`)
+VALUES
+    -- Pitch 1 (5-a-side) - sample slots
+    (1, 1, 0, 150000),
+    (1, 1, 1, 180000),
+    (1, 2, 0, 150000),
+    (1, 2, 1, 180000),
+    -- Pitch 2 (5-a-side) - sample slots
+    (2, 3, 0, 150000),
+    (2, 3, 1, 180000),
+    (2, 4, 0, 150000),
+    (2, 4, 1, 180000),
+    -- Pitch 3 (7-a-side) - sample slots
+    (3, 5, 0, 250000),
+    (3, 5, 1, 300000),
+    (3, 6, 0, 250000),
+    (3, 6, 1, 300000),
+    -- Pitch 4 (7-a-side) - sample slots
+    (4, 7, 0, 250000),
+    (4, 7, 1, 300000),
+    (4, 8, 0, 250000),
+    (4, 8, 1, 300000),
+    -- Pitch 5 (11-a-side) - sample slots
+    (5, 9, 0, 500000),
+    (5, 9, 1, 600000),
+    (5, 10, 0, 500000),
+    (5, 10, 1, 600000);
+
+-- =========================
+-- 5. TIME SLOTS — MASTER DATA (11 khung giờ duy nhất, không gắn pitch)
+-- =========================
+-- Slot 1=06:30-08:00, 2=08:00-09:30, ..., 11=21:30-23:00
+INSERT INTO
+    `time_slots` (`id`, `slot_number`, `start_time`, `end_time`, `is_active`)
+VALUES
+    (1,  1,  '06:30:00', '08:00:00', 1),
+    (2,  2,  '08:00:00', '09:30:00', 1),
+    (3,  3,  '09:30:00', '11:00:00', 1),
+    (4,  4,  '11:00:00', '12:30:00', 1),
+    (5,  5,  '12:30:00', '14:00:00', 1),
+    (6,  6,  '14:00:00', '15:30:00', 1),
+    (7,  7,  '15:30:00', '17:00:00', 1),
+    (8,  8,  '17:00:00', '18:30:00', 1),
+    (9,  9,  '18:30:00', '20:00:00', 1),
+    (10, 10, '20:00:00', '21:30:00', 1),
+    (11, 11, '21:30:00', '23:00:00', 1);
+
+-- =========================
+-- 6. SERVICES
+-- =========================
+INSERT INTO
+    `services` (`pitch_id`, `name`, `price`, `unit`)
+VALUES
+    (1, 'Nuoc khoang', 10000.00, 'chai'),
+    (2, 'Thue ao bib', 25000.00, 'bo'),
+    (3, 'Bong thi dau', 150000.00, 'qua');
+
+-- =========================
+-- 7. BOOKINGS FOR 2026-06-06 TEST DATA
+-- =========================
+-- time_slot_id now maps to global master: 8 = Ca 8 (17:00-18:30)
+-- 1. Booking: San 1, Ca 8 (17:00 - 18:30)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
+VALUES (2, 1, '2026-06-06', '17:00:00', '18:30:00', 'CONFIRMED', 'SINGLE', 150000, NOW(), 8);
+
+-- 2. Booking: San 2, Ca 9 (18:30 - 20:00)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
+VALUES (3, 2, '2026-06-06', '18:30:00', '20:00:00', 'CONFIRMED', 'SINGLE', 180000, NOW(), 9);
+
+-- 3. Slot Bao tri: San 3, Ca 2 (08:00 - 09:30)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
+VALUES (1, 3, '2026-06-06', '08:00:00', '09:30:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 2);
+
+-- 4. Slot Bao tri: San 3, Ca 3 (09:30 - 11:00)
+INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
+VALUES (1, 3, '2026-06-06', '09:30:00', '11:00:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 3);
