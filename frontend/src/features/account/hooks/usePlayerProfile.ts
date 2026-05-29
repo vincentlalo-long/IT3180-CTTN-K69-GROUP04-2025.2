@@ -24,6 +24,7 @@ export interface PlayerProfileInfo {
   phone: string;
   avatarUrl?: string;
   role?: string;
+  teamId?: number | null;
 }
 
 export function usePlayerProfile() {
@@ -35,14 +36,25 @@ export function usePlayerProfile() {
     setLoadingUser(true);
     setUserError(null);
     apiClient
-      .get("/user/profile")
+      .get("/users/me")
       .then((res) => {
-        setUserInfo(res.data);
+        const dto = res.data;
+        setUserInfo({
+          id: dto.id,
+          name: dto.username,
+          email: dto.email,
+          phone: dto.phoneNumber,
+          avatarUrl: dto.avatarUrl,
+          role: dto.role,
+          teamId: dto.teamId,
+        });
         setLoadingUser(false);
       })
       .catch((err) => {
         logApiError("usePlayerProfile.fetchUser", err);
-        setUserError(getApiErrorMessage(err, "Không thể tải thông tin tài khoản."));
+        setUserError(
+          getApiErrorMessage(err, "Không thể tải thông tin tài khoản."),
+        );
         setLoadingUser(false);
       });
   }, []);

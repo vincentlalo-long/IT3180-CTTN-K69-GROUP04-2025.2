@@ -18,7 +18,13 @@ DELETE FROM `price_rules`;
 
 DELETE FROM `pitches`;
 
+DELETE FROM `matches`;
+
 DELETE FROM `venues`;
+
+DELETE FROM `team_members`;
+
+DELETE FROM `teams`;
 
 DELETE FROM `users`;
 
@@ -40,6 +46,10 @@ ALTER TABLE `bookings` AUTO_INCREMENT = 1;
 ALTER TABLE `pitch_reviews` AUTO_INCREMENT = 1;
 
 ALTER TABLE `booking_payments` AUTO_INCREMENT = 1;
+
+ALTER TABLE `teams` AUTO_INCREMENT = 1;
+
+ALTER TABLE `matches` AUTO_INCREMENT = 1;
 
 -- =========================
 -- 1. USERS (3 users: 1 ADMIN, 2 PLAYERS)
@@ -214,3 +224,36 @@ VALUES (1, 3, '2026-06-06', '08:00:00', '09:30:00', 'MAINTENANCE', 'MAINTENANCE'
 -- 4. Slot Bao tri: San 3, Ca 3 (09:30 - 11:00)
 INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
 VALUES (1, 3, '2026-06-06', '09:30:00', '11:00:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 3);
+
+-- =========================
+-- 8. TEAMS & TEAM MEMBERS
+-- =========================
+INSERT INTO `teams` (`id`, `name`, `captain_id`, `description`, `reputation_score`, `status`, `created_at`)
+VALUES
+    (1, 'FC Mixi', 2, 'Doi bong phong trao khu vuc Cau Giay', 100, 'APPROVED', NOW()),
+    (2, 'FC Refund', 3, 'Giao luu vui ve, khong quau', 95, 'PENDING', NOW());
+
+-- player 2 is captain of team 1, player 3 is captain of team 2
+-- add members
+INSERT INTO `team_members` (`team_id`, `user_email`, `status`)
+VALUES
+    (1, 'minh.player@football.vn', 'ACTIVE'),
+    (1, 'member1@football.vn', 'ACTIVE'),
+    (1, 'member2@football.vn', 'INVITED'),
+    (2, 'tuan.player@football.vn', 'ACTIVE'),
+    (2, 'member3@football.vn', 'ACTIVE');
+
+-- update users team_id
+UPDATE `users` SET `team_id` = 1 WHERE `id` = 2;
+UPDATE `users` SET `team_id` = 2 WHERE `id` = 3;
+
+-- =========================
+-- 9. MATCHES
+-- =========================
+INSERT INTO `matches` (`id`, `venue_id`, `host_team_id`, `guest_team_id`, `skill_level`, `match_time`, `status`)
+VALUES
+    -- Open match
+    (1, 1, 1, NULL, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 2 DAY), 'OPEN'),
+    -- Matched match
+    (2, 1, 1, 2, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 3 DAY), 'MATCHED');
+
