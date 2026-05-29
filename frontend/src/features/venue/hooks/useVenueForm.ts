@@ -86,7 +86,12 @@ export function useVenueForm({ mode, existingVenue }: UseVenueFormOptions) {
   const [prevMode, setPrevMode] = useState<"CREATE" | "EDIT" | null>(mode);
   const [prevVenue, setPrevVenue] = useState<UseVenueFormOptions["existingVenue"]>(existingVenue);
 
-  if (mode !== prevMode || existingVenue !== prevVenue) {
+  const hasVenueChanged =
+    existingVenue?.name !== prevVenue?.name ||
+    existingVenue?.address !== prevVenue?.address ||
+    existingVenue?.imageUrl !== prevVenue?.imageUrl;
+
+  if (mode !== prevMode || hasVenueChanged) {
     setPrevMode(mode);
     setPrevVenue(existingVenue);
     resetVenueForm(mode, existingVenue);

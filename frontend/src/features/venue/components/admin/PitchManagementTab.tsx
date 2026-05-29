@@ -1,5 +1,5 @@
 import { UploadCloud, Plus, Pencil, Trash2, Save, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useVenueContext } from "../../hooks/useVenueContext";
 import { useVenueForm } from "../../hooks/useVenueForm";
@@ -45,9 +45,11 @@ export function PitchManagementTab() {
 
   const currentVenue = facilities.find((f) => f.id === selectedVenueId) ?? null;
 
-  const existingVenueForForm = currentVenue
-    ? { name: currentVenue.name, address: currentVenue.address, imageUrl: null }
-    : null;
+  const existingVenueForForm = useMemo(() => {
+    return currentVenue
+      ? { name: currentVenue.name, address: currentVenue.address, imageUrl: null }
+      : null;
+  }, [currentVenue]);
 
   const venueForm = useVenueForm({
     mode: venueFormMode,

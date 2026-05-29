@@ -13,10 +13,17 @@ export function AdminLayout() {
 
   return (
     <VenueProvider>
-      <div className="min-h-screen bg-gradient-to-br from-[#005E2E] to-[#29721D] text-admin-text-primary">
-        <aside className="fixed inset-y-0 left-0 hidden w-72 lg:block">
-          <AdminSideBar className="h-screen" />
+      <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#005E2E] to-[#29721D] text-admin-text-primary">
+        <aside className="hidden lg:block w-72 h-full flex-shrink-0">
+          <AdminSideBar className="h-full" />
         </aside>
+
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+          <AdminTopBar onMenuToggle={() => setIsMobileSidebarOpen(true)} />
+          <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+            <Outlet />
+          </main>
+        </div>
 
         {isMobileSidebarOpen ? (
           <div
@@ -47,13 +54,6 @@ export function AdminLayout() {
             </div>
           </div>
         ) : null}
-
-        <div className="lg:ml-72">
-          <AdminTopBar onMenuToggle={() => setIsMobileSidebarOpen(true)} />
-          <main className="px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-            <Outlet />
-          </main>
-        </div>
       </div>
     </VenueProvider>
   );

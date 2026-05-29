@@ -74,7 +74,7 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
   );
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/15 bg-gradient-to-r from-[#005E2E] to-[#29721D] px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-20 flex-shrink-0 border-b border-white/15 bg-gradient-to-r from-[#005E2E] to-[#29721D] px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
