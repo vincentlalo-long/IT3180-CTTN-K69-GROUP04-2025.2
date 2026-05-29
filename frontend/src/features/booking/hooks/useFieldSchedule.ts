@@ -1,15 +1,14 @@
-import {
-  ALL_FACILITIES_ID,
-  ADMIN_TIME_SLOTS,
-  fields,
-  facilities,
-  mockBookings,
-  TIME_SLOT_PRICING,
-  type AdminTimeSlot,
-} from "../../../data/mockAdminData";
+import { useState, useEffect } from "react";
 import { useVenueContext as useFacilityContext } from "../../venue/hooks/useVenueContext";
 import type { FieldScheduleRow, ScheduleSlot } from "../types/booking.types";
+import { getAdminFieldSchedules } from "../api/booking.api";
 import { formatMoney, getRangeLabel } from "../utils/booking.utils";
+import {
+  ADMIN_TIME_SLOTS,
+  ALL_FACILITIES_ID,
+  type AdminTimeSlot,
+} from "../constants/booking.constants";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 export function useFieldSchedule() {
   const {
@@ -17,60 +16,78 @@ export function useFieldSchedule() {
     selectedVenueId: selectedFacilityId,
   } = useFacilityContext();
 
-  const visibleFields =
-    selectedFacilityId === ALL_FACILITIES_ID
-      ? fields
-      : fields.filter((field) => field.facilityId === selectedFacilityId);
-
-  const visibleBookings =
-    selectedFacilityId === ALL_FACILITIES_ID
-      ? mockBookings
-      : mockBookings.filter(
-          (booking) => booking.facilityId === selectedFacilityId,
-        );
-
-  const bookingLookup = new Map<string, (typeof visibleBookings)[number]>();
-  visibleBookings.forEach((booking) => {
-    bookingLookup.set(`${booking.fieldId}-${booking.startTime}`, booking);
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    return new Date().toISOString().split("T")[0];
   });
+  
+  const [fieldScheduleRows, setFieldScheduleRows] = useState<FieldScheduleRow[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fieldScheduleRows: FieldScheduleRow[] = visibleFields.map((field) => {
-    const facilityName =
-      facilities.find((facility) => facility.id === field.facilityId)?.name ??
-      "Khu sân";
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      setIsLoading(true);
+      setError(null);
+      setFieldScheduleRows([]);
+      try {
+        const isAllFacilitiesSelected =
+          selectedFacilityId === ALL_FACILITIES_ID ||
+          selectedFacilityId === "ALL";
+        const venueIdConstraint = isAllFacilitiesSelected
+          ? null
+          : selectedFacilityId;
+            
+        const data = await getAdminFieldSchedules(venueIdConstraint, selectedDate);
+        
+        const rows: FieldScheduleRow[] = data.map((pitch) => {
+          const slotsRecord: Record<string, ScheduleSlot> = {};
+          
+          ADMIN_TIME_SLOTS.forEach((timeSlot) => {
+            slotsRecord[timeSlot] = { status: "AVAILABLE" };
+          });
 
-    const slots = ADMIN_TIME_SLOTS.reduce(
-      (accumulator, timeSlot) => {
-        const booking = bookingLookup.get(`${field.id}-${timeSlot}`);
+          pitch.slots.forEach((slotData) => {
+            const timeKey = slotData.startTime.slice(0, 5) as AdminTimeSlot; 
+            if (slotsRecord[timeKey]) {
+              slotsRecord[timeKey] = {
+                status: slotData.status,
+                customerName: slotData.customerName ?? undefined,
+                phone: slotData.customerPhone ?? undefined,
+                deposit: slotData.depositAmount != null 
+                  ? formatMoney(slotData.depositAmount) 
+                  : undefined,
+                timeSlotId: slotData.timeSlotId,
+                price: slotData.price,
+              };
+            }
+          });
 
-        if (!booking) {
-          accumulator[timeSlot] = { status: "available" };
-          return accumulator;
-        }
+          return {
+            fieldId: pitch.pitchId.toString(),
+            facilityId: selectedFacilityId?.toString() ?? "",
+            facilityName: pitch.venueName,
+            fieldName: pitch.pitchName,
+            fieldType: pitch.pitchName.includes("5") ? "Sân 5" : pitch.pitchName.includes("7") ? "Sân 7" : "Sân 11",
+            slots: slotsRecord,
+          };
+        });
 
-        accumulator[timeSlot] = {
-          status: booking.status,
-          customerName: booking.customerName,
-          phone: booking.customerPhone,
-          deposit: booking.depositAmount
-            ? formatMoney(booking.depositAmount)
-            : formatMoney(TIME_SLOT_PRICING[timeSlot].price),
-        };
-
-        return accumulator;
-      },
-      {} as Record<AdminTimeSlot, ScheduleSlot>,
-    );
-
-    return {
-      fieldId: field.id,
-      facilityId: field.facilityId,
-      facilityName,
-      fieldName: field.name,
-      fieldType: field.type,
-      slots,
+        setFieldScheduleRows(rows);
+      } catch (err: unknown) {
+        const message = getApiErrorMessage(err, "Khong the lay lich san.");
+        logApiError("useFieldSchedule.fetchSchedules", err, {
+          selectedFacilityId,
+          selectedDate,
+        });
+        setError(message);
+        setFieldScheduleRows([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  });
+
+    fetchSchedules();
+  }, [selectedFacilityId, selectedDate]);
 
   const handleClickSlot = (
     facilityName: string,
@@ -78,18 +95,16 @@ export function useFieldSchedule() {
     timeSlot: AdminTimeSlot,
     slot: ScheduleSlot,
   ) => {
-    if (slot.status !== "booked" && slot.status !== "in-progress") {
+    if (slot.status !== "BOOKED") {
       return;
     }
-
-    const statusLabel = slot.status === "booked" ? "Đã cọc" : "Đang đá";
 
     window.alert(
       [
         `Khu sân: ${facilityName}`,
         `Sân: ${fieldName}`,
         `Khung giờ: ${getRangeLabel(timeSlot)}`,
-        `Trạng thái: ${statusLabel}`,
+        `Trạng thái: Đã cọc`,
         `Khách: ${slot.customerName ?? "N/A"}`,
         `SĐT: ${slot.phone ?? "N/A"}`,
         `Số tiền đã cọc: ${slot.deposit ?? "0đ"}`,
@@ -102,5 +117,9 @@ export function useFieldSchedule() {
     handleClickSlot,
     selectedFacility,
     selectedFacilityId,
+    selectedDate,
+    setSelectedDate,
+    isLoading,
+    error
   };
 }

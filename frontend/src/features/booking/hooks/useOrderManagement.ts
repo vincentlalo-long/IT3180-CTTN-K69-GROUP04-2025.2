@@ -1,48 +1,78 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import {
-  ALL_FACILITIES_ID,
-  mockOrders,
-  type Order,
-} from "../../../data/mockAdminData";
 import { useVenueContext as useFacilityContext } from "../../venue/hooks/useVenueContext";
+import {
+  fetchOrdersByVenue,
+  updateOrderStatusApi,
+  type AdminBookingSummaryResponse,
+} from "../api/bookingApi";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 export function useOrderManagement() {
   const {
     selectedVenue: selectedFacility,
     selectedVenueId: selectedFacilityId,
   } = useFacilityContext();
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
 
-  const visibleOrders = useMemo(
-    () =>
-      selectedFacilityId === ALL_FACILITIES_ID
-        ? orders
-        : orders.filter((order) => order.facilityId === selectedFacilityId),
-    [orders, selectedFacilityId],
-  );
+  const [orders, setOrders] = useState<AdminBookingSummaryResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleConfirmDeposit = (orderId: string) => {
-    setOrders((currentOrders) =>
-      currentOrders.map((order) =>
-        order.id === orderId ? { ...order, status: "Đã cọc" } : order,
-      ),
-    );
+  const loadOrders = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await fetchOrdersByVenue(selectedFacilityId);
+      setOrders(data);
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Khong the tai danh sach don dat san.",
+      );
+      setErrorMessage(message);
+      setOrders([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedFacilityId]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const handleConfirmDeposit = async (orderId: number) => {
+    setErrorMessage(null);
+    try {
+      await updateOrderStatusApi(orderId, "CONFIRMED", "Xác nhận cọc");
+      await loadOrders();
+    } catch (error) {
+      logApiError("useOrderManagement.handleConfirmDeposit", error, {
+        orderId,
+      });
+      setErrorMessage(getApiErrorMessage(error, "Khong the xac nhan coc."));
+    }
   };
 
-  const handleCancelOrder = (orderId: string) => {
-    setOrders((currentOrders) =>
-      currentOrders.map((order) =>
-        order.id === orderId ? { ...order, status: "Đã hủy" } : order,
-      ),
-    );
+  const handleCancelOrder = async (orderId: number) => {
+    setErrorMessage(null);
+    try {
+      await updateOrderStatusApi(orderId, "CANCELLED", "Hủy đơn");
+      await loadOrders();
+    } catch (error) {
+      logApiError("useOrderManagement.handleCancelOrder", error, {
+        orderId,
+      });
+      setErrorMessage(getApiErrorMessage(error, "Khong the huy don dat san."));
+    }
   };
 
   return {
-    visibleOrders,
+    visibleOrders: orders,
     handleConfirmDeposit,
     handleCancelOrder,
     selectedFacilityId,
     selectedFacility,
+    isLoading,
+    errorMessage,
   };
 }

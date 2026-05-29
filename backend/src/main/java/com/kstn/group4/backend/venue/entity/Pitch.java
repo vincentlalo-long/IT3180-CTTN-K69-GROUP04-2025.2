@@ -52,5 +52,4 @@ public class Pitch {
     @OneToMany(mappedBy = "pitch", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PriceRule> priceRules = new ArrayList<>();
 
-
 }

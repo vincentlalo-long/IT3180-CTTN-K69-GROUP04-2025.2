@@ -1,4 +1,4 @@
-import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
+import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import {
   OrderManagementTable,
   useOrderManagement,
@@ -11,7 +11,15 @@ export function OrdersPage() {
     handleCancelOrder,
     selectedFacilityId,
     selectedFacility,
+    isLoading,
+    errorMessage,
   } = useOrderManagement();
+
+  const isAllFacilitiesSelected = selectedFacilityId === ALL_FACILITIES_ID;
+  const shouldShowLoadingState = isLoading && visibleOrders.length === 0;
+  const shouldShowEmptyState =
+    !isLoading && !errorMessage && visibleOrders.length === 0;
+  const shouldShowTable = visibleOrders.length > 0;
 
   return (
     <section className="space-y-5">
@@ -20,22 +28,36 @@ export function OrdersPage() {
           Quản lý đơn đặt sân
         </h2>
         <p className="mt-1 text-sm text-white/80">
-          {selectedFacilityId === ALL_FACILITIES_ID
+          {isAllFacilitiesSelected
             ? "Đang hiển thị đơn đặt sân của toàn bộ hệ thống."
             : `Đang hiển thị đơn đặt sân tại ${selectedFacility?.name}.`}
         </p>
       </header>
 
-      <div className="rounded-lg border border-white/15 bg-[#005E2E]/34 p-4 shadow-md sm:p-5">
-        <div className="overflow-x-auto rounded-lg border border-white/15 bg-[#005E2E]/32 p-2">
-          <OrderManagementTable
-            orders={visibleOrders}
-            onConfirmDeposit={handleConfirmDeposit}
-            onCancelOrder={handleCancelOrder}
-          />
+      {errorMessage ? (
+        <div className="rounded-2xl border border-rose-200/40 bg-rose-500/15 px-5 py-3 text-sm text-rose-50">
+          {errorMessage}
         </div>
+      ) : null}
 
-        {visibleOrders.length === 0 ? (
+      <div className="rounded-lg border border-white/15 bg-[#005E2E]/34 p-4 shadow-md sm:p-5">
+        {shouldShowLoadingState ? (
+          <div className="px-4 py-8 text-center text-sm text-white/75">
+            Đang tải danh sách đơn đặt sân...
+          </div>
+        ) : null}
+
+        {shouldShowTable ? (
+          <div className="overflow-x-auto rounded-lg border border-white/15 bg-[#005E2E]/32 p-2">
+            <OrderManagementTable
+              orders={visibleOrders}
+              onConfirmDeposit={handleConfirmDeposit}
+              onCancelOrder={handleCancelOrder}
+            />
+          </div>
+        ) : null}
+
+        {shouldShowEmptyState ? (
           <div className="px-4 py-8 text-center text-sm text-white/75">
             Chưa có đơn đặt sân trong khu vực đang chọn.
           </div>

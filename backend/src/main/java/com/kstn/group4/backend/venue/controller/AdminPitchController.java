@@ -2,7 +2,7 @@ package com.kstn.group4.backend.venue.controller;
 
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import com.kstn.group4.backend.venue.dto.admin.PitchDetailResponse;
-import com.kstn.group4.backend.venue.entity.Pitch;
+import com.kstn.group4.backend.venue.dto.admin.PitchUpsertRequest;
 import com.kstn.group4.backend.venue.service.admin.PitchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN')")
 public class AdminPitchController {
 
     private final PitchService pitchService;
@@ -49,7 +49,7 @@ public class AdminPitchController {
     public ResponseEntity<PitchDetailResponse> createPitch(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Integer venueId,
-            @RequestBody Pitch request
+            @RequestBody PitchUpsertRequest request
     ) {
         PitchDetailResponse response = pitchService.addPitchToVenueForManager(venueId, request, principal.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -59,7 +59,7 @@ public class AdminPitchController {
     public ResponseEntity<PitchDetailResponse> updatePitch(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Integer pitchId,
-            @RequestBody Pitch request
+            @RequestBody PitchUpsertRequest request
     ) {
         return ResponseEntity.ok(pitchService.updatePitchForManager(pitchId, request, principal.getId()));
     }

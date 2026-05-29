@@ -1,8 +1,6 @@
 package com.kstn.group4.backend.booking.dto.player;
 
 import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
@@ -16,10 +14,8 @@ public class CreateBookingRequest {
         @FutureOrPresent(message = "bookingDate phải từ hôm nay trở đi")
         private LocalDate bookingDate;
 
-        @NotNull(message = "slotNumber không được để trống")
-        @Min(value = 1, message = "slotNumber phải từ 1 đến 11")
-        @Max(value = 11, message = "slotNumber phải từ 1 đến 11")
-        private Integer slotNumber;
+        @NotNull(message = "timeSlotId không được để trống")
+        private Integer timeSlotId;
 
         public Integer getPitchId() {
                 return pitchId;
@@ -37,11 +33,11 @@ public class CreateBookingRequest {
                 this.bookingDate = bookingDate;
         }
 
-        public Integer getSlotNumber() {
-                return slotNumber;
+        public Integer getTimeSlotId() {
+                return timeSlotId;
         }
 
-        public void setSlotNumber(Integer slotNumber) {
-                this.slotNumber = slotNumber;
+        public void setTimeSlotId(Integer timeSlotId) {
+                this.timeSlotId = timeSlotId;
         }
 }

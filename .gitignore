@@ -3,3 +3,6 @@ node_modules/
 dist/
 .env
 build/
+*.class
+bin/
+/backend/uploads/

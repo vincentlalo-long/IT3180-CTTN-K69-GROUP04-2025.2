@@ -2,20 +2,7 @@ export const pitchTypeOptions = ["5vs5", "7vs7", "11vs11"] as const;
 
 export type PitchTypeOption = (typeof pitchTypeOptions)[number];
 
-export const createAreaOptionValue = "__create_new_area__";
 export const defaultSlotPrice = 250000;
-
-export interface AreaOption {
-  value: string;
-  label: string;
-}
-
-const baseAreaOptions: AreaOption[] = [
-  { value: "zone-north", label: "Khu sân phía Bắc" },
-  { value: "zone-central", label: "Khu sân trung tâm" },
-  { value: "zone-south", label: "Khu sân phía Nam" },
-  { value: createAreaOptionValue, label: "Tạo khu sân mới..." },
-];
 
 export function formatMinutes(minutes: number): string {
   const hour = Math.floor(minutes / 60)
@@ -46,18 +33,53 @@ export function generateTimeSlots(): string[] {
 
 export const timeSlots = generateTimeSlots();
 
-export function buildAreaDropdownOptions(facilityName?: string): AreaOption[] {
-  if (!facilityName?.trim()) {
-    return baseAreaOptions;
+// ─── PitchType mapping: Frontend ↔ Backend ──────────────────────────
+
+/**
+ * Map frontend label → backend enum value cho khi gửi API
+ * "5vs5" → "SAN_5", "7vs7" → "SAN_7", "11vs11" → "SAN_11"
+ */
+export function pitchTypeToBackend(frontendType: PitchTypeOption): string {
+  switch (frontendType) {
+    case "5vs5":
+      return "SAN_5";
+    case "7vs7":
+      return "SAN_7";
+    case "11vs11":
+      return "SAN_11";
+    default:
+      return "SAN_7";
   }
+}
 
-  const hasFacilityInOptions = baseAreaOptions.some(
-    (option) => option.label.toLowerCase() === facilityName.toLowerCase(),
-  );
-
-  if (hasFacilityInOptions) {
-    return baseAreaOptions;
+/**
+ * Map backend enum value → frontend label cho khi nhận API response
+ * "SAN_5" → "5vs5", "SAN_7" → "7vs7", "SAN_11" → "11vs11"
+ */
+export function pitchTypeFromBackend(backendType: string | null | undefined): PitchTypeOption {
+  switch (backendType) {
+    case "SAN_5":
+      return "5vs5";
+    case "SAN_11":
+      return "11vs11";
+    case "SAN_7":
+    default:
+      return "7vs7";
   }
+}
 
-  return [{ value: "zone-current", label: facilityName }, ...baseAreaOptions];
+/**
+ * Map backend pitchType → label hiển thị trên UI
+ * "SAN_5" → "5 vs 5"
+ */
+export function pitchTypeDisplayLabel(backendType: string | null | undefined): string {
+  switch (backendType) {
+    case "SAN_5":
+      return "5 vs 5";
+    case "SAN_11":
+      return "11 vs 11";
+    case "SAN_7":
+    default:
+      return "7 vs 7";
+  }
 }

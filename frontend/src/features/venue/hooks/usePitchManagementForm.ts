@@ -1,138 +1,80 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-  type DragEvent,
-} from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 import {
-  buildAreaDropdownOptions,
-  createAreaOptionValue,
   defaultSlotPrice,
+  pitchTypeFromBackend,
   timeSlots,
 } from "../utils/pitchManagement.utils";
-import { pitchManagementSchema } from "../schemas/pitchManagement.schema";
-import type {
-  PitchManagementFormData,
-  PitchManagementTabProps,
-} from "../types/pitchManagement.types";
+import { pitchFormSchema } from "../schemas/pitchManagement.schema";
+import type { PitchManagementFormData } from "../types/pitchManagement.types";
+import type { PitchDetailResponse } from "../types/venue.types";
 
-export function usePitchManagementForm({ facilityName }: PitchManagementTabProps) {
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewName, setPreviewName] = useState<string>("");
+interface UsePitchFormOptions {
+  selectedPitch: PitchDetailResponse | null;
+  formMode: "CREATE" | "EDIT" | null;
+}
+
+export function usePitchManagementForm({
+  selectedPitch,
+  formMode,
+}: UsePitchFormOptions) {
   const [defaultPriceInput, setDefaultPriceInput] = useState<string>(
     defaultSlotPrice.toString(),
   );
   const [applyPriceError, setApplyPriceError] = useState<string | null>(null);
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
-
-  const areaDropdownOptions = useMemo(
-    () => buildAreaDropdownOptions(facilityName),
-    [facilityName],
-  );
-
-  const initialSelectedArea =
-    areaDropdownOptions[0]?.value ?? createAreaOptionValue;
 
   const {
     register,
     handleSubmit,
     reset,
     setValue,
-    control,
     formState: { errors },
   } = useForm<PitchManagementFormData>({
-    resolver: zodResolver(pitchManagementSchema),
+    resolver: zodResolver(pitchFormSchema),
     defaultValues: {
-      selectedArea: initialSelectedArea,
-      newAreaName: facilityName ?? "",
-      newAreaAddress: "",
-      pitchName: "Sân số 1",
+      pitchName: "",
       pitchType: "7vs7",
-      description: "",
-      imageFile: null,
       slotPrices: timeSlots.map((slotLabel) => ({
         slotLabel,
-        price: defaultSlotPrice,
+        weekdayPrice: defaultSlotPrice,
+        weekendPrice: defaultSlotPrice,
       })),
     },
     mode: "onBlur",
   });
 
   useEffect(() => {
-    reset((currentValues) => ({
-      ...currentValues,
-      selectedArea: initialSelectedArea,
-      newAreaName: facilityName ?? currentValues.newAreaName,
-    }));
-  }, [facilityName, initialSelectedArea, reset]);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
-  const selectedArea = useWatch({
-    control,
-    name: "selectedArea",
-  });
-
-  const slotPrices = useWatch({
-    control,
-    name: "slotPrices",
-  });
-
-  const isCreatingNewArea = selectedArea === createAreaOptionValue;
-
-  const imageFileField = register("imageFile");
-
-  const updatePreviewFromFile = (file: File | null) => {
-    if (!file) {
-      setPreviewName("");
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setPreviewUrl(null);
-      return;
+    if (formMode === "CREATE") {
+      reset({
+        pitchName: "",
+        pitchType: "7vs7",
+        slotPrices: timeSlots.map((slotLabel) => ({
+          slotLabel,
+          weekdayPrice: defaultSlotPrice,
+          weekendPrice: defaultSlotPrice,
+        })),
+      });
+    } else if (formMode === "EDIT" && selectedPitch) {
+      reset({
+        pitchName: selectedPitch.name,
+        pitchType: pitchTypeFromBackend(selectedPitch.pitchType),
+        slotPrices: timeSlots.map((slotLabel, index) => {
+          const matchedSlot = selectedPitch.slotPrices?.[index];
+          return {
+            slotLabel,
+            weekdayPrice: matchedSlot
+              ? Number(matchedSlot.weekdayPrice)
+              : defaultSlotPrice,
+            weekendPrice: matchedSlot
+              ? Number(matchedSlot.weekendPrice)
+              : defaultSlotPrice,
+          };
+        }),
+      });
     }
-
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-
-    const nextPreviewUrl = URL.createObjectURL(file);
-    setPreviewUrl(nextPreviewUrl);
-    setPreviewName(file.name);
-  };
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-    updatePreviewFromFile(file);
-  };
-
-  const handleImageDrop = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setIsDragActive(false);
-    const file = event.dataTransfer.files[0] ?? null;
-
-    if (!file) {
-      return;
-    }
-
-    setValue("imageFile", file, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    updatePreviewFromFile(file);
-  };
+  }, [formMode, selectedPitch, reset]);
 
   const handleApplyDefaultPrice = () => {
     const parsedPrice = Number(defaultPriceInput);
@@ -144,46 +86,25 @@ export function usePitchManagementForm({ facilityName }: PitchManagementTabProps
 
     setApplyPriceError(null);
     timeSlots.forEach((_, index) => {
-      setValue(`slotPrices.${index}.price`, parsedPrice, {
+      setValue(`slotPrices.${index}.weekdayPrice`, parsedPrice, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue(`slotPrices.${index}.weekendPrice`, parsedPrice, {
         shouldDirty: true,
         shouldValidate: true,
       });
     });
   };
 
-  const onSubmit = handleSubmit(async () => {
-    setIsSaving(true);
-    setSavedMessage(null);
-
-    await new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 900);
-    });
-
-    setIsSaving(false);
-    setSavedMessage("Đã lưu thông tin sân thành công.");
-  });
-
   return {
-    areaDropdownOptions,
     applyPriceError,
     defaultPriceInput,
     errors,
     handleApplyDefaultPrice,
-    handleImageChange,
-    handleImageDrop,
-    imageFileField,
-    isCreatingNewArea,
-    isDragActive,
-    isSaving,
-    onSubmit,
-    previewName,
-    previewUrl,
-    savedMessage,
-    selectedArea,
-    setDefaultPriceInput,
-    setIsDragActive,
-    slotPrices,
-    timeSlots,
+    handleSubmit,
     register,
+    setDefaultPriceInput,
+    timeSlots,
   };
 }

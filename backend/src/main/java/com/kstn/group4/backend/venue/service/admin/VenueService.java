@@ -4,6 +4,7 @@ import com.kstn.group4.backend.booking.repository.BookingRepository;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
 import com.kstn.group4.backend.venue.dto.admin.AdminVenueResponseDTO;
 import com.kstn.group4.backend.venue.dto.admin.VenueDetailResponse;
+import com.kstn.group4.backend.venue.dto.admin.VenueUpsertRequest;
 import com.kstn.group4.backend.venue.entity.Pitch;
 import com.kstn.group4.backend.venue.entity.Venue;
 import com.kstn.group4.backend.venue.repository.PitchRepository;
@@ -76,41 +77,44 @@ public class VenueService {
 
     @Transactional(readOnly = true)
     public Page<AdminVenueResponseDTO> getVenuesByManager(Integer managerId, Pageable pageable) {
-        return venueRepository.findByManagerId(managerId, pageable)
-                .map(venue -> toAdminVenueResponse(venue, managerId));
+        return venueRepository.findAll(pageable)
+                .map(this::toAdminVenueResponseWithoutManager);
     }
 
     @Transactional(readOnly = true)
     public AdminVenueResponseDTO getVenueByManager(Integer venueId, Integer managerId) {
-        Venue venue = venueRepository.findByIdAndManagerId(venueId, managerId)
+        Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
-        return toAdminVenueResponse(venue, managerId);
+        return toAdminVenueResponseWithoutManager(venue);
     }
 
-    public AdminVenueResponseDTO createVenueByManager(Venue request, Integer managerId) {
+    public AdminVenueResponseDTO createVenueByManager(VenueUpsertRequest request, String imageUrl, Integer managerId) {
         Venue venue = new Venue();
-        venue.setName(request.getName());
-        venue.setAddress(request.getAddress());
-        venue.setDescription(request.getDescription());
-        venue.setImageUrl(request.getImageUrl());
+        venue.setName(request.name());
+        venue.setAddress(request.address());
+        venue.setDescription(request.description());
+        venue.setImageUrl(imageUrl);
         venue.setManagerId(managerId);
-        venue.setOpenTime(request.getOpenTime() != null ? request.getOpenTime() : LocalTime.of(6, 30));
-        venue.setCloseTime(request.getCloseTime() != null ? request.getCloseTime() : LocalTime.of(23, 0));
+        venue.setOpenTime(LocalTime.of(6, 30));
+        venue.setCloseTime(LocalTime.of(23, 0));
 
         Venue saved = venueRepository.save(venue);
         return toAdminVenueResponse(saved, managerId);
     }
 
-    public AdminVenueResponseDTO updateVenueByManager(Integer venueId, Venue request, Integer managerId) {
-        Venue venue = venueRepository.findByIdAndManagerId(venueId, managerId)
+    public AdminVenueResponseDTO updateVenueByManager(Integer venueId, VenueUpsertRequest request, String imageUrl, Integer managerId) {
+        Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
 
-        venue.setName(request.getName());
-        venue.setAddress(request.getAddress());
-        venue.setDescription(request.getDescription());
-        venue.setImageUrl(request.getImageUrl());
-        venue.setOpenTime(request.getOpenTime() != null ? request.getOpenTime() : venue.getOpenTime());
-        venue.setCloseTime(request.getCloseTime() != null ? request.getCloseTime() : venue.getCloseTime());
+        venue.setName(request.name());
+        venue.setAddress(request.address());
+        venue.setDescription(request.description());
+
+        // Chỉ cập nhật imageUrl khi có giá trị mới (admin gửi file mới)
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            venue.setImageUrl(imageUrl);
+        }
+
         venue.setManagerId(managerId);
 
         Venue updated = venueRepository.save(venue);
@@ -118,9 +122,22 @@ public class VenueService {
     }
 
     public void deleteVenueByManager(Integer venueId, Integer managerId) {
-        Venue venue = venueRepository.findByIdAndManagerId(venueId, managerId)
+        Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
         venueRepository.delete(venue);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AdminVenueResponseDTO> getAllVenuesForAdmin(Pageable pageable) {
+        return venueRepository.findAll(pageable)
+                .map(this::toAdminVenueResponseWithoutManager);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminVenueResponseDTO getVenueByIdForAdmin(Integer venueId) {
+        Venue venue = venueRepository.findById(venueId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
+        return toAdminVenueResponseWithoutManager(venue);
     }
 
     private VenueDetailResponse toVenueDetailResponse(Venue venue) {
@@ -145,6 +162,20 @@ public class VenueService {
     private AdminVenueResponseDTO toAdminVenueResponse(Venue venue, Integer managerId) {
         long totalPitches = pitchRepository.countByVenueId(venue.getId());
         BigDecimal revenue = bookingRepository.sumRevenueByVenueIdAndManagerId(venue.getId(), managerId);
+
+        return new AdminVenueResponseDTO(
+                venue.getId(),
+                venue.getName(),
+                venue.getAddress(),
+                venue.getImageUrl(),
+                revenue,
+                totalPitches
+        );
+    }
+
+    private AdminVenueResponseDTO toAdminVenueResponseWithoutManager(Venue venue) {
+        long totalPitches = pitchRepository.countByVenueId(venue.getId());
+        BigDecimal revenue = BigDecimal.ZERO;
 
         return new AdminVenueResponseDTO(
                 venue.getId(),

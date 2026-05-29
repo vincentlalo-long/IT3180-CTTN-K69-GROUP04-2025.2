@@ -15,6 +15,8 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
 
     List<Pitch> findByVenueId(Integer venueId);
 
+    Page<Pitch> findByVenueId(Integer venueId, Pageable pageable);
+
         Page<Pitch> findByVenueIdAndVenueManagerId(Integer venueId, Integer managerId, Pageable pageable);
 
         Optional<Pitch> findByIdAndVenueManagerId(Integer id, Integer managerId);
@@ -42,4 +44,24 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
             "LEFT JOIN FETCH p.priceRules " +
             "WHERE p.id = :id")
     Optional<Pitch> findByIdWithDetails(@Param("id") Integer id);
+
+    @Query(value = "SELECT p.id as pitchId, p.name as pitchName, v.name as venueName, " +
+            "ts.id as timeSlotId, ts.slot_number as slotNumber, ts.start_time as startTime, ts.end_time as endTime, ts.is_active as isActive, " +
+            "b.status as bookingStatus, u.username as customerName, u.phone_number as customerPhone, " +
+            "bp.paid_amount as depositAmount, " +
+            "pr.price as price " +
+            "FROM pitches p " +
+            "JOIN venues v ON p.venue_id = v.id " +
+            "CROSS JOIN time_slots ts " +
+            "LEFT JOIN price_rules pr ON pr.pitch_id = p.id AND pr.slot_number = ts.slot_number AND pr.is_weekend = :isWeekend " +
+            "LEFT JOIN bookings b ON b.pitch_id = p.id AND b.time_slot_id = ts.id AND b.booking_date = :date " +
+            "    AND b.status <> 'CANCELLED' " +
+            "LEFT JOIN users u ON b.player_id = u.id " +
+            "LEFT JOIN booking_payments bp ON bp.booking_id = b.id " +
+            "WHERE (:venueId IS NULL OR p.venue_id = :venueId) " +
+            "ORDER BY p.id ASC, ts.slot_number ASC", nativeQuery = true)
+    List<PitchScheduleProjection> findPitchSchedulesNatively(
+            @Param("venueId") Integer venueId,
+            @Param("date") java.time.LocalDate date,
+            @Param("isWeekend") boolean isWeekend);
 }

@@ -7,6 +7,7 @@ export interface VenueResponseDTO {
   name: string;
   address: string;
   imageUrl: string;
+  minPrice: BigDecimal | number;
 }
 
 export interface VenueSummaryResponse {
@@ -57,6 +58,7 @@ export interface SlotPriceResponse {
 export type SlotBookingStatus = "AVAILABLE" | "BOOKED";
 
 export interface SlotStatusResponse {
+  timeSlotId: number;
   slotNumber: number;
   startTime: string; // LocalTime (HH:mm:ss or HH:mm)
   endTime: string; // LocalTime (HH:mm:ss or HH:mm)
@@ -98,4 +100,5 @@ export interface VenueItem {
   name: string;
   address: string;
   openTime: string;
+  minPrice?: number;
 }

@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -15,6 +17,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class AuthTokenFilter extends OncePerRequestFilter {
@@ -33,18 +38,44 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                                      FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            if (jwt != null && jwtTokenProvider.isValidToken(jwt)) {
-                String email = jwtTokenProvider.extractUsernameFromToken(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            if (jwt != null) {
+                System.out.println("[AuthTokenFilter] JWT found in request. Token length: " + jwt.length());
+                
+                if (jwtTokenProvider.isValidToken(jwt)) {
+                    String email = jwtTokenProvider.extractUsernameFromToken(jwt);
+                    System.out.println("[AuthTokenFilter] Token valid. Email from token: " + email);
+                    
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    
+                    // Extract authorities from JWT token
+                    String authoritiesFromToken = jwtTokenProvider.extractAuthoritiesFromToken(jwt);
+                    System.out.println("[AuthTokenFilter] Raw authorities from token: '" + authoritiesFromToken + "'");
+                    
+                    List<GrantedAuthority> authorities = Arrays.stream(authoritiesFromToken.split(","))
+                            .map(String::trim)
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    
+                    System.out.println("✅ [AuthTokenFilter] Authentication set successfully");
+                    System.out.println("   - Email: " + email);
+                    System.out.println("   - Authorities: " + authorities);
+                    System.out.println("   - Has ADMIN: " + authorities.stream().anyMatch(a -> a.getAuthority().equals("ADMIN")));
+                } else {
+                    System.out.println("❌ [AuthTokenFilter] Token validation failed");
+                }
+            } else {
+                System.out.println("[AuthTokenFilter] No JWT token found in Authorization header");
             }
         } catch (Exception e) {
             logger.error("JWT authentication failed", e);
+            System.out.println("❌ [AuthTokenFilter] Exception: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
         }
 
         filterChain.doFilter(request, response);

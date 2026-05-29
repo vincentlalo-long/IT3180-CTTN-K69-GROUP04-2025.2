@@ -1,6 +1,7 @@
 package com.kstn.group4.backend.booking.entity;
 
 import com.kstn.group4.backend.venue.entity.Pitch;
+import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -39,6 +40,15 @@ public class Booking {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pitch_id")
     private Pitch pitch;
+
+    /**
+     * Reference to the TimeSlot this booking is for.
+     * A booking must be associated with a specific 90-minute time slot.
+     * Together with bookingDate, ensures uniqueness: UNIQUE(booking_date, time_slot_id).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_slot_id")
+    private TimeSlot timeSlot;
 
     @Column(name = "booking_date")
     private LocalDate bookingDate;

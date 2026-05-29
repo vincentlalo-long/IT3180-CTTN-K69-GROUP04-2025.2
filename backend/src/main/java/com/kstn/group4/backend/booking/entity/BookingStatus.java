@@ -1,7 +1,10 @@
 package com.kstn.group4.backend.booking.entity;
 
 public enum BookingStatus {
-    RESERVED,
+    CONFIRMED,
+    MAINTENANCE,
+    PENDING,
     CANCELLED,
+    RESERVED,
     PLAYING
 }

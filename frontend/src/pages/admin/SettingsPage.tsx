@@ -5,9 +5,8 @@ import {
   Volleyball,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import { ALL_FACILITIES_ID } from "../../data/mockAdminData";
 import { ProfileTab } from "../../features/account/components/admin/ProfileTab";
 import { NotificationTab } from "../../features/account/components/admin/NotificationTab";
 import { SecurityTab } from "../../features/account/components/admin/SecurityTab";
@@ -56,24 +55,15 @@ const settingsTabs: SettingsTabItem[] = [
 
 export function SettingsPage() {
   const {
-    facilities,
     selectedVenue: selectedFacility,
-    selectedVenueId: selectedFacilityId,
   } = useFacilityContext();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("pitch-management");
 
-  const editableFacilityName = useMemo(() => {
-    if (selectedFacilityId === ALL_FACILITIES_ID) {
-      return facilities[0]?.name ?? "";
-    }
-
-    return selectedFacility?.name ?? "";
-  }, [facilities, selectedFacility, selectedFacilityId]);
 
   const renderActiveTab = () => {
     switch (activeTab) {
       case "pitch-management":
-        return <PitchManagementTab facilityName={editableFacilityName} />;
+        return <PitchManagementTab />;
       case "profile":
         return <ProfileTab />;
       case "security":

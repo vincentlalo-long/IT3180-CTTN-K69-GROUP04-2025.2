@@ -1,90 +1,63 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import apiClient from "@/shared/api/apiClient";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
-import { getPlayerBookings } from "../api/account.api";
-import type {
-  PlayerBookingHistoryItem,
-  PlayerProfileInfo,
-} from "../types/account.types";
+type ProfileEventListener = () => void;
+const listeners: ProfileEventListener[] = [];
 
-const defaultPlayerProfileInfo: PlayerProfileInfo = {
-  name: "Phạm Gia Linh",
-  phone: "",
-  email: "",
-};
+export function emitProfileEvent() {
+  listeners.forEach((fn) => fn());
+}
+
+export function subscribeProfileEvent(fn: ProfileEventListener) {
+  listeners.push(fn);
+  return () => {
+    const idx = listeners.indexOf(fn);
+    if (idx !== -1) listeners.splice(idx, 1);
+  };
+}
+
+export interface PlayerProfileInfo {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  avatarUrl?: string;
+  role?: string;
+}
 
 export function usePlayerProfile() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [userInfo, setUserInfo] = useState<PlayerProfileInfo>(
-    defaultPlayerProfileInfo,
-  );
-  const [history, setHistory] = useState<PlayerBookingHistoryItem[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
+  const [loadingUser, setLoadingUser] = useState(false);
+  const [userError, setUserError] = useState<string | null>(null);
 
+  const fetchUser = useCallback(() => {
+    setLoadingUser(true);
+    setUserError(null);
+    apiClient
+      .get("/user/profile")
+      .then((res) => {
+        setUserInfo(res.data);
+        setLoadingUser(false);
+      })
+      .catch((err) => {
+        logApiError("usePlayerProfile.fetchUser", err);
+        setUserError(getApiErrorMessage(err, "Không thể tải thông tin tài khoản."));
+        setLoadingUser(false);
+      });
+  }, []);
+
+  // Effect 1: fetch lần đầu khi mount
   useEffect(() => {
-    if (!showHistory) {
-      return;
-    }
+    fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    let isMounted = true;
+  // Effect 2: subscribe event emitter
+  useEffect(() => {
+    const unsub = subscribeProfileEvent(fetchUser);
+    return unsub;
+  }, [fetchUser]);
 
-    const loadHistory = async () => {
-      setLoadingHistory(true);
-      setHistoryError(null);
-
-      try {
-        const data = await getPlayerBookings();
-        if (isMounted) {
-          setHistory(data);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setHistoryError(
-            error instanceof Error ? error.message : "Lỗi không xác định",
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingHistory(false);
-        }
-      }
-    };
-
-    loadHistory();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [showHistory]);
-
-  const toggleEditing = () => {
-    setIsEditing((currentValue) => !currentValue);
-  };
-
-  const toggleHistory = () => {
-    setShowHistory((currentValue) => !currentValue);
-  };
-
-  const updateUserInfo = <Key extends keyof PlayerProfileInfo>(
-    key: Key,
-    value: PlayerProfileInfo[Key],
-  ) => {
-    setUserInfo((currentValue) => ({
-      ...currentValue,
-      [key]: value,
-    }));
-  };
-
-  return {
-    isEditing,
-    userInfo,
-    history,
-    loadingHistory,
-    historyError,
-    showHistory,
-    toggleEditing,
-    toggleHistory,
-    updateUserInfo,
-  };
+  return { userInfo, loadingUser, userError, refetch: fetchUser };
 }

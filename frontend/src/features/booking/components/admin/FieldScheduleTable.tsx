@@ -3,10 +3,10 @@ import {
   ADMIN_TIME_SLOTS,
   TIME_SLOT_PRICING,
   type AdminTimeSlot,
-} from "../../../../data/mockAdminData";
+} from "../../constants/booking.constants";
 import type { FieldScheduleRow, ScheduleSlot } from "../../types/booking.types";
 import { slotStatusStyles } from "../../constants/booking.constants";
-import { formatMoney, getRangeLabel } from "../../utils/booking.utils";
+import { formatCompactPrice, getRangeLabel } from "../../utils/booking.utils";
 import { useVenueContext as useFacilityContext } from "../../../venue/hooks/useVenueContext";
 
 interface FieldScheduleTableProps {
@@ -36,12 +36,6 @@ export function FieldScheduleTable({
             {ADMIN_TIME_SLOTS.map((timeSlot) => {
               const priceMeta = TIME_SLOT_PRICING[timeSlot];
               const isGoldenHour = priceMeta.tier === "golden";
-              const badgeClass =
-                priceMeta.tier === "off-peak"
-                  ? "bg-white/16 text-white/95"
-                  : priceMeta.tier === "transition"
-                    ? "bg-amber-300/30 text-amber-50"
-                    : "bg-lime-300/40 text-[#15381a]";
 
               return (
                 <th
@@ -55,11 +49,6 @@ export function FieldScheduleTable({
                   <p className="text-sm font-semibold leading-tight">
                     {getRangeLabel(timeSlot)}
                   </p>
-                  <span
-                    className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${badgeClass}`}
-                  >
-                    {formatMoney(priceMeta.price)} - {priceMeta.tierLabel}
-                  </span>
                 </th>
               );
             })}
@@ -77,7 +66,7 @@ export function FieldScheduleTable({
                 <p className="mt-1 text-xs font-normal text-white/80">
                   {row.fieldType}
                 </p>
-                {selectedFacilityId === ALL_FACILITIES_ID ? (
+                {selectedFacilityId === ALL_FACILITIES_ID || selectedFacilityId === "all" ? (
                   <p className="mt-1 text-[11px] font-normal text-white/65">
                     {row.facilityName}
                   </p>
@@ -86,9 +75,8 @@ export function FieldScheduleTable({
 
               {ADMIN_TIME_SLOTS.map((timeSlot) => {
                 const slot = row.slots[timeSlot];
-                const statusMeta = slotStatusStyles[slot.status];
-                const isDetailSlot =
-                  slot.status === "booked" || slot.status === "in-progress";
+                const statusMeta = slotStatusStyles[slot?.status ?? "AVAILABLE"];
+                const isDetailSlot = slot?.status === "BOOKED";
 
                 return (
                   <td
@@ -110,11 +98,18 @@ export function FieldScheduleTable({
                       }`}
                     >
                       <p className="text-sm font-semibold leading-tight">
-                        {slot.customerName ?? statusMeta.label}
+                        {slot?.customerName ?? statusMeta.label}
                       </p>
-                      <p className="mt-1 text-xs opacity-90">
-                        {statusMeta.label}
-                      </p>
+                      {isDetailSlot ? (
+                        <p className="mt-1 text-xs opacity-90">
+                          {statusMeta.label}
+                        </p>
+                      ) : null}
+                      {slot?.price != null ? (
+                        <p className="mt-1 text-xs font-bold text-white/90">
+                          {formatCompactPrice(slot.price)}
+                        </p>
+                      ) : null}
                     </button>
                   </td>
                 );

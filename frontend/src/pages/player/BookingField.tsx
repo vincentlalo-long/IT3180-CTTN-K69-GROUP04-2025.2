@@ -16,6 +16,7 @@ import type {
 } from "@/features/venue/types/venue.types";
 import { createBooking } from "@/features/booking/api/bookingApi";
 import type { SlotDisplayItem } from "@/features/booking/components/player/SlotsGrid";
+import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 const normalizeTime = (value: string) => value.slice(0, 5);
 
@@ -100,31 +101,32 @@ export function BookingField() {
     setSubmitError(null);
     setSubmitSuccess(null);
 
+    const bookingDate = format(selectedDate, "yyyy-MM-dd");
+
     try {
-      const slotNumbers = selectedSlots
+      const timeSlotIds = selectedSlots
         .map((slot) => {
           const match = slots.find(
             (item) =>
               normalizeTime(item.startTime) === slot.startTime &&
               normalizeTime(item.endTime) === slot.endTime,
           );
-          return match?.slotNumber;
+          return match?.timeSlotId;
         })
         .filter((value): value is number => typeof value === "number");
 
-      if (slotNumbers.length !== selectedSlots.length) {
-        setSubmitError("Khong the xac dinh slotNumber cho tat ca khung gio.");
+      if (timeSlotIds.length !== selectedSlots.length) {
+        setSubmitError("Khong the xac dinh timeSlotId cho tat ca khung gio.");
         setIsSubmitting(false);
         return;
       }
 
-      const bookingDate = format(selectedDate, "yyyy-MM-dd");
       await Promise.all(
-        slotNumbers.map((slotNumber) =>
+        timeSlotIds.map((timeSlotId) =>
           createBooking({
             pitchId: selectedPitchId,
             bookingDate,
-            slotNumber,
+            timeSlotId,
           }),
         ),
       );
@@ -133,7 +135,13 @@ export function BookingField() {
       clearSlots();
       refresh();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Dat san that bai.");
+      logApiError("BookingField.handleSubmit", err, {
+        venueId,
+        selectedPitchId,
+        bookingDate,
+        selectedSlotCount: selectedSlots.length,
+      });
+      setSubmitError(getApiErrorMessage(err, "Dat san that bai."));
     } finally {
       setIsSubmitting(false);
     }
@@ -218,7 +226,10 @@ export function BookingField() {
         {!loading && !error && pitch && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Dang xem: <span className="font-semibold text-gray-900 dark:text-slate-100">{pitch.pitchName}</span>
+              Dang xem:{" "}
+              <span className="font-semibold text-gray-900 dark:text-slate-100">
+                {pitch.pitchName}
+              </span>
             </div>
             <SlotsGrid slots={slotItems} onSlotToggle={toggleSlot} />
           </div>

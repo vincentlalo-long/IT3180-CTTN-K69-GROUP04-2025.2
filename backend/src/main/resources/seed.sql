@@ -135,100 +135,58 @@ VALUES
     (5, 'San 5 - 11 Nguoi', 'SAN_11', 1, 500000, 1);
 
 -- =========================
--- 4. PRICE RULES (10 time slots linked to pitches)
+-- 4. PRICE RULES
 -- =========================
--- Slot numbers represent time periods: 1-10 (e.g., 6:30-7:30, 7:30-8:30, etc.)
--- is_weekend: 0 = weekday, 1 = weekend
 INSERT INTO
     `price_rules` (`pitch_id`, `slot_number`, `is_weekend`, `price`)
 VALUES
-    -- Pitch 1 (5-a-side) - 2 time slots
-    (1, 1, 0, 150000), -- Morning slot (weekday)
-    (1, 2, 1, 180000), -- Morning slot (weekend)
-    -- Pitch 2 (5-a-side) - 2 time slots
-    (2, 3, 0, 150000), -- Afternoon slot (weekday)
-    (2, 4, 1, 180000), -- Afternoon slot (weekend)
-    -- Pitch 3 (7-a-side) - 2 time slots
-    (3, 5, 0, 250000), -- Evening slot (weekday)
-    (3, 6, 1, 300000), -- Evening slot (weekend)
-    -- Pitch 4 (7-a-side) - 2 time slots
-    (4, 7, 0, 250000), -- Night slot (weekday)
-    (4, 8, 1, 300000), -- Night slot (weekend)
-    -- Pitch 5 (11-a-side) - 2 time slots
-    (5, 9, 0, 500000), -- Standard weekday
+    -- Pitch 1 (5-a-side) - sample slots
+    (1, 1, 0, 150000),
+    (1, 1, 1, 180000),
+    (1, 2, 0, 150000),
+    (1, 2, 1, 180000),
+    -- Pitch 2 (5-a-side) - sample slots
+    (2, 3, 0, 150000),
+    (2, 3, 1, 180000),
+    (2, 4, 0, 150000),
+    (2, 4, 1, 180000),
+    -- Pitch 3 (7-a-side) - sample slots
+    (3, 5, 0, 250000),
+    (3, 5, 1, 300000),
+    (3, 6, 0, 250000),
+    (3, 6, 1, 300000),
+    -- Pitch 4 (7-a-side) - sample slots
+    (4, 7, 0, 250000),
+    (4, 7, 1, 300000),
+    (4, 8, 0, 250000),
+    (4, 8, 1, 300000),
+    -- Pitch 5 (11-a-side) - sample slots
+    (5, 9, 0, 500000),
+    (5, 9, 1, 600000),
+    (5, 10, 0, 500000),
     (5, 10, 1, 600000);
 
 -- =========================
--- 4. TIME SLOTS (11 slots per pitch, 90 minutes each from 06:30 to 23:00)
+-- 5. TIME SLOTS — MASTER DATA (11 khung giờ duy nhất, không gắn pitch)
 -- =========================
--- Slot schedule: 1=06:30-08:00, 2=08:00-09:30, ..., 11=21:30-23:00
+-- Slot 1=06:30-08:00, 2=08:00-09:30, ..., 11=21:30-23:00
 INSERT INTO
-    `time_slots` (`pitch_id`, `slot_number`, `start_time`, `end_time`, `is_active`)
+    `time_slots` (`id`, `slot_number`, `start_time`, `end_time`, `is_active`)
 VALUES
-    -- Pitch 1 (5-a-side)
-    (1, 1, '06:30:00', '08:00:00', b'1'),
-    (1, 2, '08:00:00', '09:30:00', b'1'),
-    (1, 3, '09:30:00', '11:00:00', b'1'),
-    (1, 4, '11:00:00', '12:30:00', b'1'),
-    (1, 5, '12:30:00', '14:00:00', b'1'),
-    (1, 6, '14:00:00', '15:30:00', b'1'),
-    (1, 7, '15:30:00', '17:00:00', b'1'),
-    (1, 8, '17:00:00', '18:30:00', b'1'),
-    (1, 9, '18:30:00', '20:00:00', b'1'),
-    (1, 10, '20:00:00', '21:30:00', b'1'),
-    (1, 11, '21:30:00', '23:00:00', b'1'),
-    -- Pitch 2 (5-a-side)
-    (2, 1, '06:30:00', '08:00:00', b'1'),
-    (2, 2, '08:00:00', '09:30:00', b'1'),
-    (2, 3, '09:30:00', '11:00:00', b'1'),
-    (2, 4, '11:00:00', '12:30:00', b'1'),
-    (2, 5, '12:30:00', '14:00:00', b'1'),
-    (2, 6, '14:00:00', '15:30:00', b'1'),
-    (2, 7, '15:30:00', '17:00:00', b'1'),
-    (2, 8, '17:00:00', '18:30:00', b'1'),
-    (2, 9, '18:30:00', '20:00:00', b'1'),
-    (2, 10, '20:00:00', '21:30:00', b'1'),
-    (2, 11, '21:30:00', '23:00:00', b'1'),
-    -- Pitch 3 (7-a-side)
-    (3, 1, '06:30:00', '08:00:00', b'1'),
-    (3, 2, '08:00:00', '09:30:00', b'1'),
-    (3, 3, '09:30:00', '11:00:00', b'1'),
-    (3, 4, '11:00:00', '12:30:00', b'1'),
-    (3, 5, '12:30:00', '14:00:00', b'1'),
-    (3, 6, '14:00:00', '15:30:00', b'1'),
-    (3, 7, '15:30:00', '17:00:00', b'1'),
-    (3, 8, '17:00:00', '18:30:00', b'1'),
-    (3, 9, '18:30:00', '20:00:00', b'1'),
-    (3, 10, '20:00:00', '21:30:00', b'1'),
-    (3, 11, '21:30:00', '23:00:00', b'1'),
-    -- Pitch 4 (7-a-side)
-    (4, 1, '06:30:00', '08:00:00', b'1'),
-    (4, 2, '08:00:00', '09:30:00', b'1'),
-    (4, 3, '09:30:00', '11:00:00', b'1'),
-    (4, 4, '11:00:00', '12:30:00', b'1'),
-    (4, 5, '12:30:00', '14:00:00', b'1'),
-    (4, 6, '14:00:00', '15:30:00', b'1'),
-    (4, 7, '15:30:00', '17:00:00', b'1'),
-    (4, 8, '17:00:00', '18:30:00', b'1'),
-    (4, 9, '18:30:00', '20:00:00', b'1'),
-    (4, 10, '20:00:00', '21:30:00', b'1'),
-    (4, 11, '21:30:00', '23:00:00', b'1'),
-    -- Pitch 5 (11-a-side)
-    (5, 1, '06:30:00', '08:00:00', b'1'),
-    (5, 2, '08:00:00', '09:30:00', b'1'),
-    (5, 3, '09:30:00', '11:00:00', b'1'),
-    (5, 4, '11:00:00', '12:30:00', b'1'),
-    (5, 5, '12:30:00', '14:00:00', b'1'),
-    (5, 6, '14:00:00', '15:30:00', b'1'),
-    (5, 7, '15:30:00', '17:00:00', b'1'),
-    (5, 8, '17:00:00', '18:30:00', b'1'),
-    (5, 9, '18:30:00', '20:00:00', b'1'),
-    (5, 10, '20:00:00', '21:30:00', b'1'),
-    (5, 11, '21:30:00', '23:00:00', b'1');
+    (1,  1,  '06:30:00', '08:00:00', 1),
+    (2,  2,  '08:00:00', '09:30:00', 1),
+    (3,  3,  '09:30:00', '11:00:00', 1),
+    (4,  4,  '11:00:00', '12:30:00', 1),
+    (5,  5,  '12:30:00', '14:00:00', 1),
+    (6,  6,  '14:00:00', '15:30:00', 1),
+    (7,  7,  '15:30:00', '17:00:00', 1),
+    (8,  8,  '17:00:00', '18:30:00', 1),
+    (9,  9,  '18:30:00', '20:00:00', 1),
+    (10, 10, '20:00:00', '21:30:00', 1),
+    (11, 11, '21:30:00', '23:00:00', 1);
 
 -- =========================
--- 5. SERVICES
--- =========================
+-- 6. SERVICES
 -- =========================
 INSERT INTO
     `services` (`pitch_id`, `name`, `price`, `unit`)
@@ -238,86 +196,21 @@ VALUES
     (3, 'Bong thi dau', 150000.00, 'qua');
 
 -- =========================
--- 6. BOOKINGS (DISABLED FOR TEST COMPATIBILITY)
+-- 7. BOOKINGS FOR 2026-06-06 TEST DATA
 -- =========================
--- Commented out due to potential H2 compatibility issues with date functions
--- INSERT INTO
---     `bookings` (
---         `player_id`,
---         `pitch_id`,
---         `booking_date`,
---         `start_time`,
---         `end_time`,
---         `status`,
---         `booking_type`,
---         `total_price`,
---         `created_at`
---     )
--- VALUES
---     (
---         2,
---         1,
---         CURRENT_DATE,
---         '17:00:00',
---         '18:30:00',
---         'RESERVED',
---         'MATCH',
---         500000.00,
---         NOW()
---     ),
---     (
---         2,
---         2,
---         DATE_ADD (CURRENT_DATE, INTERVAL 1 DAY),
---         '18:30:00',
---         '20:00:00',
---         'RESERVED',
---         'TOUR',
---         900000.00,
---         NOW()
---     ),
---     (
---         2,
---         3,
---         DATE_ADD (CURRENT_DATE, INTERVAL -1 DAY),
---         '14:00:00',
---         '15:30:00',
---         'PLAYING',
---         'MATCH',
---         900000.00,
---         NOW()
---     );
--- =========================
--- 7. REVIEWS (DISABLED FOR TEST COMPATIBILITY)
--- =========================
--- Commented out due to potential foreign key constraints
--- INSERT INTO
---     `pitch_reviews` (
---         `pitch_id`,
---         `player_id`,
---         `rating`,
---         `content`,
---         `created_at`
---     )
--- VALUES
---     (1, 2, 5, 'San dep, chat luong tot', NOW()),
---     (2, 2, 4, 'Gia hop ly, anh sang on', NOW());
-
--- =========================
--- 8. BOOKINGS FOR 2026-06-06 TEST DATA
--- =========================
--- 1. Booking thành công: Sân 1, 17:00 - 18:30 (time_slot_id = 8)
+-- time_slot_id now maps to global master: 8 = Ca 8 (17:00-18:30)
+-- 1. Booking: San 1, Ca 8 (17:00 - 18:30)
 INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
 VALUES (2, 1, '2026-06-06', '17:00:00', '18:30:00', 'CONFIRMED', 'SINGLE', 150000, NOW(), 8);
 
--- 2. Booking thành công: Sân 2, 18:30 - 20:00 (time_slot_id = 20)
+-- 2. Booking: San 2, Ca 9 (18:30 - 20:00)
 INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
-VALUES (3, 2, '2026-06-06', '18:30:00', '20:00:00', 'CONFIRMED', 'SINGLE', 180000, NOW(), 20);
+VALUES (3, 2, '2026-06-06', '18:30:00', '20:00:00', 'CONFIRMED', 'SINGLE', 180000, NOW(), 9);
 
--- 3. Slot Bảo trì (MAINTENANCE): Sân 3, 08:00 - 09:30 (time_slot_id = 24)
+-- 3. Slot Bao tri: San 3, Ca 2 (08:00 - 09:30)
 INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
-VALUES (1, 3, '2026-06-06', '08:00:00', '09:30:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 24);
+VALUES (1, 3, '2026-06-06', '08:00:00', '09:30:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 2);
 
--- 4. Slot Bảo trì (MAINTENANCE): Sân 3, 09:30 - 11:00 (time_slot_id = 25)
+-- 4. Slot Bao tri: San 3, Ca 3 (09:30 - 11:00)
 INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
-VALUES (1, 3, '2026-06-06', '09:30:00', '11:00:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 25);
+VALUES (1, 3, '2026-06-06', '09:30:00', '11:00:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 3);
