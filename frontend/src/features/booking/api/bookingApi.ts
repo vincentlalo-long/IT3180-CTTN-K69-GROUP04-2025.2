@@ -65,3 +65,15 @@ export const createBooking = async (
   );
   return response.data;
 };
+
+// TODO: Player cancel booking
+// When the backend exposes an endpoint for players to cancel their own bookings,
+// implement this function and wire it into BookingField / BookingPage.
+//
+// Expected endpoint options:
+//   DELETE /player/bookings/{bookingId}
+//   PATCH  /player/bookings/{bookingId}/cancel
+//
+// export const cancelPlayerBooking = async (bookingId: number): Promise<void> => {
+//   await apiClient.delete(`/player/bookings/${bookingId}`);
+// };

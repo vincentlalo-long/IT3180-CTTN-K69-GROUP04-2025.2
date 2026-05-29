@@ -25,6 +25,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,6 +42,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class BookingService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingService.class);
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
@@ -281,6 +286,13 @@ public class BookingService {
         );
 
         if (alreadyBooked) {
+            LOGGER.warn(
+                    "BOOKING_RACE status=FAILED reason=ALREADY_BOOKED playerId={} pitchId={} timeSlotId={} bookingDate={}",
+                    playerId,
+                    request.getPitchId(),
+                    request.getTimeSlotId(),
+                    request.getBookingDate()
+            );
             throw new ResourceConflictException("Ca đặt sân này đã được đặt. Vui lòng chọn ca khác");
         }
 
@@ -307,8 +319,19 @@ public class BookingService {
         booking.setStatus(BookingStatus.RESERVED);
         booking.setTotalPrice(totalPrice);
 
-        Booking savedBooking = bookingRepository.save(booking);
-        return toPlayerBookingResponse(savedBooking, depositAmount);
+        try {
+            Booking savedBooking = bookingRepository.save(booking);
+            return toPlayerBookingResponse(savedBooking, depositAmount);
+        } catch (DataIntegrityViolationException ex) {
+            LOGGER.warn(
+                    "BOOKING_RACE status=FAILED reason=UNIQUE_CONSTRAINT playerId={} pitchId={} timeSlotId={} bookingDate={}",
+                    playerId,
+                    request.getPitchId(),
+                    request.getTimeSlotId(),
+                    request.getBookingDate()
+            );
+            throw new ResourceConflictException("Ca đặt sân này đã được đặt. Vui lòng chọn ca khác");
+        }
     }
 
     /**

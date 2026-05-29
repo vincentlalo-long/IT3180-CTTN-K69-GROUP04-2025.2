@@ -4,6 +4,9 @@ import { SlotCard, type SlotStatus } from "./SlotCard";
 export interface SlotDisplayItem {
   slot: TimeSlotRange;
   status: SlotStatus;
+  /** Resolved from SlotStatusResponse — used for booking submission and price display */
+  timeSlotId?: number;
+  price?: number | null;
 }
 
 interface SlotsGridProps {
