@@ -10,23 +10,30 @@ import {
   useAvailableSlots,
   useSlotSelection,
 } from "@/features/booking";
-import type {
-  SlotStatusResponse,
-  TimeSlotRange,
-} from "@/features/venue/types/venue.types";
+import type { SlotStatusResponse } from "@/features/venue/types/venue.types";
 import { createBooking } from "@/features/booking/api/bookingApi";
 import type { SlotDisplayItem } from "@/features/booking/components/player/SlotsGrid";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
+import { BookingConfirmModal } from "@/features/booking/components/player/BookingConfirmModal";
 
 const normalizeTime = (value: string) => value.slice(0, 5);
 
-const toSlotRange = (slot: SlotStatusResponse): TimeSlotRange => ({
-  startTime: normalizeTime(slot.startTime),
-  endTime: normalizeTime(slot.endTime),
+/** Map a raw SlotStatusResponse → SlotDisplayItem with pricing metadata attached */
+const toSlotDisplayItem = (
+  slot: SlotStatusResponse,
+  status: SlotDisplayItem["status"],
+): SlotDisplayItem => ({
+  slot: {
+    startTime: normalizeTime(slot.startTime),
+    endTime: normalizeTime(slot.endTime),
+  },
+  status,
+  timeSlotId: slot.timeSlotId,
+  price: slot.price != null ? Number(slot.price) : null,
 });
 
-const sortSlots = (left: TimeSlotRange, right: TimeSlotRange) =>
-  left.startTime.localeCompare(right.startTime);
+const sortSlotItems = (a: SlotDisplayItem, b: SlotDisplayItem) =>
+  a.slot.startTime.localeCompare(b.slot.startTime);
 
 export function BookingField() {
   const navigate = useNavigate();
@@ -39,6 +46,15 @@ export function BookingField() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<{
+    pitchId: number;
+    bookingDate: string;
+    /** Enriched items (carry timeSlotId + price) for the confirm modal */
+    slots: SlotDisplayItem[];
+    timeSlotIds: number[];
+    totalPrice: number;
+  } | null>(null);
 
   const { selectedSlots, toggleSlot, clearSlots } = useSlotSelection({
     resetKey: [selectedDate, selectedPitchId],
@@ -71,80 +87,140 @@ export function BookingField() {
   const slotItems = useMemo<SlotDisplayItem[]>(() => {
     return slots
       .map((slot) => {
-        const slotRange = toSlotRange(slot);
+        const startNorm = normalizeTime(slot.startTime);
+        const endNorm = normalizeTime(slot.endTime);
+
         if (slot.status === "BOOKED") {
-          return { slot: slotRange, status: "booked" } as SlotDisplayItem;
+          return toSlotDisplayItem(slot, "booked");
         }
 
-        if (
-          selectedSlots.some(
-            (item) =>
-              item.startTime === slotRange.startTime &&
-              item.endTime === slotRange.endTime,
-          )
-        ) {
-          return { slot: slotRange, status: "selected" } as SlotDisplayItem;
-        }
+        const isSelected = selectedSlots.some(
+          (item) => item.startTime === startNorm && item.endTime === endNorm,
+        );
 
-        return { slot: slotRange, status: "available" } as SlotDisplayItem;
+        return toSlotDisplayItem(slot, isSelected ? "selected" : "available");
       })
-      .sort((left, right) => sortSlots(left.slot, right.slot));
+      .sort(sortSlotItems);
   }, [slots, selectedSlots]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selectedPitchId) {
-      setSubmitError("Vui long chon san truoc khi dat.");
+      setSubmitError("Vui lòng chọn sân trước khi đặt.");
       return;
     }
+    if (!selectedSlots.length) {
+      setSubmitError("Vui lòng chọn ít nhất một khung giờ.");
+      return;
+    }
+
+    // Resolve enriched SlotDisplayItems from the live slotItems grid.
+    // This guarantees timeSlotId/price are fresh and that selected slots
+    // are still AVAILABLE (not booked by another user since last refresh).
+    const enrichedSlots: SlotDisplayItem[] = [];
+    const unavailableSlots: string[] = [];
+
+    for (const sel of selectedSlots) {
+      const live = slotItems.find(
+        (item) =>
+          item.slot.startTime === sel.startTime &&
+          item.slot.endTime === sel.endTime,
+      );
+
+      if (!live) {
+        // Slot disappeared from API response entirely — treat as unavailable
+        unavailableSlots.push(`${sel.startTime}–${sel.endTime}`);
+        continue;
+      }
+
+      if (live.status === "booked") {
+        unavailableSlots.push(`${sel.startTime}–${sel.endTime}`);
+        continue;
+      }
+
+      if (live.timeSlotId == null) {
+        setSubmitError(
+          `Không thể xác định timeSlotId cho khung giờ ${sel.startTime}–${sel.endTime}.`,
+        );
+        return;
+      }
+
+      enrichedSlots.push(live);
+    }
+
+    if (unavailableSlots.length > 0) {
+      setSubmitError(
+        `Khung giờ sau đã được đặt bởi người khác: ${unavailableSlots.join(", ")}. Vui lòng chọn lại.`,
+      );
+      // Remove stale selections so the grid reflects reality
+      clearSlots();
+      refresh();
+      return;
+    }
+
+    const timeSlotIds = enrichedSlots.map((item) => item.timeSlotId as number);
+    const totalPrice = enrichedSlots.reduce(
+      (sum, item) => sum + (item.price ?? 0),
+      0,
+    );
+
+    setSubmitError(null);
+    setPendingBooking({
+      pitchId: selectedPitchId,
+      bookingDate: format(selectedDate, "yyyy-MM-dd"),
+      slots: enrichedSlots,
+      timeSlotIds,
+      totalPrice,
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!pendingBooking) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
 
-    const bookingDate = format(selectedDate, "yyyy-MM-dd");
-
     try {
-      const timeSlotIds = selectedSlots
-        .map((slot) => {
-          const match = slots.find(
-            (item) =>
-              normalizeTime(item.startTime) === slot.startTime &&
-              normalizeTime(item.endTime) === slot.endTime,
-          );
-          return match?.timeSlotId;
-        })
-        .filter((value): value is number => typeof value === "number");
-
-      if (timeSlotIds.length !== selectedSlots.length) {
-        setSubmitError("Khong the xac dinh timeSlotId cho tat ca khung gio.");
-        setIsSubmitting(false);
-        return;
-      }
-
+      // Each timeSlotId requires a separate POST /player/bookings request.
+      // Promise.all sends them in parallel; if any fails the whole batch is
+      // treated as failed (partial success is surfaced via error message).
       await Promise.all(
-        timeSlotIds.map((timeSlotId) =>
+        pendingBooking.timeSlotIds.map((timeSlotId) =>
           createBooking({
-            pitchId: selectedPitchId,
-            bookingDate,
+            pitchId: pendingBooking.pitchId,
+            bookingDate: pendingBooking.bookingDate,
             timeSlotId,
           }),
         ),
       );
 
-      setSubmitSuccess("Dat san thanh cong.");
+      // ── Success: reset UI, refresh grid, show feedback banner ──
+      setShowConfirmModal(false);
+      setPendingBooking(null);
       clearSlots();
       refresh();
+      setSubmitSuccess(
+        `Đặt sân thành công! ${pendingBooking.slots.length} khung giờ đã được xác nhận.`,
+      );
     } catch (err) {
-      logApiError("BookingField.handleSubmit", err, {
+      logApiError("BookingField.handleConfirmBooking", err, {
         venueId,
-        selectedPitchId,
-        bookingDate,
-        selectedSlotCount: selectedSlots.length,
+        selectedPitchId: pendingBooking.pitchId,
+        bookingDate: pendingBooking.bookingDate,
+        selectedSlotCount: pendingBooking.timeSlotIds.length,
       });
-      setSubmitError(getApiErrorMessage(err, "Dat san that bai."));
+      // Keep modal open so user can retry or dismiss
+      setSubmitError(
+        getApiErrorMessage(err, "Đặt sân thất bại. Vui lòng thử lại."),
+      );
     } finally {
       setIsSubmitting(false);
     }
+
+    // TODO: Player cancel booking
+    // When backend exposes DELETE /player/bookings/{id} or PATCH /player/bookings/{id}/cancel,
+    // add cancelPlayerBooking(bookingId) to bookingApi.ts and wire it here or in BookingPage.
   };
 
   return (
@@ -235,12 +311,6 @@ export function BookingField() {
           </div>
         )}
 
-        {submitError && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-600 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-200">
-            {submitError}
-          </div>
-        )}
-
         {submitSuccess && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200">
             {submitSuccess}
@@ -254,6 +324,20 @@ export function BookingField() {
           isSubmitting={isSubmitting}
           disableSubmit={!selectedPitchId || loading}
         />
+
+        {showConfirmModal && pendingBooking && (
+          <BookingConfirmModal
+            open={showConfirmModal}
+            onClose={() => setShowConfirmModal(false)}
+            onConfirm={handleConfirmBooking}
+            isSubmitting={isSubmitting}
+            pitchName={pitch?.pitchName || ""}
+            bookingDate={pendingBooking.bookingDate}
+            slots={pendingBooking.slots}
+            totalPrice={pendingBooking.totalPrice}
+            error={submitError ?? null}
+          />
+        )}
       </div>
     </div>
   );
