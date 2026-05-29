@@ -47,11 +47,11 @@ export function MatchPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#004D23] via-[#05361b] to-[#012411]">
+    <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
       <PlayerNavBar />
 
       {/* Main Banner & Header Title */}
-      <div className="relative overflow-hidden bg-black/35 py-8 border-b border-white/5">
+      <div className="relative overflow-hidden bg-[#005E2E]/40 py-8 border-b border-white/10">
         <div className="mx-auto max-w-[1280px] px-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
@@ -63,7 +63,7 @@ export function MatchPage() {
                 Chợ Kèo Giao Hữu
               </h1>
               <p className="mt-2 text-sm text-white/70 max-w-xl">
-                Tìm kiếm đối thủ chất lượng, giao lưu học hỏi, tích lũy điểm uy tín và khẳng định vị thế đội bóng của bạn trên bảng xếp hạng.
+                Tìm kiếm đối thủ chất lượng, giao lưu học hỏi, tích luy điểm uy tín và khẳng định vị thế đội bóng của bạn trên bảng xếp hạng.
               </p>
             </div>
 
@@ -74,7 +74,7 @@ export function MatchPage() {
                   {userInfo.teamId ? (
                     <button
                       onClick={() => setShowCreateMatch(true)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(16,185,129,0.5)] transition duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#F8B416] hover:bg-[#e09e10] px-6 py-3.5 text-sm font-extrabold uppercase text-white shadow-[0_4px_12px_rgba(248,180,22,0.35)] transition duration-200 hover:scale-[1.03] active:scale-[0.98]"
                     >
                       <PlusCircle size={18} />
                       Tạo kèo tìm đối
@@ -82,7 +82,7 @@ export function MatchPage() {
                   ) : (
                     <button
                       onClick={() => setShowCreateTeam(true)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(245,158,11,0.5)] transition duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                      className="inline-flex items-center gap-2 rounded-full bg-white text-[#0B582A] hover:bg-emerald-50 px-6 py-3.5 text-sm font-extrabold uppercase shadow-[0_4px_12px_rgba(255,255,255,0.2)] transition duration-200 hover:scale-[1.03] active:scale-[0.98]"
                     >
                       <UserCheck size={18} />
                       Đăng ký Đội bóng của bạn
@@ -96,17 +96,17 @@ export function MatchPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-black/20 backdrop-blur-sm sticky top-0 z-40 border-b border-white/5 py-4 shadow-md">
+      <div className="bg-[#005E2E]/20 backdrop-blur-sm sticky top-0 z-40 border-b border-white/10 py-4 shadow-md">
         <div className="mx-auto flex max-w-[1280px] flex-col md:flex-row items-center gap-4 px-6">
           {/* Search Input */}
-          <div className="flex w-full md:flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 shadow-inner focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500">
-            <Search size={16} className="text-white/40 shrink-0" />
+          <div className="flex w-full md:flex-1 items-center gap-2 rounded-full bg-white px-4 py-2.5 shadow-sm focus-within:ring-1 focus-within:ring-[#005E2E]">
+            <Search size={16} className="text-gray-400 shrink-0" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Tìm kiếm theo tên đội bóng hoặc sân..."
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none"
             />
           </div>
 
@@ -115,7 +115,7 @@ export function MatchPage() {
             <select
               value={selectedVenueId || ""}
               onChange={handleVenueChange}
-              className="w-full md:w-[200px] rounded-xl border border-white/10 bg-[#04331b] px-4 py-2.5 text-sm font-semibold text-white/90 focus:border-emerald-500 focus:outline-none"
+              className="w-full md:w-[200px] rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur outline-none focus:outline-none cursor-pointer transition hover:bg-white/20 [&>option]:bg-[#005E2E] [&>option]:text-white"
             >
               <option value="">Tất cả khu sân</option>
               {venues.map((v) => (
@@ -128,7 +128,7 @@ export function MatchPage() {
             <select
               value={selectedSkillLevel || ""}
               onChange={handleSkillChange}
-              className="w-full md:w-[180px] rounded-xl border border-white/10 bg-[#04331b] px-4 py-2.5 text-sm font-semibold text-white/90 focus:border-emerald-500 focus:outline-none"
+              className="w-full md:w-[180px] rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur outline-none focus:outline-none cursor-pointer transition hover:bg-white/20 [&>option]:bg-[#005E2E] [&>option]:text-white"
             >
               <option value="">Tất cả trình độ</option>
               <option value="WEAK">Phong trào (Yếu)</option>

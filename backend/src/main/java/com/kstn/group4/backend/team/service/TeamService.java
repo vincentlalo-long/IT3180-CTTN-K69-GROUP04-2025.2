@@ -190,4 +190,33 @@ public class TeamService {
                 memberEmails
         );
     }
+
+    @Transactional(readOnly = true)
+    public TeamResponse getMyTeam(UserPrincipal userPrincipal) {
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng", "User"));
+
+        if (user.getTeamId() == null) {
+            return null;
+        }
+
+        Team team = teamRepository.findById(user.getTeamId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + user.getTeamId(), "Team"));
+
+        return mapToResponse(team);
+    }
+
+    @Transactional(readOnly = true)
+    public TeamResponse getTeamDetailsById(Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + teamId, "Team"));
+        return mapToResponse(team);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeamResponse> getApprovedTeams() {
+        return teamRepository.findByStatus(TeamStatus.APPROVED).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
 }

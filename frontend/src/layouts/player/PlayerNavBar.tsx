@@ -10,6 +10,7 @@ export function PlayerNavBar() {
     { label: "Home", path: "/" },
     { label: "Đặt sân", path: "/booking" },
     { label: "Chợ kèo", path: "/match" },
+    { label: "Đội bóng", path: "/team" },
     { label: "Hồ sơ", path: "/profile" },
   ];
 

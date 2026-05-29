@@ -14,6 +14,7 @@ import { BookingPage } from "./pages/player/BookingPage.tsx";
 import { BookingField } from "./pages/player/BookingField.tsx";
 import { MatchPage } from "./pages/player/MatchPage.tsx";
 import { ProfilePage } from "./pages/player/ProfilePage.tsx";
+import { PlayerTeamPage } from "./pages/player/PlayerTeamPage.tsx";
 
 import { ToastContainer } from "./shared/components/Toast/Toast.tsx";
 
@@ -28,6 +29,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/match" element={<MatchPage />} />
+        <Route path="/team" element={<PlayerTeamPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />

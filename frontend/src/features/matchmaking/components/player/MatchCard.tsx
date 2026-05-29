@@ -31,13 +31,13 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
   const getSkillLevelBadgeColor = (level: string) => {
     switch (level) {
       case "WEAK":
-        return "bg-teal-500/20 text-teal-300 border-teal-500/30";
+        return "bg-teal-100 text-teal-800 border-teal-200";
       case "AVERAGE":
-        return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+        return "bg-amber-100 text-amber-800 border-amber-200";
       case "GOOD":
-        return "bg-rose-500/20 text-rose-300 border-rose-500/30";
+        return "bg-rose-100 text-rose-800 border-rose-200";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -80,12 +80,12 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#054125]/90 to-[#032e1a]/95 p-5 shadow-[0_12px_24px_rgba(0,0,0,0.4)] transition duration-300 hover:scale-[1.02] hover:border-white/20">
+    <div className="group overflow-hidden rounded-2xl border-2 border-black/60 bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition duration-300 hover:scale-[1.01] hover:brightness-95 w-full text-left">
       {/* Venue Header */}
-      <div className="flex items-start justify-between border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2 text-white">
-          <MapPin size={18} className="text-emerald-400 shrink-0" />
-          <h3 className="text-base font-bold truncate max-w-[180px]" title={match.venueName}>
+      <div className="flex items-start justify-between border-b border-gray-200 pb-4">
+        <div className="flex items-center gap-2 text-[#0B582A]">
+          <MapPin size={18} className="text-[#005E2E] shrink-0" />
+          <h3 className="text-sm font-extrabold truncate max-w-[180px]" title={match.venueName}>
             {match.venueName}
           </h3>
         </div>
@@ -101,25 +101,25 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
       {/* Match Details */}
       <div className="my-5 space-y-4">
         {/* Teams Matchup */}
-        <div className="flex items-center justify-between rounded-xl bg-black/20 p-3">
+        <div className="flex items-center justify-between rounded-xl bg-[#005E2E]/10 p-3">
           <div className="flex flex-col items-center flex-1 text-center min-w-0">
-            <span className="text-xs text-white/50 mb-1">Đội nhà</span>
-            <span className="text-sm font-bold text-white truncate w-full" title={match.hostTeamName}>
+            <span className="text-xs text-gray-500 font-semibold mb-1">Đội nhà</span>
+            <span className="text-sm font-extrabold text-[#0B582A] truncate w-full" title={match.hostTeamName}>
               {match.hostTeamName}
             </span>
           </div>
 
           <div className="flex flex-col items-center px-2">
-            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+            <span className="rounded-full bg-[#F8B416] px-2.5 py-1 text-[10px] font-black text-white shadow-sm border-none uppercase tracking-wider">
               VS
             </span>
           </div>
 
           <div className="flex flex-col items-center flex-1 text-center min-w-0">
-            <span className="text-xs text-white/50 mb-1">Đối thủ</span>
+            <span className="text-xs text-gray-500 font-semibold mb-1">Đối thủ</span>
             <span
-              className={`text-sm font-bold truncate w-full ${
-                isMatched ? "text-white" : "text-amber-400 italic"
+              className={`text-sm font-extrabold truncate w-full ${
+                isMatched ? "text-[#0B582A]" : "text-amber-600 italic"
               }`}
               title={match.guestTeamName || "Đang chờ..."}
             >
@@ -129,14 +129,14 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
         </div>
 
         {/* Stats & Time */}
-        <div className="grid grid-cols-2 gap-3 text-sm text-white/80">
-          <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2.5">
-            <Calendar size={16} className="text-emerald-400" />
-            <span className="text-xs truncate">{formattedDate}</span>
+        <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg p-2.5">
+            <Calendar size={16} className="text-[#005E2E]" />
+            <span className="text-xs truncate font-semibold text-gray-700">{formattedDate}</span>
           </div>
-          <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2.5">
-            <Users size={16} className="text-emerald-400" />
-            <span className="text-xs">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg p-2.5">
+            <Users size={16} className="text-[#005E2E]" />
+            <span className="text-xs font-semibold text-gray-700">
               {isMatched ? "2 / 2 Đội" : "1 / 2 Đội"}
             </span>
           </div>
@@ -146,11 +146,11 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
       {/* Action Button */}
       <div className="mt-2">
         {isMatched ? (
-          <div className="w-full rounded-xl bg-[#0a4d29]/40 py-2.5 text-center text-sm font-semibold text-emerald-400 border border-emerald-500/20">
+          <div className="w-full rounded-full bg-gray-100 py-2.5 text-center text-sm font-semibold text-gray-500 border border-gray-200">
             Kèo đã được nhận (2/2)
           </div>
         ) : isHost ? (
-          <div className="w-full rounded-xl bg-white/5 py-2.5 text-center text-sm font-semibold text-white/60 border border-white/5">
+          <div className="w-full rounded-full bg-emerald-50 py-2.5 text-center text-sm font-bold text-emerald-700 border border-emerald-200">
             Kèo do bạn tạo
           </div>
         ) : (
@@ -158,7 +158,7 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
             type="button"
             onClick={handleJoin}
             disabled={isJoining}
-            className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-2.5 text-center text-sm font-bold text-white shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition duration-200 hover:from-emerald-600 hover:to-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-full bg-[#005E2E] hover:bg-[#004d26] py-2.5 text-center text-sm font-extrabold uppercase text-white shadow-[0_4px_12px_rgba(0,94,46,0.25)] transition duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isJoining ? "Đang nhận kèo..." : "Nhận kèo ngay (1/2)"}
           </button>

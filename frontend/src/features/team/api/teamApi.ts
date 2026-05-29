@@ -95,3 +95,33 @@ export const banTeam = async (teamId: number, days: number): Promise<Team> => {
     throw error;
   }
 };
+
+export const getMyTeam = async (): Promise<Team | null> => {
+  try {
+    const response = await apiClient.get<Team | null>("/teams/my-team");
+    return response.data;
+  } catch (error) {
+    logApiError("getMyTeam", error);
+    throw error;
+  }
+};
+
+export const getTeamById = async (teamId: number): Promise<Team> => {
+  try {
+    const response = await apiClient.get<Team>(`/teams/${teamId}`);
+    return response.data;
+  } catch (error) {
+    logApiError("getTeamById", error, { teamId });
+    throw error;
+  }
+};
+
+export const getApprovedTeams = async (): Promise<Team[]> => {
+  try {
+    const response = await apiClient.get<Team[]>("/teams");
+    return response.data;
+  } catch (error) {
+    logApiError("getApprovedTeams", error);
+    throw error;
+  }
+};

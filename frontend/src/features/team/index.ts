@@ -1,6 +1,8 @@
 export { TeamDetailModal } from "./components/admin/TeamDetailModal";
 export { TeamList } from "./components/admin/TeamList";
 export { CreateTeamForm } from "./components/player/CreateTeamForm";
+export { MyTeamDetails } from "./components/player/MyTeamDetails";
+export { TeamListCard } from "./components/player/TeamListCard";
 export { useTeamManagement } from "./hooks/useTeamManagement";
 export {
   clampReputation,
