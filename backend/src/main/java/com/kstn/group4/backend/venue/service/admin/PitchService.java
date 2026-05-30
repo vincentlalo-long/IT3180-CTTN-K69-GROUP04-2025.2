@@ -176,7 +176,6 @@ public class PitchService {
         );
     }
   
-    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules, BigDecimal basePrice) {
     // ─── Private helpers ────────────────────────────────────────────────
 
     private void savePriceRulesForPitch(Pitch pitch, List<SlotPriceRequest> slotPrices) {
@@ -185,6 +184,10 @@ public class PitchService {
         }
 
         List<PriceRule> rulesToSave = new ArrayList<>();
+        BigDecimal basePrice = pitch.getBasePrice();
+        if (basePrice == null || basePrice.compareTo(BigDecimal.ZERO) <= 0) {
+            basePrice = BigDecimal.ONE;
+        }
 
         for (SlotPriceRequest slot : slotPrices) {
             if (slot.slotNumber() == null || slot.slotNumber() < MIN_SLOT || slot.slotNumber() > MAX_SLOT) {
@@ -197,7 +200,7 @@ public class PitchService {
                 weekdayRule.setPitch(pitch);
                 weekdayRule.setSlotNumber(slot.slotNumber());
                 weekdayRule.setIsWeekend(Boolean.FALSE);
-                weekdayRule.setPrice(slot.weekdayPrice());
+                weekdayRule.setCoefficient(slot.weekdayPrice().divide(basePrice, 2, java.math.RoundingMode.HALF_UP));
                 rulesToSave.add(weekdayRule);
             }
 
@@ -207,7 +210,7 @@ public class PitchService {
                 weekendRule.setPitch(pitch);
                 weekendRule.setSlotNumber(slot.slotNumber());
                 weekendRule.setIsWeekend(Boolean.TRUE);
-                weekendRule.setPrice(slot.weekendPrice());
+                weekendRule.setCoefficient(slot.weekendPrice().divide(basePrice, 2, java.math.RoundingMode.HALF_UP));
                 rulesToSave.add(weekendRule);
             }
         }
@@ -227,7 +230,7 @@ public class PitchService {
         };
     }
 
-    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules) {
+    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules, BigDecimal basePrice) {
         List<PriceRule> safeRules = rules == null ? List.of() : rules.stream()
                 .sorted(Comparator.comparing(PriceRule::getSlotNumber).thenComparing(PriceRule::getIsWeekend))
                 .toList();
