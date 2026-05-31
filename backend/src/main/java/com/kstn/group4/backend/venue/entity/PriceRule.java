@@ -37,6 +37,6 @@ public class PriceRule {
     @Column(name = "is_weekend", nullable = false)
     private Boolean isWeekend;
 
-    @Column(name = "price", nullable = false)
-    private BigDecimal price;
+    @Column(name = "coefficient", nullable = false)
+    private BigDecimal coefficient;
 }

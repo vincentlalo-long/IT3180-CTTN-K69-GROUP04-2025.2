@@ -1,11 +1,26 @@
-export type MatchmakingStatus = "Đang tìm" | "Đã chốt" | "Hết hạn" | "Bị hủy";
+export type MatchSkillLevel = "WEAK" | "AVERAGE" | "GOOD";
+export type MatchStatus = "OPEN" | "MATCHED" | "CANCELLED" | "COMPLETED";
 
+export interface MatchResponse {
+  id: number;
+  venueId: number;
+  venueName: string;
+  hostTeamId: number;
+  hostTeamName: string;
+  guestTeamId: number | null;
+  guestTeamName: string | null;
+  skillLevel: MatchSkillLevel;
+  matchTime: string;
+  status: MatchStatus;
+}
+
+// Keep mock types if any legacy components import them to prevent breaking
+export type MatchmakingStatus = "Đang tìm" | "Đã chốt" | "Hết hạn" | "Bị hủy";
 export type MatchmakingLevel =
   | "Phong trào"
   | "Trung bình"
   | "Khá"
   | "Bán chuyên";
-
 export type MatchType =
   | "Đấu giao hữu"
   | "Kèo đồng trình"

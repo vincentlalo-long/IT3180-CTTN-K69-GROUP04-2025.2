@@ -60,7 +60,7 @@ public class PitchService {
             pitch.getVenue() != null ? pitch.getVenue().getId() : null,
             pitch.getVenue() != null ? pitch.getVenue().getName() : null,
             pitch.getBasePrice(),
-            toSlotPriceTable(rules)
+            toSlotPriceTable(rules, pitch.getBasePrice())
         );
     }
 
@@ -143,18 +143,18 @@ public class PitchService {
             throw new BusinessException("Ngày thi đấu không được để trống", "INVALID_DATE");
         }
 
-        if (!pitchRepository.existsById(pitchId)) {
-            throw new ResourceNotFoundException("Không tìm thấy sân với ID: " + pitchId, "Pitch");
-        }
+        Pitch pitch = pitchRepository.findById(pitchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + pitchId, "Pitch"));
 
         boolean isWeekend = isWeekend(date);
 
-        return priceRuleRepository.findByPitchIdAndSlotNumberAndIsWeekend(pitchId, slotNumber, isWeekend)
-                .map(PriceRule::getPrice)
+        BigDecimal coefficient = priceRuleRepository.findByPitchIdAndSlotNumberAndIsWeekend(pitchId, slotNumber, isWeekend)
+                .map(PriceRule::getCoefficient)
                 .orElseThrow(() -> new BusinessException(
                         "Không tìm thấy luật giá cho sân " + pitchId + ", ca " + slotNumber + ", ngày " + (isWeekend ? "cuối tuần" : "thường"),
                         "PRICE_RULE_NOT_FOUND"
                 ));
+        return pitch.getBasePrice() != null ? pitch.getBasePrice().multiply(coefficient) : BigDecimal.ZERO;
     }
 
     @Transactional(readOnly = true)
@@ -172,10 +172,10 @@ public class PitchService {
                 pitch.getVenue() != null ? pitch.getVenue().getId() : null,
                 pitch.getVenue() != null ? pitch.getVenue().getName() : null,
                 pitch.getBasePrice(),
-                toSlotPriceTable(rules)
+                toSlotPriceTable(rules, pitch.getBasePrice())
         );
     }
-
+  
     // ─── Private helpers ────────────────────────────────────────────────
 
     private void savePriceRulesForPitch(Pitch pitch, List<SlotPriceRequest> slotPrices) {
@@ -184,6 +184,10 @@ public class PitchService {
         }
 
         List<PriceRule> rulesToSave = new ArrayList<>();
+        BigDecimal basePrice = pitch.getBasePrice();
+        if (basePrice == null || basePrice.compareTo(BigDecimal.ZERO) <= 0) {
+            basePrice = BigDecimal.ONE;
+        }
 
         for (SlotPriceRequest slot : slotPrices) {
             if (slot.slotNumber() == null || slot.slotNumber() < MIN_SLOT || slot.slotNumber() > MAX_SLOT) {
@@ -196,7 +200,7 @@ public class PitchService {
                 weekdayRule.setPitch(pitch);
                 weekdayRule.setSlotNumber(slot.slotNumber());
                 weekdayRule.setIsWeekend(Boolean.FALSE);
-                weekdayRule.setPrice(slot.weekdayPrice());
+                weekdayRule.setCoefficient(slot.weekdayPrice().divide(basePrice, 2, java.math.RoundingMode.HALF_UP));
                 rulesToSave.add(weekdayRule);
             }
 
@@ -206,7 +210,7 @@ public class PitchService {
                 weekendRule.setPitch(pitch);
                 weekendRule.setSlotNumber(slot.slotNumber());
                 weekendRule.setIsWeekend(Boolean.TRUE);
-                weekendRule.setPrice(slot.weekendPrice());
+                weekendRule.setCoefficient(slot.weekendPrice().divide(basePrice, 2, java.math.RoundingMode.HALF_UP));
                 rulesToSave.add(weekendRule);
             }
         }
@@ -226,7 +230,7 @@ public class PitchService {
         };
     }
 
-    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules) {
+    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules, BigDecimal basePrice) {
         List<PriceRule> safeRules = rules == null ? List.of() : rules.stream()
                 .sorted(Comparator.comparing(PriceRule::getSlotNumber).thenComparing(PriceRule::getIsWeekend))
                 .toList();
@@ -238,13 +242,15 @@ public class PitchService {
 
             BigDecimal weekdayPrice = safeRules.stream()
                     .filter(rule -> currentSlot == rule.getSlotNumber() && Boolean.FALSE.equals(rule.getIsWeekend()))
-                    .map(PriceRule::getPrice)
+                    .map(PriceRule::getCoefficient)
+                    .map(coeff -> basePrice != null ? basePrice.multiply(coeff) : null)
                     .findFirst()
                     .orElse(null);
 
             BigDecimal weekendPrice = safeRules.stream()
                     .filter(rule -> currentSlot == rule.getSlotNumber() && Boolean.TRUE.equals(rule.getIsWeekend()))
-                    .map(PriceRule::getPrice)
+                    .map(PriceRule::getCoefficient)
+                    .map(coeff -> basePrice != null ? basePrice.multiply(coeff) : null)
                     .findFirst()
                     .orElse(null);
 

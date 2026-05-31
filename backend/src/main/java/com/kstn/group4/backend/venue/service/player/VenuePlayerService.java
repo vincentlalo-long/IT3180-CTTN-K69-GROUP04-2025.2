@@ -196,11 +196,12 @@ public class VenuePlayerService {
             boolean weekend,
             BigDecimal basePrice
     ) {
-        return priceRules.stream()
+        BigDecimal coefficient = priceRules.stream()
                 .filter(rule -> slotNumber.equals(rule.getSlotNumber()) && weekend == Boolean.TRUE.equals(rule.getIsWeekend()))
-                .map(PriceRule::getPrice)
+                .map(PriceRule::getCoefficient)
                 .findFirst()
-                .orElse(basePrice);
+                .orElse(BigDecimal.ONE);
+        return basePrice != null ? basePrice.multiply(coefficient) : BigDecimal.ZERO;
     }
 
 

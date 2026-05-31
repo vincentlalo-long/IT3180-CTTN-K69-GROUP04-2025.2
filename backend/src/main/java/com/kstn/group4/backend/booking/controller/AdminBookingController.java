@@ -67,5 +67,17 @@ public class AdminBookingController {
         // Truyền cả object request vào, không truyền request.status()
         bookingService.updateBookingStatus(bookingId, request); 
         return ResponseEntity.ok().build();
-}
+    }
+
+    /**
+     * Override booking price manually
+     */
+    @PutMapping("/{id}/price")
+    public ResponseEntity<Void> overrideBookingPrice(
+            @PathVariable("id") Integer bookingId,
+            @Valid @RequestBody com.kstn.group4.backend.booking.dto.admin.AdminOverridePriceRequest request
+    ) {
+        bookingService.overrideBookingPrice(bookingId, request.newPrice());
+        return ResponseEntity.ok().build();
+    }
 }

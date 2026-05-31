@@ -31,7 +31,7 @@ public class User {
     private LocalDateTime createdAt;
 
     @Column(name = "team_id")
-    private Integer teamId;
+    private Long teamId;
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;

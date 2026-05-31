@@ -35,6 +35,7 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,6 +115,15 @@ public class BookingService {
 
         try {
             BookingStatus newStatus = BookingStatus.valueOf(statusString.toUpperCase());
+            
+            // Handle pricing logic on cancellation
+            if (newStatus == BookingStatus.CANCELLED && booking.getStatus() != BookingStatus.CANCELLED) {
+                if (booking.getPricingMode() != com.kstn.group4.backend.booking.entity.PricingMode.MANUAL) {
+                    BigDecimal deposit = calculateDepositAmount(booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO);
+                    booking.setTotalPrice(deposit);
+                }
+            }
+            
             booking.setStatus(newStatus);
             bookingRepository.save(booking);
         } catch (IllegalArgumentException e) {
@@ -122,6 +132,20 @@ public class BookingService {
                     "INVALID_BOOKING_STATUS"
             );
         }
+    }
+
+    /**
+     * Override booking price by admin.
+     * Changes pricing mode to MANUAL so future automatic recalculations ignore it.
+     */
+    @Transactional
+    public void overrideBookingPrice(Integer bookingId, BigDecimal newPrice) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt sân với ID: " + bookingId, "Booking"));
+
+        booking.setTotalPrice(newPrice);
+        booking.setPricingMode(com.kstn.group4.backend.booking.entity.PricingMode.MANUAL);
+        bookingRepository.save(booking);
     }
 
     // ==================== MAPPER METHODS (Private) ====================
@@ -298,13 +322,25 @@ public class BookingService {
 
         // ==================== STEP 5: Lookup Pricing ====================
         boolean isWeekend = isWeekend(request.getBookingDate());
-        BigDecimal totalPrice = priceRuleRepository
+        
+        // Golden hours: 17:00 to 22:00
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+        
+        BigDecimal coefficient = priceRuleRepository
                 .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), isWeekend)
-                .map(PriceRule::getPrice)
-                .orElseGet(pitch::getBasePrice);
-        if (totalPrice == null) {
-            throw new BusinessException("Chua co gia cho ca nay", "PRICE_NOT_SET");
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (isWeekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+        
+        if (pitch.getBasePrice() == null) {
+            throw new BusinessException("Chưa có giá cơ bản cho sân này", "BASE_PRICE_NOT_SET");
         }
+        BigDecimal totalPrice = pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
 
         BigDecimal depositAmount = calculateDepositAmount(totalPrice);
 
@@ -356,6 +392,11 @@ public class BookingService {
 
         if (booking.getStatus() != BookingStatus.RESERVED) {
             throw new BusinessException("Chỉ có thể hủy đơn ở trạng thái PENDING/BOOKED", "INVALID_CANCELLATION_STATE");
+        }
+
+        if (booking.getPricingMode() != com.kstn.group4.backend.booking.entity.PricingMode.MANUAL) {
+            BigDecimal deposit = calculateDepositAmount(booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO);
+            booking.setTotalPrice(deposit);
         }
 
         booking.setStatus(BookingStatus.CANCELLED);

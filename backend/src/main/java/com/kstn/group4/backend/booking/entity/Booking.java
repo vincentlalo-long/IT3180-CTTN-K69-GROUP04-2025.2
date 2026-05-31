@@ -69,6 +69,10 @@ public class Booking {
     @Column(name = "total_price")
     private BigDecimal totalPrice;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pricing_mode")
+    private PricingMode pricingMode = PricingMode.AUTO;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

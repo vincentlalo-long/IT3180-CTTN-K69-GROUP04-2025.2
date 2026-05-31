@@ -1,18 +1,26 @@
-import { Ban, Eye } from "lucide-react";
+import { Check, Eye, X } from "lucide-react";
 
 import type { Team } from "../../types/team.types";
 import { getReputationTone, getStatusMeta } from "../../utils/team.utils";
 
 interface TeamListProps {
   teams: Team[];
-  onOpenDetails: (teamId: string) => void;
-  onBanTeam: (teamId: string) => void;
+  onOpenDetails: (teamId: number) => void;
+  onApproveTeam?: (teamId: number) => void;
+  onRejectTeam?: (teamId: number) => void;
+  activeTab: "ALL" | "PENDING";
 }
 
-export function TeamList({ teams, onOpenDetails, onBanTeam }: TeamListProps) {
+export function TeamList({
+  teams,
+  onOpenDetails,
+  onApproveTeam,
+  onRejectTeam,
+  activeTab,
+}: TeamListProps) {
   return (
     <div className="space-y-3">
-      <div className="hidden rounded-xl border border-white/20 bg-[#004f27] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white/90 md:grid md:grid-cols-[1.55fr_1.25fr_0.8fr_0.9fr_1fr] md:gap-3">
+      <div className="hidden rounded-xl border border-white/20 bg-[#004f27] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white/90 md:grid md:grid-cols-[1.5fr_1.2fr_0.8fr_0.9fr_1fr] md:gap-3">
         <span>Đội bóng</span>
         <span>Đội trưởng</span>
         <span>Điểm uy tín</span>
@@ -23,25 +31,24 @@ export function TeamList({ teams, onOpenDetails, onBanTeam }: TeamListProps) {
       {teams.map((team, index) => {
         const statusMeta = getStatusMeta(team.status);
         const rowTone = index % 2 === 0 ? "bg-[#0d5a2f]/65" : "bg-[#0a4d29]/65";
+        const logoLetter = team.name.charAt(0).toUpperCase();
 
         return (
           <article
             key={team.id}
             className={`rounded-xl border border-white/10 px-4 py-3 shadow-sm transition hover:border-white/25 hover:bg-[#146f3d]/70 ${rowTone}`}
           >
-            <div className="grid gap-3 md:grid-cols-[1.55fr_1.25fr_0.8fr_0.9fr_1fr] md:items-center">
+            <div className="grid gap-3 md:grid-cols-[1.5fr_1.2fr_0.8fr_0.9fr_1fr] md:items-center">
               <div className="flex items-center gap-3">
-                <img
-                  src={team.logoUrl}
-                  alt={team.teamName}
-                  className="h-10 w-10 rounded-full border border-white/25 bg-[#0a4d29]/60 object-cover"
-                />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-emerald-700 font-bold text-white">
+                  {logoLetter}
+                </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-white/65 md:hidden">
                     Đội bóng
                   </p>
                   <p className="mt-0.5 text-sm font-semibold text-white">
-                    {team.teamName}
+                    {team.name}
                   </p>
                 </div>
               </div>
@@ -53,7 +60,6 @@ export function TeamList({ teams, onOpenDetails, onBanTeam }: TeamListProps) {
                 <p className="mt-0.5 text-sm font-medium text-white/95">
                   {team.captainName}
                 </p>
-                <p className="mt-0.5 text-xs text-white/70">{team.phone}</p>
               </div>
 
               <div>
@@ -63,16 +69,16 @@ export function TeamList({ teams, onOpenDetails, onBanTeam }: TeamListProps) {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`h-2.5 w-2.5 rounded-full ${getReputationTone(team.reputation)}`}
+                      className={`h-2.5 w-2.5 rounded-full ${getReputationTone(team.reputationScore)}`}
                     />
                     <p className="text-sm font-semibold text-white">
-                      {team.reputation}/100
+                      {team.reputationScore}/100
                     </p>
                   </div>
                   <div className="h-1.5 rounded-full bg-black/25">
                     <div
-                      className={`h-full rounded-full transition-all ${getReputationTone(team.reputation)}`}
-                      style={{ width: `${team.reputation}%` }}
+                      className={`h-full rounded-full transition-all ${getReputationTone(team.reputationScore)}`}
+                      style={{ width: `${team.reputationScore}%` }}
                     />
                   </div>
                 </div>
@@ -99,15 +105,27 @@ export function TeamList({ teams, onOpenDetails, onBanTeam }: TeamListProps) {
                   Chi tiết
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => onBanTeam(team.id)}
-                  disabled={team.status === "Banned"}
-                  className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-900/35 disabled:text-rose-100/65"
-                >
-                  <Ban size={13} />
-                  Cấm
-                </button>
+                {activeTab === "PENDING" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onApproveTeam?.(team.id)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-lime-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-lime-700"
+                    >
+                      <Check size={14} />
+                      Duyệt
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onRejectTeam?.(team.id)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                    >
+                      <X size={14} />
+                      Từ chối
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </article>

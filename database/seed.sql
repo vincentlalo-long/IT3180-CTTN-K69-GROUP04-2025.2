@@ -18,7 +18,71 @@ DELETE FROM `price_rules`;
 
 DELETE FROM `pitches`;
 
+DELETE FROM `matches`;
+
 DELETE FROM `venues`;
+
+
+-- 1) Seed 1 Venue (manager_id map toi user da dang ky)
+INSERT INTO `venues` (
+	`id`, `name`, `address`, `description`, `image_url`, `manager_id`, `open_time`, `close_time`
+) VALUES
+(
+	1,
+	'Cum san Bong Da Yen Hoa',
+	'123 Nguyen Chi Thanh, Cau Giay, Ha Noi',
+	'Cum san phuc vu cho phong trao va giai dau ban chuyen',
+	'https://images.unsplash.com/photo-1574629810360-7efbbe195018',
+	1,
+	'06:30:00',
+	'23:00:00'
+);
+
+-- 2) Seed 3 Pitches
+INSERT INTO `pitches` (`id`, `name`, `pitch_type`, `is_active`, `base_price`, `venue_id`) VALUES
+(1, 'San 5A',  'SAN_5',  b'1', 350000.00, 1),
+(2, 'San 7B',  'SAN_7',  b'1', 500000.00, 1),
+(3, 'San 11C', 'SAN_11', b'1', 900000.00, 1);
+
+-- 3) Seed Price Rules (moi san 2 rule: ngay thuong/cuoi tuan cho slot 1)
+INSERT INTO `price_rules` (`pitch_id`, `slot_number`, `is_weekend`, `coefficient`) VALUES
+(1, 1, b'0', 1.00),
+(1, 1, b'1', 1.20),
+(2, 1, b'0', 1.00),
+(2, 1, b'1', 1.16),
+(3, 1, b'0', 1.00),
+(3, 1, b'1', 1.11);
+
+-- 4) Seed Services
+INSERT INTO `services` (`pitch_id`, `name`, `price`, `unit`) VALUES
+(1, 'Nuoc khoang', 10000.00, 'chai'),
+(2, 'Thue ao bib', 25000.00, 'bo'),
+(3, 'Bong thi dau', 150000.00, 'qua');
+
+-- 5) Seed >=10 Bookings de demo Dashboard
+-- Luu y: status theo BookingStatus enum hien tai: RESERVED, CANCELLED, PLAYING.
+INSERT INTO `bookings` (
+	`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`
+) VALUES
+(2, 1, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '06:30:00', '08:00:00', 'PLAYING',   'MATCH',    350000.00, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(2, 2, DATE_SUB(CURDATE(), INTERVAL 6 DAY), '08:00:00', '09:30:00', 'PLAYING',   'TRAINING', 500000.00, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(2, 3, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '09:30:00', '11:00:00', 'CANCELLED', 'MATCH',    900000.00, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(2, 1, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '11:00:00', '12:30:00', 'PLAYING',   'FRIENDLY', 350000.00, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(2, 2, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '12:30:00', '14:00:00', 'CANCELLED', 'MATCH',    500000.00, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(2, 3, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '14:00:00', '15:30:00', 'PLAYING',   'TOUR',     900000.00, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(2, 1, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '15:30:00', '17:00:00', 'PLAYING',   'MATCH',    350000.00, DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(2, 2, CURDATE(),                            '17:00:00', '18:30:00', 'RESERVED',  'MATCH',    500000.00, NOW()),
+(2, 3, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '18:30:00', '20:00:00', 'RESERVED',  'TOUR',     900000.00, NOW()),
+(2, 1, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '20:00:00', '21:30:00', 'CANCELLED', 'FRIENDLY', 350000.00, NOW());
+
+-- 6) Seed reviews (optional cho demo)
+INSERT INTO `pitch_reviews` (`pitch_id`, `player_id`, `rating`, `content`, `created_at`) VALUES
+(1, 2, 5, 'San dep, chat luong tot', NOW()),
+(2, 2, 4, 'Gia hop ly, anh sang on', NOW());
+
+DELETE FROM `team_members`;
+
+DELETE FROM `teams`;
 
 DELETE FROM `users`;
 
@@ -40,6 +104,10 @@ ALTER TABLE `bookings` AUTO_INCREMENT = 1;
 ALTER TABLE `pitch_reviews` AUTO_INCREMENT = 1;
 
 ALTER TABLE `booking_payments` AUTO_INCREMENT = 1;
+
+ALTER TABLE `teams` AUTO_INCREMENT = 1;
+
+ALTER TABLE `matches` AUTO_INCREMENT = 1;
 
 -- =========================
 -- 1. USERS (3 users: 1 ADMIN, 2 PLAYERS)
@@ -214,3 +282,37 @@ VALUES (1, 3, '2026-06-06', '08:00:00', '09:30:00', 'MAINTENANCE', 'MAINTENANCE'
 -- 4. Slot Bao tri: San 3, Ca 3 (09:30 - 11:00)
 INSERT INTO `bookings` (`player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
 VALUES (1, 3, '2026-06-06', '09:30:00', '11:00:00', 'MAINTENANCE', 'MAINTENANCE', 0, NOW(), 3);
+
+-- =========================
+-- 8. TEAMS & TEAM MEMBERS
+-- =========================
+INSERT INTO `teams` (`id`, `name`, `captain_id`, `description`, `reputation_score`, `status`, `created_at`)
+VALUES
+    (1, 'FC Mixi', 2, 'Doi bong phong trao khu vuc Cau Giay', 100, 'APPROVED', NOW()),
+    (2, 'FC Refund', 3, 'Giao luu vui ve, khong quau', 95, 'PENDING', NOW());
+
+-- player 2 is captain of team 1, player 3 is captain of team 2
+-- add members
+INSERT INTO `team_members` (`team_id`, `user_email`, `status`)
+VALUES
+    (1, 'minh.player@football.vn', 'ACTIVE'),
+    (1, 'member1@football.vn', 'ACTIVE'),
+    (1, 'member2@football.vn', 'INVITED'),
+    (2, 'tuan.player@football.vn', 'ACTIVE'),
+    (2, 'member3@football.vn', 'ACTIVE');
+
+-- update users team_id
+UPDATE `users` SET `team_id` = 1 WHERE `id` = 2;
+UPDATE `users` SET `team_id` = 2 WHERE `id` = 3;
+
+-- =========================
+-- 9. MATCHES
+-- =========================
+INSERT INTO `matches` (`id`, `venue_id`, `host_team_id`, `guest_team_id`, `skill_level`, `match_time`, `status`)
+VALUES
+    -- Open match
+    (1, 1, 1, NULL, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 2 DAY), 'OPEN'),
+    -- Matched match
+    (2, 1, 1, 2, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 3 DAY), 'MATCHED');
+
+

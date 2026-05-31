@@ -9,7 +9,7 @@ public record UserResponseDTO(
         String role,
         String phoneNumber,
         String avatarUrl,
-        Integer teamId,
+        Long teamId,
         LocalDateTime createdAt
 ) {
 }

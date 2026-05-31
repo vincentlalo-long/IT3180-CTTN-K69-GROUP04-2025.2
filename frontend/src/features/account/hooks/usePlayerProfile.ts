@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import apiClient from "@/shared/api/apiClient";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
+import type { PlayerProfileInfo } from "../types/account.types";
 
 type ProfileEventListener = () => void;
 const listeners: ProfileEventListener[] = [];
@@ -16,8 +17,6 @@ export function subscribeProfileEvent(fn: ProfileEventListener) {
     if (idx !== -1) listeners.splice(idx, 1);
   };
 }
-
-import type { PlayerProfileInfo } from "../types/account.types";
 
 export function usePlayerProfile() {
   const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
@@ -35,7 +34,9 @@ export function usePlayerProfile() {
       })
       .catch((err) => {
         logApiError("usePlayerProfile.fetchUser", err);
-        setUserError(getApiErrorMessage(err, "Không thể tải thông tin tài khoản."));
+        setUserError(
+          getApiErrorMessage(err, "Không thể tải thông tin tài khoản."),
+        );
         setLoadingUser(false);
       });
   }, []);
