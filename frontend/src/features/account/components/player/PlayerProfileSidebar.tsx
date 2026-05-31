@@ -17,17 +17,27 @@ export function PlayerProfileSidebar({ userInfo }: PlayerProfileSidebarProps) {
       </div>
       <div className="w-full rounded-2xl bg-white/20 px-4 py-4 flex flex-col gap-2">
         <div className="font-bold text-[#2E7D1E] text-lg truncate">
-          {userInfo.name}
+          {userInfo.username}
         </div>
         <div className="text-sm text-gray-700 truncate">{userInfo.email}</div>
-        {userInfo.phone && (
+        {userInfo.phoneNumber && (
           <div className="text-sm text-gray-700 truncate">
-            SĐT: {userInfo.phone}
+            SĐT: {userInfo.phoneNumber}
           </div>
         )}
         {userInfo.role && (
           <div className="text-xs font-semibold text-[#2E7D1E] bg-white/60 rounded px-2 py-1 w-fit">
             {userInfo.role}
+          </div>
+        )}
+        {userInfo.teamId && (
+          <div className="text-sm text-gray-700 truncate">
+            Team ID: {userInfo.teamId}
+          </div>
+        )}
+        {userInfo.createdAt && (
+          <div className="text-sm text-gray-700 truncate">
+            Tham gia: {new Date(userInfo.createdAt).toLocaleDateString("vi-VN")}
           </div>
         )}
       </div>

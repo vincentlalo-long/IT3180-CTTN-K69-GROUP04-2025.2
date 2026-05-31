@@ -8,7 +8,7 @@ import {
 import type { PlayerBookingHistoryItem } from "../../features/account/types/account.types";
 import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect, useCallback } from "react";
-import { getPlayerBookings } from "../../features/account/api/account.api";
+import { getPlayerBookings, updatePlayerProfile } from "../../features/account/api/account.api";
 import { subscribeProfileEvent } from "../../features/account/hooks/usePlayerProfile";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
@@ -17,10 +17,23 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
+  const [editData, setEditData] = useState({ username: "", phoneNumber: "", email: "" });
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const [history, setHistory] = useState<PlayerBookingHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    if (userInfo) {
+      setEditData({
+        username: userInfo.username,
+        phoneNumber: userInfo.phoneNumber || "",
+        email: userInfo.email,
+      });
+    }
+  }, [userInfo]);
 
   const fetchHistory = useCallback(() => {
     setLoadingHistory(true);
@@ -62,11 +75,29 @@ export function ProfilePage() {
     return unsub;
   }, [refetch, fetchHistory]);
 
-  const toggleEditing = () => setIsEditing((prev) => !prev);
+  const toggleEditing = async () => {
+    if (isEditing) {
+      // Save changes
+      try {
+        setIsUpdating(true);
+        await updatePlayerProfile(editData.username, editData.phoneNumber);
+        refetch(); // fetch fresh data
+        setIsEditing(false);
+      } catch (err) {
+        logApiError("ProfilePage.updateProfile", err);
+        alert(getApiErrorMessage(err, "Lỗi khi cập nhật thông tin!"));
+      } finally {
+        setIsUpdating(false);
+      }
+    } else {
+      setIsEditing(true);
+    }
+  };
+
   const toggleHistory = () => setShowHistory((prev) => !prev);
 
-  const updateUserInfo = (field: string, value: string) => {
-    console.log("updateUserInfo", field, value);
+  const updateUserInfo = (field: keyof typeof editData, value: string) => {
+    setEditData((prev) => ({ ...prev, [field]: value }));
   };
 
   if (loadingUser) {
@@ -99,13 +130,14 @@ export function ProfilePage() {
           <PlayerProfileSidebar userInfo={userInfo} />
           <div className="flex-1 rounded-2xl bg-white/90 px-8 py-6">
             <PlayerProfileForm
-              userInfo={userInfo}
+              userInfo={isEditing ? { ...userInfo, ...editData } : userInfo}
               isEditing={isEditing}
               onToggleEditing={toggleEditing}
-              onChangeName={(value) => updateUserInfo("name", value)}
-              onChangePhone={(value) => updateUserInfo("phone", value)}
+              onChangeName={(value) => updateUserInfo("username", value)}
+              onChangePhone={(value) => updateUserInfo("phoneNumber", value)}
               onChangeEmail={(value) => updateUserInfo("email", value)}
             />
+            {isUpdating && <div className="text-sm text-[#2E7D1E] font-medium mb-4">Đang lưu thay đổi...</div>}
             <PlayerBookingHistory
               showHistory={showHistory}
               loadingHistory={loadingHistory}

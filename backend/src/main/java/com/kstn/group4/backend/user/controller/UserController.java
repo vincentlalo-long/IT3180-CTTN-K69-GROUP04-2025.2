@@ -21,4 +21,10 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> getCurrentUserProfile() {
         return ResponseEntity.ok(userService.getCurrentUserProfile());
     }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/me")
+    @PreAuthorize("hasAnyRole('PLAYER','ADMIN')")
+    public ResponseEntity<UserResponseDTO> updateProfile(@org.springframework.web.bind.annotation.RequestBody com.kstn.group4.backend.user.dto.UpdateProfileRequest request) {
+        return ResponseEntity.ok(userService.updateProfile(request));
+    }
 }

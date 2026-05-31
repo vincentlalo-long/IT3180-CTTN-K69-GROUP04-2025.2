@@ -84,8 +84,8 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/public/**", "/pitches/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/player/**").hasAuthority("PLAYER")
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/player/**").hasRole("PLAYER")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);

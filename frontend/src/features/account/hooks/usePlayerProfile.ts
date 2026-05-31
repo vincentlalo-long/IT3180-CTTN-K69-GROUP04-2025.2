@@ -17,14 +17,7 @@ export function subscribeProfileEvent(fn: ProfileEventListener) {
   };
 }
 
-export interface PlayerProfileInfo {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  avatarUrl?: string;
-  role?: string;
-}
+import type { PlayerProfileInfo } from "../types/account.types";
 
 export function usePlayerProfile() {
   const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
@@ -35,7 +28,7 @@ export function usePlayerProfile() {
     setLoadingUser(true);
     setUserError(null);
     apiClient
-      .get("/user/profile")
+      .get("/users/me")
       .then((res) => {
         setUserInfo(res.data);
         setLoadingUser(false);

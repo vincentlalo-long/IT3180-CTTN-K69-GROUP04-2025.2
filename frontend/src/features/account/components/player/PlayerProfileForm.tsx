@@ -26,13 +26,13 @@ export function PlayerProfileForm({
       <div className="mb-5 flex items-center gap-6">
         {isEditing ? (
           <input
-            value={userInfo.name}
+            value={userInfo.username}
             onChange={(event) => onChangeName(event.target.value)}
             className="border-b-2 border-[#2E7D1E] bg-transparent text-xl font-bold text-[#2E7D1E] outline-none"
           />
         ) : (
           <span className="text-xl font-bold text-[#2E7D1E]">
-            {userInfo.name}
+            {userInfo.username}
           </span>
         )}
         <button
@@ -61,7 +61,7 @@ export function PlayerProfileForm({
       <div className="mb-5 flex flex-col gap-3">
         <input
           disabled={!isEditing}
-          value={userInfo.phone}
+          value={userInfo.phoneNumber || ""}
           onChange={(event) => onChangePhone(event.target.value)}
           placeholder="Số điện thoại"
           className={`h-11 w-full rounded-xl px-4 text-sm text-gray-700 outline-none transition

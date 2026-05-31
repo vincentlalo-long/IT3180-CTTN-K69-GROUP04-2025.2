@@ -38,7 +38,7 @@ public class UserPrincipal implements UserDetails {
     public static UserPrincipal build(User user) {
         String normalizedRole = Role.fromValue(user.getRole()).name();
         List<GrantedAuthority> authorities = Collections.singletonList(
-            new SimpleGrantedAuthority(normalizedRole)
+            new SimpleGrantedAuthority("ROLE_" + normalizedRole)
         );
         
         System.out.println("[UserPrincipal.build] User: " + user.getEmail() + ", Role: " + normalizedRole + ", Authorities: " + authorities);

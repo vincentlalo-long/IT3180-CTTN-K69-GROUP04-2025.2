@@ -1,5 +1,6 @@
-import { Calendar } from "lucide-react";
+import { Calendar, Filter, Loader2 } from "lucide-react";
 import type { PlayerBookingHistoryItem } from "../../types/account.types";
+import { useState } from "react";
 
 interface PlayerBookingHistoryProps {
   showHistory: boolean;
@@ -16,6 +17,13 @@ export function PlayerBookingHistory({
   history,
   onToggleHistory,
 }: PlayerBookingHistoryProps) {
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+
+  const filteredHistory = history.filter((item) => {
+    if (statusFilter === "ALL") return true;
+    return item.status === statusFilter;
+  });
+
   return (
     <>
       <p className="mb-2 text-base font-bold text-[#2E7D1E]">Hoạt động</p>
@@ -27,45 +35,92 @@ export function PlayerBookingHistory({
         Lịch sử đặt sân
       </button>
       {showHistory && (
-        <div className="mb-5">
-          <div className="mb-2 font-semibold">Lịch sử đặt sân</div>
+        <div className="mb-5 rounded-xl border p-4 sm:p-5 bg-gray-50">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="font-semibold text-lg text-gray-800">Lịch sử đặt sân</div>
+            
+            {/* Filter */}
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-500" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-[#2E7D1E]"
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="PENDING">Chờ xác nhận</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="RESERVED">Đã giữ chỗ</option>
+                <option value="PLAYING">Đang đá</option>
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+            </div>
+          </div>
+
           {loadingHistory ? (
-            <div className="text-sm text-gray-500">Đang tải...</div>
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#2E7D1E] mb-2" />
+              <p className="text-sm font-medium text-gray-500">Đang tải dữ liệu...</p>
+            </div>
           ) : historyError ? (
-            <div className="text-sm text-red-500">{historyError}</div>
-          ) : history.length === 0 ? (
-            <div className="text-sm text-gray-500">
-              Chưa có lịch sử đặt sân.
+            <div className="rounded-lg bg-red-50 p-4 text-center text-sm font-medium text-red-500 border border-red-100">
+              {historyError}
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="rounded-lg bg-white p-8 text-center border">
+              <Calendar className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+              <p className="text-sm font-medium text-gray-500">
+                {statusFilter === "ALL" 
+                  ? "Bạn chưa có lịch sử đặt sân nào." 
+                  : "Không tìm thấy lịch sử nào phù hợp với bộ lọc."}
+              </p>
             </div>
           ) : (
-            <ul className="space-y-3">
-              {history.map((item) => (
+            <ul className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              {filteredHistory.map((item) => (
                 <li
                   key={item.id}
-                  className="flex flex-col gap-2 rounded-xl border bg-white px-4 py-3 sm:flex-row sm:items-center sm:gap-6"
+                  className="flex flex-col gap-3 rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:gap-6"
                 >
                   <div className="flex-1">
-                    <div className="font-semibold text-[#2E7D1E]">
-                      {item.field}
+                    <div className="mb-1 text-base font-bold text-[#2E7D1E]">
+                      {item.pitchName}
                     </div>
-                    <div className="text-sm text-gray-700">
-                      {item.slot} | {item.date}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm text-gray-600 mb-2">
+                      <div className="flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-md">
+                        <span className="font-semibold text-gray-800">{item.bookingDate}</span>
+                      </div>
+                      <div className="hidden sm:block text-gray-400">•</div>
+                      <div className="font-medium">
+                        {item.startTime} - {item.endTime}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      Giá: {item.price.toLocaleString()}₫
+                    <div className="text-sm font-medium text-gray-700">
+                      Tổng tiền: <span className="text-[#2E7D1E] font-bold">{item.totalPrice.toLocaleString()}₫</span>
+                      {item.depositAmount > 0 && (
+                        <span className="ml-2 text-gray-500 text-xs font-normal">
+                          (Đã cọc: {item.depositAmount.toLocaleString()}₫)
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-bold
-                      ${item.status === "pending" ? "bg-yellow-100 text-yellow-700" : ""}
-                      ${item.status === "confirmed" ? "bg-green-100 text-green-700" : ""}
-                      ${item.status === "cancelled" ? "bg-red-100 text-red-700" : ""}
-                    `}
-                  >
-                    {item.status === "pending" && "Chờ xác nhận"}
-                    {item.status === "confirmed" && "Đã xác nhận"}
-                    {item.status === "cancelled" && "Đã hủy"}
-                  </span>
+                  <div className="flex justify-end sm:block">
+                    <span
+                      className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide border
+                        ${item.status === "PENDING" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
+                        ${item.status === "CONFIRMED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : ""}
+                        ${item.status === "PLAYING" ? "bg-green-50 text-green-700 border-green-200" : ""}
+                        ${item.status === "CANCELLED" ? "bg-red-50 text-red-700 border-red-200" : ""}
+                        ${item.status === "RESERVED" ? "bg-blue-50 text-blue-700 border-blue-200" : ""}
+                      `}
+                    >
+                      {item.status === "PENDING" && "Chờ xác nhận"}
+                      {item.status === "CONFIRMED" && "Đã xác nhận"}
+                      {item.status === "CANCELLED" && "Đã hủy"}
+                      {item.status === "PLAYING" && "Đang đá"}
+                      {item.status === "RESERVED" && "Đã giữ chỗ"}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>

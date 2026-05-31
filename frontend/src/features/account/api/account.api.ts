@@ -2,6 +2,13 @@ import type { PlayerBookingHistoryItem } from "../types/account.types";
 import apiClient from "@/shared/api/apiClient";
 
 export const getPlayerBookings = async (): Promise<PlayerBookingHistoryItem[]> => {
-  const response = await apiClient.get("/user/bookings");
-  return response.data as PlayerBookingHistoryItem[];
+  const response = await apiClient.get("/player/bookings?size=100");
+  return response.data.content as PlayerBookingHistoryItem[];
+};
+
+export const updatePlayerProfile = async (
+  username: string,
+  phoneNumber: string
+): Promise<void> => {
+  await apiClient.patch("/users/me", { username, phoneNumber });
 };
