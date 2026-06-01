@@ -35,4 +35,6 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
 
     @Query("SELECT m FROM Match m WHERE m.hostTeam.id = :teamId OR m.guestTeam.id = :teamId")
     List<Match> findByHostOrGuestTeamId(@Param("teamId") Long teamId);
+
+    List<Match> findByVenueId(Integer venueId);
 }
