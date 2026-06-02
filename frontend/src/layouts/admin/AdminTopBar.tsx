@@ -1,5 +1,7 @@
 import { Bell, ChevronDown, Menu, Search, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
+import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
 import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { useVenueContext as useFacilityContext } from "../../features/venue/hooks/useVenueContext";
 
@@ -56,6 +58,8 @@ const resolveFacilityStatus = (
 };
 
 export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
   const {
     facilities,
     selectedVenue: selectedFacility,
@@ -141,6 +145,7 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
 
           <button
             type="button"
+            onClick={() => navigate("/admin/settings")}
             className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#005E2E]/45 text-admin-text-secondary transition hover:bg-white/12 hover:text-admin-icon-light lg:inline-flex"
             aria-label="Cài đặt"
           >
@@ -159,10 +164,10 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-admin-text-primary">
-                Admin MIXIFOOT
+                {user?.username || "Admin MIXIFOOT"}
               </p>
               <p className="text-xs text-admin-text-secondary">
-                admin@mixifoot.vn
+                {user?.email || "admin@mixifoot.vn"}
               </p>
             </div>
             <img
