@@ -48,5 +48,6 @@ public class Venue {
 
     // One venue contains multiple pitches.
     @OneToMany(mappedBy = "venue", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 25)
     private List<Pitch> pitches = new ArrayList<>();
 }
