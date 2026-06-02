@@ -1,6 +1,7 @@
 package com.kstn.group4.backend.match.entity;
 
 import com.kstn.group4.backend.team.entity.Team;
+import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.venue.entity.Venue;
 import com.kstn.group4.backend.match.enums.MatchSkillLevel;
 import com.kstn.group4.backend.match.enums.MatchStatus;
@@ -30,6 +31,13 @@ public class Match {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guest_team_id")
     private Team guestTeam;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_slot_id")
+    private TimeSlot timeSlot;
+
+    @Column(name = "pitch_type")
+    private Integer pitchType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "skill_level", nullable = false)

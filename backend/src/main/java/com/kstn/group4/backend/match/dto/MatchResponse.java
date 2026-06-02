@@ -24,4 +24,5 @@ public class MatchResponse {
     private LocalDateTime matchTime;
     private MatchStatus status;
     private String description;
+    private Integer pitchType;
 }

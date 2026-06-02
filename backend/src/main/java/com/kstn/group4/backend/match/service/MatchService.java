@@ -1,9 +1,13 @@
 package com.kstn.group4.backend.match.service;
 
+import com.kstn.group4.backend.booking.entity.Booking;
+import com.kstn.group4.backend.booking.entity.BookingStatus;
+import com.kstn.group4.backend.booking.repository.BookingRepository;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import com.kstn.group4.backend.exception.BusinessException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
 import com.kstn.group4.backend.match.dto.CreateMatchRequest;
+import com.kstn.group4.backend.match.dto.MatchRequestResponse;
 import com.kstn.group4.backend.match.dto.MatchResponse;
 import com.kstn.group4.backend.match.entity.Match;
 import com.kstn.group4.backend.match.entity.MatchRequest;
@@ -17,8 +21,11 @@ import com.kstn.group4.backend.team.enums.TeamStatus;
 import com.kstn.group4.backend.team.repository.TeamRepository;
 import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
+import com.kstn.group4.backend.venue.entity.Pitch;
+import com.kstn.group4.backend.venue.entity.PitchType;
 import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.venue.entity.Venue;
+import com.kstn.group4.backend.venue.repository.PitchRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
 import com.kstn.group4.backend.venue.repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +46,8 @@ public class MatchService {
     private final UserRepository userRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final MatchRequestRepository matchRequestRepository;
+    private final PitchRepository pitchRepository;
+    private final BookingRepository bookingRepository;
 
     @Transactional
     public MatchResponse createMatch(UserPrincipal userPrincipal, CreateMatchRequest request) {
@@ -64,6 +73,8 @@ public class MatchService {
         Match match = new Match();
         match.setVenue(venue);
         match.setHostTeam(hostTeam);
+        match.setTimeSlot(timeSlot);
+        match.setPitchType(request.getPitchType());
         match.setSkillLevel(request.getSkillLevel());
         match.setMatchTime(matchTime);
         match.setDescription(request.getDescription());
@@ -149,8 +160,42 @@ public class MatchService {
                 throw new BusinessException("Chỉ đội trưởng đội chủ nhà mới được phê duyệt yêu cầu này");
             }
 
+            // === AUTO-BOOKING: Find available pitch and create booking ===
+            PitchType pitchTypeEnum = mapIntToPitchType(match.getPitchType());
+            List<Pitch> availablePitches = pitchRepository.findAvailablePitches(
+                    match.getVenue().getId(),
+                    pitchTypeEnum,
+                    match.getMatchTime().toLocalDate(),
+                    match.getTimeSlot().getId()
+            );
+
+            if (availablePitches.isEmpty()) {
+                // No pitch available — cancel match
+                match.setStatus(MatchStatus.CANCELLED);
+                matchRepository.save(match);
+                matchRequest.setStatus(MatchRequestStatus.REJECTED);
+                matchRequestRepository.save(matchRequest);
+                throw new BusinessException("Khu sân đã hết sân loại " + match.getPitchType()
+                        + " người trong khung giờ bạn chọn. Kèo đã bị hủy tự động.");
+            }
+
+            Pitch selectedPitch = availablePitches.get(0);
+
+            // Create auto-booking with CONFIRMED status
+            Booking booking = new Booking();
+            booking.setPlayer(match.getHostTeam().getCaptain());
+            booking.setPitch(selectedPitch);
+            booking.setTimeSlot(match.getTimeSlot());
+            booking.setBookingDate(match.getMatchTime().toLocalDate());
+            booking.setStartTime(match.getTimeSlot().getStartTime());
+            booking.setEndTime(match.getTimeSlot().getEndTime());
+            booking.setStatus(BookingStatus.CONFIRMED);
+            booking.setBookingType("MATCH_AUTO");
+            bookingRepository.save(booking);
+
+            // Update match state
             match.setGuestTeam(matchRequest.getGuestTeam());
-            match.setStatus(MatchStatus.MATCHED);
+            match.setStatus(MatchStatus.SCHEDULED);
             matchRepository.save(match);
 
             matchRequest.setStatus(MatchRequestStatus.APPROVED);
@@ -159,8 +204,8 @@ public class MatchService {
             // Automatically reject all other requests for this match
             List<MatchRequest> otherRequests = matchRequestRepository.findByMatchId(match.getId());
             for (MatchRequest other : otherRequests) {
-                if (!other.getId().equals(matchRequest.getId()) && 
-                    (other.getStatus() == MatchRequestStatus.PENDING_GUEST_CAPTAIN || 
+                if (!other.getId().equals(matchRequest.getId()) &&
+                    (other.getStatus() == MatchRequestStatus.PENDING_GUEST_CAPTAIN ||
                      other.getStatus() == MatchRequestStatus.PENDING_HOST_CAPTAIN)) {
                     other.setStatus(MatchRequestStatus.REJECTED);
                     matchRequestRepository.save(other);
@@ -171,6 +216,22 @@ public class MatchService {
         }
 
         return mapToResponse(matchRequest.getMatch());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MatchRequestResponse> getMatchRequests(Integer matchId) {
+        List<MatchRequest> requests = matchRequestRepository.findByMatchId(matchId);
+        return requests.stream()
+                .map(r -> new MatchRequestResponse(
+                        r.getId(),
+                        r.getMatch().getId(),
+                        r.getGuestTeam().getId(),
+                        r.getGuestTeam().getName(),
+                        r.getCreatedByUser().getUsername(),
+                        r.getStatus(),
+                        r.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -204,7 +265,19 @@ public class MatchService {
                 match.getSkillLevel(),
                 match.getMatchTime(),
                 match.getStatus(),
-                match.getDescription()
+                match.getDescription(),
+                match.getPitchType()
         );
+    }
+
+    private PitchType mapIntToPitchType(Integer pitchType) {
+        if (pitchType == null) {
+            return PitchType.SAN_5; // Default fallback
+        }
+        return switch (pitchType) {
+            case 7 -> PitchType.SAN_7;
+            case 11 -> PitchType.SAN_11;
+            default -> PitchType.SAN_5;
+        };
     }
 }

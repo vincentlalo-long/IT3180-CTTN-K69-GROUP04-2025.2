@@ -176,13 +176,17 @@ CREATE TABLE IF NOT EXISTS `matches` (
     `match_time` DATETIME NOT NULL,
     `status` VARCHAR(50) NOT NULL,
     `description` TEXT,
+    `pitch_type` INT,
+    `time_slot_id` INT,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_matches_venue_id`
         FOREIGN KEY (`venue_id`) REFERENCES `venues` (`id`),
     CONSTRAINT `fk_matches_host_team_id`
         FOREIGN KEY (`host_team_id`) REFERENCES `teams` (`id`),
     CONSTRAINT `fk_matches_guest_team_id`
-        FOREIGN KEY (`guest_team_id`) REFERENCES `teams` (`id`)
+        FOREIGN KEY (`guest_team_id`) REFERENCES `teams` (`id`),
+    CONSTRAINT `fk_matches_time_slot`
+        FOREIGN KEY (`time_slot_id`) REFERENCES `time_slots` (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `match_requests` (

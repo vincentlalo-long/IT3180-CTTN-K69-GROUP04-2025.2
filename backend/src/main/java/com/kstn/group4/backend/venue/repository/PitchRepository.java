@@ -1,9 +1,11 @@
 package com.kstn.group4.backend.venue.repository;
 
 import com.kstn.group4.backend.venue.entity.Pitch;
+import com.kstn.group4.backend.venue.entity.PitchType;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +14,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PitchRepository extends JpaRepository<Pitch, Integer> {
+
+    /**
+     * Find the first available (unbooked) pitch in a venue with a specific type for a given date and time slot.
+     * Uses NOT EXISTS to exclude pitches that already have a non-cancelled booking for that slot/date.
+     */
+    @Query("SELECT p FROM Pitch p WHERE p.venue.id = :venueId " +
+            "AND p.pitchType = :pitchType " +
+            "AND p.isActive = true " +
+            "AND NOT EXISTS (" +
+            "  SELECT b FROM com.kstn.group4.backend.booking.entity.Booking b " +
+            "  WHERE b.pitch.id = p.id " +
+            "  AND b.bookingDate = :bookingDate " +
+            "  AND b.timeSlot.id = :timeSlotId " +
+            "  AND b.status <> com.kstn.group4.backend.booking.entity.BookingStatus.CANCELLED" +
+            ") ORDER BY p.id ASC")
+    List<Pitch> findAvailablePitches(
+            @Param("venueId") Integer venueId,
+            @Param("pitchType") PitchType pitchType,
+            @Param("bookingDate") LocalDate bookingDate,
+            @Param("timeSlotId") Integer timeSlotId);
 
     List<Pitch> findByVenueId(Integer venueId);
 

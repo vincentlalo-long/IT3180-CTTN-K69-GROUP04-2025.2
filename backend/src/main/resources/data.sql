@@ -115,13 +115,13 @@ UPDATE `users` SET `team_id` = 2 WHERE `id` = 3;
 -- =========================
 -- 8. MATCHES (4 matches: OPEN, MATCHED, CANCELLED, OPEN)
 -- =========================
-INSERT INTO `matches` (`id`, `venue_id`, `host_team_id`, `guest_team_id`, `skill_level`, `match_time`, `status`)
+INSERT INTO `matches` (`id`, `venue_id`, `host_team_id`, `guest_team_id`, `skill_level`, `match_time`, `status`, `pitch_type`, `time_slot_id`)
 VALUES
     -- Open match at venue 1
-    (1, 1, 1, NULL, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 2 DAY), 'OPEN'),
+    (1, 1, 1, NULL, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 2 DAY), 'OPEN', 5, 8),
     -- Matched match at venue 1
-    (2, 1, 1, 2, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 3 DAY), 'MATCHED'),
+    (2, 1, 1, 2, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 3 DAY), 'MATCHED', 5, 9),
     -- Cancelled match at venue 2
-    (3, 2, 2, NULL, 'WEAK', DATE_ADD(NOW(), INTERVAL 1 DAY), 'CANCELLED'),
+    (3, 2, 2, NULL, 'WEAK', DATE_ADD(NOW(), INTERVAL 1 DAY), 'CANCELLED', 7, 8),
     -- Open match at venue 2
-    (4, 2, 1, NULL, 'GOOD', DATE_ADD(NOW(), INTERVAL 4 DAY), 'OPEN');
+    (4, 2, 1, NULL, 'GOOD', DATE_ADD(NOW(), INTERVAL 4 DAY), 'OPEN', 11, 10);

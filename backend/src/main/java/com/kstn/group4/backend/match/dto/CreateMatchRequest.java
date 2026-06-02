@@ -22,5 +22,8 @@ public class CreateMatchRequest {
     @NotNull(message = "Ngày thi đấu không được để trống")
     private LocalDate matchDate;
 
+    @NotNull(message = "Loại sân không được để trống (5, 7, 11)")
+    private Integer pitchType;
+
     private String description;
 }
