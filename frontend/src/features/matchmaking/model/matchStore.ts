@@ -15,12 +15,9 @@ interface MatchState {
     timeSlotId: number,
     matchDate: string,
     description: string,
+    pitchType: number,
   ) => Promise<void>;
-  joinMatchAction: (
-    matchId: number,
-    guestTeamId: number,
-    guestTeamName: string,
-  ) => Promise<void>;
+  joinMatchAction: (matchId: number) => Promise<void>;
 }
 
 export const useMatchStore = create<MatchState>((set, get) => ({
@@ -46,10 +43,10 @@ export const useMatchStore = create<MatchState>((set, get) => ({
     }
   },
 
-  createNewMatch: async (venueId, skillLevel, timeSlotId, matchDate, description) => {
+  createNewMatch: async (venueId, skillLevel, timeSlotId, matchDate, description, pitchType) => {
     set({ loading: true });
     try {
-      await createMatch({ venueId, skillLevel, timeSlotId, matchDate, description });
+      await createMatch({ venueId, skillLevel, timeSlotId, matchDate, description, pitchType });
       const { selectedVenueId, selectedSkillLevel } = get();
       const list = await getOpenMatches(selectedVenueId, selectedSkillLevel);
       set({ matches: list, loading: false });
@@ -59,34 +56,12 @@ export const useMatchStore = create<MatchState>((set, get) => ({
     }
   },
 
-  joinMatchAction: async (matchId, guestTeamId, guestTeamName) => {
-    const originalMatches = get().matches;
-
-    // Optimistic Update: Set guest team details immediately and set status to MATCHED
-    set({
-      matches: originalMatches.map((m) =>
-        m.id === matchId
-          ? {
-              ...m,
-              guestTeamId,
-              guestTeamName,
-              status: "MATCHED" as const,
-            }
-          : m,
-      ),
-    });
-
+  joinMatchAction: async (matchId) => {
     try {
-      const updatedMatch = await joinMatch(matchId);
-      // Update with server response
-      set({
-        matches: get().matches.map((m) =>
-          m.id === matchId ? updatedMatch : m,
-        ),
-      });
+      await joinMatch(matchId);
+      // After successful join, just refresh the match list to get accurate server state
+      await get().fetchMatches();
     } catch (error) {
-      // Revert on error
-      set({ matches: originalMatches });
       throw error;
     }
   },

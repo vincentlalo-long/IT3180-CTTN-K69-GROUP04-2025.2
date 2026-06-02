@@ -1,5 +1,6 @@
 export type MatchSkillLevel = "WEAK" | "AVERAGE" | "GOOD";
-export type MatchStatus = "OPEN" | "MATCHED" | "CANCELLED" | "COMPLETED";
+export type MatchStatus = "OPEN" | "MATCHED" | "SCHEDULED" | "CANCELLED" | "COMPLETED";
+export type MatchRequestStatus = "PENDING_GUEST_CAPTAIN" | "PENDING_HOST_CAPTAIN" | "APPROVED" | "REJECTED";
 
 export interface MatchResponse {
   id: number;
@@ -12,6 +13,18 @@ export interface MatchResponse {
   skillLevel: MatchSkillLevel;
   matchTime: string;
   status: MatchStatus;
+  description?: string;
+  pitchType?: number;
+}
+
+export interface MatchRequestResponse {
+  id: number;
+  matchId: number;
+  guestTeamId: number;
+  guestTeamName: string;
+  createdByUsername: string;
+  status: MatchRequestStatus;
+  createdAt: string;
 }
 
 // Keep mock types if any legacy components import them to prevent breaking

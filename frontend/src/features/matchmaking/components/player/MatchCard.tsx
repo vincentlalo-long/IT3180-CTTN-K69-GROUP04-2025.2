@@ -1,10 +1,11 @@
-import { Calendar, MapPin, Users } from "lucide-react";
-import { useState } from "react";
+import { Calendar, MapPin, Users, CheckCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 
-import type { MatchResponse } from "../../types/matchmaking.types";
+import type { MatchResponse, MatchRequestResponse } from "../../types/matchmaking.types";
 import { useMatchStore } from "../../model/matchStore";
+import { getMatchRequests, approveMatchRequest } from "../../api/matchmakingApi";
 
 interface MatchCardProps {
   match: MatchResponse;
@@ -13,7 +14,11 @@ interface MatchCardProps {
 
 export function MatchCard({ match, userTeamId }: MatchCardProps) {
   const joinMatchAction = useMatchStore((state) => state.joinMatchAction);
+  const fetchMatches = useMatchStore((state) => state.fetchMatches);
   const [isJoining, setIsJoining] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<MatchRequestResponse[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
 
   const getSkillLevelLabel = (level: string) => {
     switch (level) {
@@ -41,8 +46,31 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
     }
   };
 
+  const getPitchTypeLabel = (pt?: number) => {
+    if (!pt) return null;
+    return `Sân ${pt}`;
+  };
+
+  const isHost = userTeamId === match.hostTeamId;
+  const isMatched = match.status === "MATCHED" || match.status === "SCHEDULED" || match.guestTeamId !== null;
+
+  // Fetch pending requests for the host captain
+  useEffect(() => {
+    if (isHost && match.status === "OPEN") {
+      setLoadingRequests(true);
+      getMatchRequests(match.id)
+        .then((data) => {
+          const pending = data.filter(
+            (r) => r.status === "PENDING_HOST_CAPTAIN" || r.status === "PENDING_GUEST_CAPTAIN"
+          );
+          setPendingRequests(pending);
+        })
+        .catch((err) => console.error("Lỗi khi tải yêu cầu cáp kèo:", err))
+        .finally(() => setLoadingRequests(false));
+    }
+  }, [isHost, match.id, match.status]);
+
   const handleJoin = async () => {
-    // Đã bỏ chặn ngầm tại Frontend để luồng MatchRequest xử lý ở Backend
     if (userTeamId === match.hostTeamId) {
       alert("Bạn không thể tự nhận kèo của chính đội mình.");
       return;
@@ -50,8 +78,7 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
 
     setIsJoining(true);
     try {
-      // Optimistic update: use temporary team name
-      await joinMatchAction(match.id, userTeamId!, "Đội của bạn");
+      await joinMatchAction(match.id);
     } catch (error) {
       console.error(error);
       const axiosError = error as { response?: { data?: { message?: string } } };
@@ -62,8 +89,23 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
     }
   };
 
-  const isMatched = match.status === "MATCHED" || match.guestTeamId !== null;
-  const isHost = userTeamId === match.hostTeamId;
+  const handleApprove = async (requestId: number) => {
+    if (!window.confirm("Bạn có chắc chắn muốn chấp nhận yêu cầu cáp kèo này?")) return;
+
+    setApprovingId(requestId);
+    try {
+      await approveMatchRequest(requestId);
+      alert("Đã chấp nhận kèo thành công! Sân đã được đặt tự động.");
+      await fetchMatches();
+    } catch (error) {
+      console.error(error);
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      const errMsg = axiosError.response?.data?.message || "Phê duyệt thất bại. Vui lòng thử lại!";
+      alert(errMsg);
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   // Format date nicely
   let formattedDate = "";
@@ -75,6 +117,21 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
     formattedDate = match.matchTime;
   }
 
+  const getStatusLabel = () => {
+    switch (match.status) {
+      case "SCHEDULED":
+        return "Đã chốt & Đặt sân";
+      case "MATCHED":
+        return "Kèo đã được nhận";
+      case "CANCELLED":
+        return "Kèo đã bị huỷ";
+      case "COMPLETED":
+        return "Đã hoàn thành";
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="group overflow-hidden rounded-2xl border-2 border-black/60 bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition duration-300 hover:scale-[1.01] hover:brightness-95 w-full text-left">
       {/* Venue Header */}
@@ -85,13 +142,20 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
             {match.venueName}
           </h3>
         </div>
-        <span
-          className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getSkillLevelBadgeColor(
-            match.skillLevel,
-          )}`}
-        >
-          {getSkillLevelLabel(match.skillLevel)}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {match.pitchType && (
+            <span className="inline-flex rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+              {getPitchTypeLabel(match.pitchType)}
+            </span>
+          )}
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getSkillLevelBadgeColor(
+              match.skillLevel,
+            )}`}
+          >
+            {getSkillLevelLabel(match.skillLevel)}
+          </span>
+        </div>
       </div>
 
       {/* Match Details */}
@@ -139,15 +203,61 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
         </div>
       </div>
 
+      {/* Pending Requests for Host Captain */}
+      {isHost && match.status === "OPEN" && pendingRequests.length > 0 && (
+        <div className="mb-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+            Yêu cầu cáp kèo ({pendingRequests.length})
+          </p>
+          {pendingRequests.map((req) => (
+            <div key={req.id} className="flex items-center justify-between gap-2 rounded-lg border border-amber-100 bg-white p-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-gray-800 truncate">{req.guestTeamName}</p>
+                <p className="text-xs text-gray-500">
+                  {req.status === "PENDING_HOST_CAPTAIN" ? "Chờ bạn duyệt" : "Chờ đội trưởng đội khách"}
+                </p>
+              </div>
+              {req.status === "PENDING_HOST_CAPTAIN" && (
+                <button
+                  type="button"
+                  onClick={() => handleApprove(req.id)}
+                  disabled={approvingId === req.id}
+                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+                >
+                  {approvingId === req.id ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <CheckCircle size={12} />
+                  )}
+                  Chấp nhận
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Loading indicator for requests */}
+      {isHost && match.status === "OPEN" && loadingRequests && (
+        <div className="mb-3 flex items-center justify-center gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-500">
+          <Loader2 size={14} className="animate-spin" />
+          Đang tải yêu cầu cáp kèo...
+        </div>
+      )}
+
       {/* Action Button */}
       <div className="mt-2">
-        {isMatched ? (
+        {match.status === "SCHEDULED" ? (
+          <div className="w-full rounded-full bg-sky-50 py-2.5 text-center text-sm font-bold text-sky-700 border border-sky-200">
+            {getStatusLabel()} ✓
+          </div>
+        ) : isMatched ? (
           <div className="w-full rounded-full bg-gray-100 py-2.5 text-center text-sm font-semibold text-gray-500 border border-gray-200">
             Kèo đã được nhận (2/2)
           </div>
         ) : isHost ? (
           <div className="w-full rounded-full bg-emerald-50 py-2.5 text-center text-sm font-bold text-emerald-700 border border-emerald-200">
-            Kèo do bạn tạo
+            Kèo do bạn tạo — đang chờ đối thủ
           </div>
         ) : (
           <button
