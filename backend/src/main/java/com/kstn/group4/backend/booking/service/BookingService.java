@@ -464,4 +464,44 @@ public class BookingService {
     private BigDecimal calculateDepositAmount(BigDecimal totalPrice) {
         return totalPrice.multiply(BigDecimal.valueOf(0.5)).setScale(2, RoundingMode.HALF_UP);
     }
+
+    @Transactional
+    public Booking createMatchAutoBooking(Integer playerId, Integer pitchId, Integer timeSlotId, LocalDate bookingDate) {
+        User player = userRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng", "User"));
+        Pitch pitch = pitchRepository.findByIdForUpdate(pitchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân", "Pitch"));
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca", "TimeSlot"));
+
+        // Tận dụng logic tính toán hệ số giá (Weekend, Golden Hour) có sẵn
+        boolean isWeekend = isWeekend(bookingDate);
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+        
+        BigDecimal coefficient = priceRuleRepository
+                .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), isWeekend)
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (isWeekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+
+        BigDecimal totalPrice = pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+
+        Booking booking = new Booking();
+        booking.setPlayer(player);
+        booking.setPitch(pitch);
+        booking.setTimeSlot(timeSlot);
+        booking.setBookingDate(bookingDate);
+        booking.setStartTime(timeSlot.getStartTime());
+        booking.setEndTime(timeSlot.getEndTime());
+        booking.setStatus(BookingStatus.CONFIRMED); // Ép trạng thái CONFIRMED (luồng mock)
+        booking.setBookingType("MATCH_AUTO");
+        booking.setTotalPrice(totalPrice); // Lưu đúng tổng tiền tính được từ CSDL!
+
+        return bookingRepository.save(booking);
+    }
 }

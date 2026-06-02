@@ -2,6 +2,7 @@ package com.kstn.group4.backend.match.controller;
 
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import com.kstn.group4.backend.match.dto.CreateMatchRequest;
+import com.kstn.group4.backend.match.dto.MatchRequestResponse;
 import com.kstn.group4.backend.match.dto.MatchResponse;
 import com.kstn.group4.backend.match.enums.MatchSkillLevel;
 import com.kstn.group4.backend.match.service.MatchService;
@@ -23,7 +24,7 @@ public class MatchController {
     private final MatchService matchService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('PLAYER')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER')")
     public ResponseEntity<MatchResponse> createMatch(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody CreateMatchRequest request
@@ -41,7 +42,7 @@ public class MatchController {
     }
 
     @PostMapping("/{id}/join")
-    @PreAuthorize("hasAuthority('PLAYER')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER')")
     public ResponseEntity<MatchResponse> joinMatch(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Integer id
@@ -49,8 +50,16 @@ public class MatchController {
         return ResponseEntity.ok(matchService.joinMatch(userPrincipal, id));
     }
 
+    @GetMapping("/{matchId}/requests")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER')")
+    public ResponseEntity<List<MatchRequestResponse>> getMatchRequests(
+            @PathVariable Integer matchId
+    ) {
+        return ResponseEntity.ok(matchService.getMatchRequests(matchId));
+    }
+
     @PostMapping("/requests/{requestId}/approve")
-    @PreAuthorize("hasAuthority('PLAYER')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER')")
     public ResponseEntity<MatchResponse> approveMatchRequest(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @PathVariable Integer requestId

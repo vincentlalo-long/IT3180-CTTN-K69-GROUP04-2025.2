@@ -18,8 +18,8 @@ public class AdminMatchController {
     private final MatchService matchService;
 
     @GetMapping
-    public ResponseEntity<List<MatchResponse>> getAllMatches() {
-        return ResponseEntity.ok(matchService.getAllMatchesForAdmin());
+    public ResponseEntity<List<MatchResponse>> getAllMatches(@RequestParam(required = false) Integer venueId) {
+        return ResponseEntity.ok(matchService.getAllMatchesForAdmin(venueId));
     }
 
     @DeleteMapping("/{id}")

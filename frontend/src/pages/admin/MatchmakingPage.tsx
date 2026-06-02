@@ -1,17 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getAdminAllMatches, deleteMatch } from "../../features/matchmaking/api/matchmakingApi";
 import type { MatchResponse } from "../../features/matchmaking/types/matchmaking.types";
+import { useVenueContext } from "../../features/venue/hooks/useVenueContext";
+import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { toast } from "../../shared/utils/toast";
 import { Trash2, Calendar, MapPin, Users, Award, RefreshCw } from "lucide-react";
 
 export function MatchmakingPage() {
+  const { selectedVenueId } = useVenueContext();
   const [matches, setMatches] = useState<MatchResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAdminAllMatches();
+      const venueParam = selectedVenueId === ALL_FACILITIES_ID ? null : Number(selectedVenueId);
+      const data = await getAdminAllMatches(venueParam);
       setMatches(data);
     } catch (error) {
       console.error(error);
@@ -19,11 +23,11 @@ export function MatchmakingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedVenueId]);
 
   useEffect(() => {
     fetchMatches();
-  }, []);
+  }, [selectedVenueId, fetchMatches]);
 
   const handleRemoveMatch = async (matchId: number) => {
     if (!window.confirm(`Bạn có chắc chắn muốn gỡ kèo đấu ID: ${matchId} khỏi hệ thống?`)) {

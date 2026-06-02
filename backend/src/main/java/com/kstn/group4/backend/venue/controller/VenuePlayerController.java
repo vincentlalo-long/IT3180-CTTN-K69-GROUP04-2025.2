@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/player/venues")
-@PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN')")
+@PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
 public class VenuePlayerController {
 
 	private final VenuePlayerService venuePlayerService;

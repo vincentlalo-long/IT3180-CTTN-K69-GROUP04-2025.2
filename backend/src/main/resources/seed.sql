@@ -165,31 +165,7 @@ VALUES
     -- Pitch 5 (11-a-side) - 2 time slots
     (5, 9, 0, 1.00), -- Standard weekday
     (5, 10, 1, 1.20);
-    -- Pitch 1 (5-a-side) - sample slots
-    (1, 1, 0, 150000),
-    (1, 1, 1, 180000),
-    (1, 2, 0, 150000),
-    (1, 2, 1, 180000),
-    -- Pitch 2 (5-a-side) - sample slots
-    (2, 3, 0, 150000),
-    (2, 3, 1, 180000),
-    (2, 4, 0, 150000),
-    (2, 4, 1, 180000),
-    -- Pitch 3 (7-a-side) - sample slots
-    (3, 5, 0, 250000),
-    (3, 5, 1, 300000),
-    (3, 6, 0, 250000),
-    (3, 6, 1, 300000),
-    -- Pitch 4 (7-a-side) - sample slots
-    (4, 7, 0, 250000),
-    (4, 7, 1, 300000),
-    (4, 8, 0, 250000),
-    (4, 8, 1, 300000),
-    -- Pitch 5 (11-a-side) - sample slots
-    (5, 9, 0, 500000),
-    (5, 9, 1, 600000),
-    (5, 10, 0, 500000),
-    (5, 10, 1, 600000);
+
 
 -- =========================
 -- 5. TIME SLOTS — MASTER DATA (11 khung giờ duy nhất, không gắn pitch)
@@ -265,10 +241,10 @@ UPDATE `users` SET `team_id` = 2 WHERE `id` = 3;
 -- =========================
 -- 9. MATCHES
 -- =========================
-INSERT INTO `matches` (`id`, `venue_id`, `host_team_id`, `guest_team_id`, `skill_level`, `match_time`, `status`)
+INSERT INTO `matches` (`id`, `venue_id`, `host_team_id`, `guest_team_id`, `skill_level`, `match_time`, `status`, `pitch_type`, `time_slot_id`)
 VALUES
     -- Open match
-    (1, 1, 1, NULL, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 2 DAY), 'OPEN'),
+    (1, 1, 1, NULL, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 2 DAY), 'OPEN', 5, 8),
     -- Matched match
-    (2, 1, 1, 2, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 3 DAY), 'MATCHED');
+    (2, 1, 1, 2, 'AVERAGE', DATE_ADD(NOW(), INTERVAL 3 DAY), 'MATCHED', 5, 9);
 

@@ -22,7 +22,7 @@ public class TeamController {
     private final TeamService teamService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<TeamResponse> createTeam(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody CreateTeamRequest request
@@ -32,7 +32,7 @@ public class TeamController {
     }
 
     @GetMapping("/my-team")
-    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<TeamResponse> getMyTeam(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
@@ -41,14 +41,14 @@ public class TeamController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<TeamResponse> getTeamDetails(@PathVariable Long id) {
         TeamResponse response = teamService.getTeamDetailsById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<List<TeamResponse>> getApprovedTeams() {
         return ResponseEntity.ok(teamService.getApprovedTeams());
     }

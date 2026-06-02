@@ -18,16 +18,6 @@ export function subscribeProfileEvent(fn: ProfileEventListener) {
   };
 }
 
-export interface PlayerProfileInfo {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  avatarUrl?: string;
-  role?: string;
-  teamId?: number | null;
-}
-
 export function usePlayerProfile() {
   const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
@@ -42,12 +32,13 @@ export function usePlayerProfile() {
         const dto = res.data;
         setUserInfo({
           id: dto.id,
-          name: dto.username,
+          username: dto.username,
           email: dto.email,
-          phone: dto.phoneNumber,
+          phoneNumber: dto.phoneNumber,
           avatarUrl: dto.avatarUrl,
           role: dto.role,
           teamId: dto.teamId,
+          createdAt: dto.createdAt,
         });
         setLoadingUser(false);
       })

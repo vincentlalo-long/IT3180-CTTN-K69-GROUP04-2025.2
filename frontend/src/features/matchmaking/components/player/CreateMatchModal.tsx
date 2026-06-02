@@ -32,6 +32,7 @@ export function CreateMatchModal({ onClose, onSuccess }: CreateMatchModalProps) 
   const [skillLevel, setSkillLevel] = useState<MatchSkillLevel>("AVERAGE");
   const [matchDate, setMatchDate] = useState("");
   const [timeSlotId, setTimeSlotId] = useState("1");
+  const [pitchType, setPitchType] = useState("5");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +85,7 @@ export function CreateMatchModal({ onClose, onSuccess }: CreateMatchModalProps) 
     setError(null);
 
     try {
-      await createNewMatch(parseInt(venueId), skillLevel, parseInt(timeSlotId), matchDate, description);
+      await createNewMatch(parseInt(venueId), skillLevel, parseInt(timeSlotId), matchDate, description, parseInt(pitchType));
       alert("Đăng ký tạo kèo thành công!");
       onSuccess();
     } catch (err) {
@@ -145,6 +146,22 @@ export function CreateMatchModal({ onClose, onSuccess }: CreateMatchModalProps) 
                   {v.name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-white/70 mb-1.5">
+              Loại sân
+            </label>
+            <select
+              required
+              value={pitchType}
+              onChange={(e) => setPitchType(e.target.value)}
+              className="w-full rounded-xl border border-white/15 bg-[#032e1a] px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="5">Sân 5 người</option>
+              <option value="7">Sân 7 người</option>
+              <option value="11">Sân 11 người</option>
             </select>
           </div>
 

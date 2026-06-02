@@ -1,6 +1,6 @@
 import apiClient from "@/shared/api/apiClient";
 import { logApiError } from "@/shared/utils/apiError";
-import type { MatchResponse, MatchSkillLevel } from "../types/matchmaking.types";
+import type { MatchResponse, MatchSkillLevel, MatchRequestResponse } from "../types/matchmaking.types";
 
 export const getOpenMatches = async (
   venueId?: number | null,
@@ -27,6 +27,7 @@ export const createMatch = async (data: {
   timeSlotId: number;
   matchDate: string;
   description: string;
+  pitchType: number;
 }): Promise<MatchResponse> => {
   try {
     const response = await apiClient.post<MatchResponse>("/matches", data);
@@ -49,9 +50,40 @@ export const joinMatch = async (matchId: number): Promise<MatchResponse> => {
   }
 };
 
-export const getAdminAllMatches = async (): Promise<MatchResponse[]> => {
+export const getMatchRequests = async (matchId: number): Promise<MatchRequestResponse[]> => {
   try {
-    const response = await apiClient.get<MatchResponse[]>("/admin/matches");
+    const response = await apiClient.get<MatchRequestResponse[]>(
+      `/matches/${matchId}/requests`,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("getMatchRequests", error, { matchId });
+    throw error;
+  }
+};
+
+export const approveMatchRequest = async (requestId: number): Promise<MatchResponse> => {
+  try {
+    const response = await apiClient.post<MatchResponse>(
+      `/matches/requests/${requestId}/approve`,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("approveMatchRequest", error, { requestId });
+    throw error;
+  }
+};
+
+export const getAdminAllMatches = async (
+  venueId?: number | null,
+): Promise<MatchResponse[]> => {
+  try {
+    const params: Record<string, string | number> = {};
+    if (venueId) params.venueId = venueId;
+
+    const response = await apiClient.get<MatchResponse[]>("/admin/matches", {
+      params,
+    });
     return response.data;
   } catch (error) {
     logApiError("getAdminAllMatches", error);

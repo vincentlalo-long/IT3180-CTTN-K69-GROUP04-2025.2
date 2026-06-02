@@ -1,7 +1,7 @@
 export { MatchCard } from "./components/player/MatchCard";
 export { CreateMatchModal } from "./components/player/CreateMatchModal";
 export { useMatchStore } from "./model/matchStore";
-export type { MatchResponse, MatchSkillLevel, MatchStatus } from "./types/matchmaking.types";
+export type { MatchResponse, MatchSkillLevel, MatchStatus, MatchRequestResponse } from "./types/matchmaking.types";
 export * from "./api/matchmakingApi";
 
 // Legacy exports to prevent Admin matchmaking pages from breaking
