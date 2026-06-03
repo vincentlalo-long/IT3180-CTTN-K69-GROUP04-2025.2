@@ -6,11 +6,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   DateSelector,
   SelectedSlotsBar,
+  ServiceSelector,
   SlotsGrid,
   useAvailableSlots,
   useSlotSelection,
 } from "@/features/booking";
 import type {
+  ServiceItemResponse,
   SlotStatusResponse,
   TimeSlotRange,
 } from "@/features/venue/types/venue.types";
@@ -28,6 +30,8 @@ const toSlotRange = (slot: SlotStatusResponse): TimeSlotRange => ({
 const sortSlots = (left: TimeSlotRange, right: TimeSlotRange) =>
   left.startTime.localeCompare(right.startTime);
 
+const toNumber = (value: string | number | null | undefined) => Number(value ?? 0);
+
 export function BookingField() {
   const navigate = useNavigate();
   const { fieldId } = useParams();
@@ -39,6 +43,8 @@ export function BookingField() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [selectedServices, setSelectedServices] = useState<Record<number, number>>({});
+  const [availableServices, setAvailableServices] = useState<ServiceItemResponse[]>([]);
 
   const { selectedSlots, toggleSlot, clearSlots } = useSlotSelection({
     resetKey: [selectedDate, selectedPitchId],
@@ -72,8 +78,14 @@ export function BookingField() {
     return slots
       .map((slot) => {
         const slotRange = toSlotRange(slot);
-        if (slot.status === "BOOKED") {
-          return { slot: slotRange, status: "booked" } as SlotDisplayItem;
+        const price = toNumber(slot.price);
+
+        if (slot.status === "PENDING") {
+          return { slot: slotRange, status: "pending", price } as SlotDisplayItem;
+        }
+
+        if (slot.status !== "AVAILABLE") {
+          return { slot: slotRange, status: "booked", price } as SlotDisplayItem;
         }
 
         if (
@@ -83,17 +95,52 @@ export function BookingField() {
               item.endTime === slotRange.endTime,
           )
         ) {
-          return { slot: slotRange, status: "selected" } as SlotDisplayItem;
+          return { slot: slotRange, status: "selected", price } as SlotDisplayItem;
         }
 
-        return { slot: slotRange, status: "available" } as SlotDisplayItem;
+        return { slot: slotRange, status: "available", price } as SlotDisplayItem;
       })
       .sort((left, right) => sortSlots(left.slot, right.slot));
   }, [slots, selectedSlots]);
 
+  const selectedSlotDetails = useMemo(() => {
+    return selectedSlots
+      .map((slot) =>
+        slots.find(
+          (item) =>
+            normalizeTime(item.startTime) === slot.startTime &&
+            normalizeTime(item.endTime) === slot.endTime,
+        ),
+      )
+      .filter((slot): slot is SlotStatusResponse => Boolean(slot));
+  }, [selectedSlots, slots]);
+
+  const fieldTotal = useMemo(() => {
+    return selectedSlotDetails.reduce(
+      (total, slot) => total + toNumber(slot.price),
+      0,
+    );
+  }, [selectedSlotDetails]);
+
+  const serviceTotal = useMemo(() => {
+    return availableServices.reduce((total, service) => {
+      const quantity = selectedServices[service.id] ?? 0;
+      return total + quantity * toNumber(service.price);
+    }, 0);
+  }, [availableServices, selectedServices]);
+
+  const selectedServicePayload = useMemo(() => {
+    return Object.entries(selectedServices)
+      .map(([serviceId, quantity]) => ({
+        serviceId: Number(serviceId),
+        quantity,
+      }))
+      .filter((item) => item.quantity > 0);
+  }, [selectedServices]);
+
   const handleSubmit = async () => {
     if (!selectedPitchId) {
-      setSubmitError("Vui long chon san truoc khi dat.");
+      setSubmitError("Vui lòng chọn sân trước khi đặt.");
       return;
     }
 
@@ -116,23 +163,25 @@ export function BookingField() {
         .filter((value): value is number => typeof value === "number");
 
       if (timeSlotIds.length !== selectedSlots.length) {
-        setSubmitError("Khong the xac dinh timeSlotId cho tat ca khung gio.");
+        setSubmitError("Không thể xác định timeSlotId cho tất cả khung giờ.");
         setIsSubmitting(false);
         return;
       }
 
       await Promise.all(
-        timeSlotIds.map((timeSlotId) =>
+        timeSlotIds.map((timeSlotId, index) =>
           createBooking({
             pitchId: selectedPitchId,
             bookingDate,
             timeSlotId,
+            services: index === 0 ? selectedServicePayload : [],
           }),
         ),
       );
 
-      setSubmitSuccess("Dat san thanh cong.");
+      setSubmitSuccess("Đặt sân thành công.");
       clearSlots();
+      setSelectedServices({});
       refresh();
     } catch (err) {
       logApiError("BookingField.handleSubmit", err, {
@@ -141,7 +190,7 @@ export function BookingField() {
         bookingDate,
         selectedSlotCount: selectedSlots.length,
       });
-      setSubmitError(getApiErrorMessage(err, "Dat san that bai."));
+      setSubmitError(getApiErrorMessage(err, "Đặt sân thất bại."));
     } finally {
       setIsSubmitting(false);
     }
@@ -159,10 +208,10 @@ export function BookingField() {
           </button>
           <div className="flex-1">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
-              Dat san
+              Đặt sân
             </h1>
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              {venueAvailability?.venueName ?? "Dang tai thong tin san"}
+              {venueAvailability?.venueName ?? "Đang tải thông tin sân"}
             </p>
           </div>
           <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-slate-300">
@@ -172,7 +221,7 @@ export function BookingField() {
               onChange={(event) => setAutoRefresh(event.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-emerald-600"
             />
-            Cap nhat tu dong
+            Cập nhật tự động
           </label>
         </div>
 
@@ -181,7 +230,7 @@ export function BookingField() {
         {venueAvailability?.pitches.length ? (
           <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <label className="text-sm font-semibold text-gray-900 dark:text-slate-100">
-              Chon san
+              Chọn sân
             </label>
             <select
               value={selectedPitchId ?? ""}
@@ -199,7 +248,7 @@ export function BookingField() {
             </select>
             {lastUpdated && (
               <p className="mt-2 text-xs text-gray-400 dark:text-slate-500">
-                Cap nhat luc {format(lastUpdated, "HH:mm:ss")}
+                Cập nhật lúc {format(lastUpdated, "HH:mm:ss")}
               </p>
             )}
           </div>
@@ -207,7 +256,7 @@ export function BookingField() {
 
         {loading && (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-            Dang tai khung gio...
+            Đang tải khung giờ...
           </div>
         )}
 
@@ -219,19 +268,25 @@ export function BookingField() {
 
         {!loading && !error && !pitch && (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-            Khong tim thay san phu hop.
+            Không tìm thấy sân phù hợp.
           </div>
         )}
 
         {!loading && !error && pitch && (
           <div className="space-y-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              Dang xem:{" "}
+              Đang xem:{" "}
               <span className="font-semibold text-gray-900 dark:text-slate-100">
                 {pitch.pitchName}
               </span>
             </div>
             <SlotsGrid slots={slotItems} onSlotToggle={toggleSlot} />
+            <ServiceSelector
+              venueId={venueId}
+              selectedServices={selectedServices}
+              onChange={setSelectedServices}
+              onServicesLoaded={setAvailableServices}
+            />
           </div>
         )}
 
@@ -253,6 +308,9 @@ export function BookingField() {
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           disableSubmit={!selectedPitchId || loading}
+          fieldTotal={fieldTotal}
+          serviceTotal={serviceTotal}
+          totalPrice={fieldTotal + serviceTotal}
         />
       </div>
     </div>
