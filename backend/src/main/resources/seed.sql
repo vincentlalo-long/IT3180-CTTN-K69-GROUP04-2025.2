@@ -37,30 +37,10 @@ ALTER TABLE `booking_payments` AUTO_INCREMENT = 1;
 ALTER TABLE `teams` AUTO_INCREMENT = 1;
 ALTER TABLE `matches` AUTO_INCREMENT = 1;
 
-<<<<<<< HEAD
-ALTER TABLE `booking_services` AUTO_INCREMENT = 1;
-
--- =========================
--- 1. USERS (3 users: 1 ADMIN, 2 PLAYERS)
--- =========================
--- Password: "password123" -> BCrypt encoded
-INSERT INTO
-    `users` (
-    `id`,
-    `username`,
-    `email`,
-    `password`,
-    `role`,
-    `created_at`,
-    `phone_number`,
-    `avatar_url`
-)
-=======
 -- ==========================================
 -- 1. USERS (INSERT IGNORE TO PROTECT ACTIVE TOKENS)
 -- ==========================================
 INSERT IGNORE INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `phone_number`, `avatar_url`)
->>>>>>> origin/dev
 VALUES
     (1, 'owner_hoang', 'hoang.owner@football.vn', '$2a$10$Y9O5YLMY2VVLvxPUQXUuZOBV0ZQTvEVjYQhxFQDXvJ5y3YJ1dQrGG', 'ADMIN', NOW(), '0909123456', NULL),
     (2, 'player_minh', 'minh.player@football.vn', '$2a$10$slYQmyNdGzin7olVN3p5be3DlH.PKZbv5H8KnzzigXXbVxzy6QMOG', 'PLAYER', NOW(), '0912345678', NULL),
