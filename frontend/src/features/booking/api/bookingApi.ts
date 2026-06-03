@@ -43,7 +43,7 @@ export const fetchOrdersByVenue = async (
 };
 
 /**
- * Cap nhat trang thai don dat san.
+ * Cập nhật trạng thái đơn đặt sân.
  */
 export const updateOrderStatusApi = async (
   orderId: number,

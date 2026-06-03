@@ -3,6 +3,7 @@ export { OrderManagementTable } from "./components/admin/OrderManagementTable";
 export { BookingSlotsDemo } from "./components/player/BookingSlotsDemo";
 export { DateSelector } from "./components/player/DateSelector";
 export { SelectedSlotsBar } from "./components/player/SelectedSlotsBar";
+export { ServiceSelector } from "./components/player/ServiceSelector";
 export { SlotCard } from "./components/player/SlotCard";
 export { SlotsGrid } from "./components/player/SlotsGrid";
 

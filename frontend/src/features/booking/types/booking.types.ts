@@ -40,6 +40,10 @@ export interface CreateBookingRequest {
   pitchId: number;
   bookingDate: string; // YYYY-MM-DD
   timeSlotId: number;
+  services?: Array<{
+    serviceId: number;
+    quantity: number;
+  }>;
 }
 
 export interface PlayerBookingResponse {

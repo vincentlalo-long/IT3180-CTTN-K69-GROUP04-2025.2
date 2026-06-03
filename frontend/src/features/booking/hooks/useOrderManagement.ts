@@ -27,7 +27,7 @@ export function useOrderManagement() {
     } catch (error) {
       const message = getApiErrorMessage(
         error,
-        "Khong the tai danh sach don dat san.",
+        "Không thể tải danh sách đơn đặt sân.",
       );
       setErrorMessage(message);
       setOrders([]);
@@ -49,7 +49,7 @@ export function useOrderManagement() {
       logApiError("useOrderManagement.handleConfirmDeposit", error, {
         orderId,
       });
-      setErrorMessage(getApiErrorMessage(error, "Khong the xac nhan coc."));
+      setErrorMessage(getApiErrorMessage(error, "Không thể xác nhận cọc."));
     }
   };
 
@@ -62,7 +62,7 @@ export function useOrderManagement() {
       logApiError("useOrderManagement.handleCancelOrder", error, {
         orderId,
       });
-      setErrorMessage(getApiErrorMessage(error, "Khong the huy don dat san."));
+      setErrorMessage(getApiErrorMessage(error, "Không thể hủy đơn đặt sân."));
     }
   };
 

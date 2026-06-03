@@ -1,6 +1,7 @@
 import apiClient from "@/shared/api/apiClient";
 import { logApiError } from "@/shared/utils/apiError";
 import type {
+  ServiceItemResponse,
   VenueAvailabilityResponse,
   VenueResponseDTO,
 } from "@/features/venue/types/venue.types";
@@ -60,6 +61,20 @@ export const getVenueAvailability = async (
     return response.data;
   } catch (error) {
     logApiError("getVenueAvailability", error, { venueId, date });
+    throw error;
+  }
+};
+
+export const getVenueServices = async (
+  venueId: number,
+): Promise<ServiceItemResponse[]> => {
+  try {
+    const response = await apiClient.get<ServiceItemResponse[]>(
+      `/player/venues/${venueId}/services`,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("getVenueServices", error, { venueId });
     throw error;
   }
 };
