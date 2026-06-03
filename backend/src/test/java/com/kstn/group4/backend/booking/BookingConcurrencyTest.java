@@ -45,8 +45,8 @@ class BookingConcurrencyTest {
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        Callable<Outcome> taskPlayer2 = createTask(2, pitchId, timeSlotId, bookingDate, ready, start);
-        Callable<Outcome> taskPlayer3 = createTask(3, pitchId, timeSlotId, bookingDate, ready, start);
+        Callable<Outcome> taskPlayer2 = createTask(1, pitchId, timeSlotId, bookingDate, ready, start);
+        Callable<Outcome> taskPlayer3 = createTask(2, pitchId, timeSlotId, bookingDate, ready, start);
 
         Future<Outcome> result1 = executor.submit(taskPlayer2);
         Future<Outcome> result2 = executor.submit(taskPlayer3);
