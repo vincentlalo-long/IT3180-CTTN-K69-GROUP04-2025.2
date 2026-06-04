@@ -7,7 +7,7 @@ import {
   updateLeague,
   deleteLeague,
 } from "../../matchmaking/api/league.api";
-import type { League, LeagueRequest } from "../../matchmaking/types/league.types";
+import type { League, LeagueRequest, LeagueFormat, LeagueStatus } from "../../matchmaking/types/league.types";
 
 export function LeagueManager() {
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -264,7 +264,7 @@ export function LeagueManager() {
                   <label className="block text-sm font-medium text-white/90 mb-1">Thể thức <span className="text-rose-400">*</span></label>
                   <select
                     value={formData.format}
-                    onChange={(e) => setFormData({ ...formData, format: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, format: e.target.value as LeagueFormat })}
                     className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     <option value="KNOCKOUT" className="text-black">Đấu loại trực tiếp</option>
@@ -298,7 +298,7 @@ export function LeagueManager() {
                 <label className="block text-sm font-medium text-white/90 mb-1">Trạng thái <span className="text-rose-400">*</span></label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as LeagueStatus })}
                   className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 >
                   <option value="OPENING" className="text-black">Đang mở đăng ký</option>
