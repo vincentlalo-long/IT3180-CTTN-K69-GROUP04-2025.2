@@ -22,6 +22,7 @@ function createEmptyUser(): AuthUser {
     email: null,
     userId: null,
     username: null,
+    avatar: null,
   };
 }
 
@@ -39,11 +40,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       email: userFromStorage.email,
       userId: userFromStorage.userId,
       username: userFromStorage.username,
+      avatar: localStorage.getItem("userAvatar"),
     };
   });
 
   const logout = useCallback(() => {
     clearTokenFromStorage();
+    localStorage.removeItem("userAvatar");
     setUser(createEmptyUser());
     console.log("Đã đăng xuất");
   }, []);
@@ -62,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       email: userFromStorage.email,
       userId: userFromStorage.userId,
       username: userFromStorage.username,
+      avatar: localStorage.getItem("userAvatar"),
     });
   }, [logout]);
 

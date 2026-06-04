@@ -8,6 +8,7 @@ interface PlayerBookingHistoryProps {
   historyError: string | null;
   history: PlayerBookingHistoryItem[];
   onToggleHistory: () => void;
+  isTab?: boolean;
 }
 
 export function PlayerBookingHistory({
@@ -16,6 +17,7 @@ export function PlayerBookingHistory({
   historyError,
   history,
   onToggleHistory,
+  isTab = false,
 }: PlayerBookingHistoryProps) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
@@ -26,16 +28,20 @@ export function PlayerBookingHistory({
 
   return (
     <>
-      <p className="mb-2 text-base font-bold text-[#2E7D1E]">Hoạt động</p>
-      <button
-        onClick={onToggleHistory}
-        className="mb-5 flex w-full items-center gap-3 rounded-xl bg-[#D9D9D9] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-[#ccc]"
-      >
-        <Calendar size={17} className="text-gray-500" />
-        Lịch sử đặt sân
-      </button>
-      {showHistory && (
-        <div className="mb-5 rounded-xl border p-4 sm:p-5 bg-gray-50">
+      {!isTab && (
+        <>
+          <p className="mb-2 text-base font-bold text-[#2E7D1E]">Hoạt động</p>
+          <button
+            onClick={onToggleHistory}
+            className="mb-5 flex w-full items-center gap-3 rounded-xl bg-[#D9D9D9] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-[#ccc]"
+          >
+            <Calendar size={17} className="text-gray-500" />
+            Lịch sử đặt sân
+          </button>
+        </>
+      )}
+      {(showHistory || isTab) && (
+        <div className="mb-5 rounded-xl border p-4 sm:p-5 bg-slate-50">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="font-semibold text-lg text-gray-800">Lịch sử đặt sân</div>
             
