@@ -3,6 +3,7 @@ import {
   PlayerProfileForm,
   PlayerProfileSidebar,
   usePlayerProfile,
+  type PlayerProfileInfo,
 } from "../../features/account";
 import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect } from "react";
@@ -23,12 +24,14 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "history" | "terms">("profile");
 
-  // Sync activeTab when navigating via router state
-  useEffect(() => {
-    if (location.state?.tab) {
-      setActiveTab(location.state.tab as "profile" | "history" | "terms");
+  // Sync activeTab when navigating via router state (render phase)
+  const [prevLocationState, setPrevLocationState] = useState<unknown>(null);
+  if (location.state !== prevLocationState) {
+    setPrevLocationState(location.state);
+    if (location.state && typeof location.state === "object" && "tab" in location.state) {
+      setActiveTab((location.state as { tab: "profile" | "history" | "terms" }).tab);
     }
-  }, [location.state]);
+  }
 
   // Smooth scroll window to top on activeTab change (important on mobile viewports)
   useEffect(() => {
@@ -37,15 +40,16 @@ export function ProfilePage() {
 
   const [editData, setEditData] = useState({ username: "", phoneNumber: "", email: "" });
 
-  useEffect(() => {
-    if (userInfo) {
-      setEditData({
-        username: userInfo.username,
-        phoneNumber: userInfo.phoneNumber || "",
-        email: userInfo.email,
-      });
-    }
-  }, [userInfo]);
+  // Sync editData when userInfo is loaded or updated (render phase)
+  const [prevUserInfo, setPrevUserInfo] = useState<PlayerProfileInfo | null>(null);
+  if (userInfo && userInfo !== prevUserInfo) {
+    setPrevUserInfo(userInfo);
+    setEditData({
+      username: userInfo.username,
+      phoneNumber: userInfo.phoneNumber || "",
+      email: userInfo.email,
+    });
+  }
 
   // React Query for booking history
   const {
@@ -73,7 +77,10 @@ export function ProfilePage() {
       const storedUser = getUserFromStorage();
       if (storedUser) {
         saveTokenToStorage(storedUser.token || "", {
-          ...storedUser,
+          type: storedUser.type || undefined,
+          role: storedUser.role || undefined,
+          email: storedUser.email || undefined,
+          userId: storedUser.userId || undefined,
           username: editData.username,
         });
       }
