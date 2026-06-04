@@ -38,7 +38,7 @@ export function PlayerNavBar() {
   ];
 
   return (
-    <header className="border-b border-white/15 bg-[#005E2E]/80 backdrop-blur">
+    <header className="border-b border-white/15 bg-[#005E2E]/80 backdrop-blur relative z-50">
       <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-5 px-6 py-4">
         <div className="flex items-center gap-3">
           <img
@@ -97,12 +97,12 @@ export function PlayerNavBar() {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 top-12 z-50 w-48 rounded-lg border border-white/15 bg-[#005E2E] p-2 shadow-lg">
+                <div className="absolute right-0 top-12 z-[999] w-48 rounded-lg border border-white/15 bg-[#005E2E] p-2 shadow-lg">
                   <button
                     type="button"
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      navigate("/profile");
+                      navigate("/profile", { state: { tab: "profile" } });
                     }}
                     className="w-full rounded-md px-4 py-2 text-left text-sm font-medium text-white hover:bg-white/10 transition"
                   >
@@ -112,7 +112,7 @@ export function PlayerNavBar() {
                     type="button"
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      navigate("/profile");
+                      navigate("/profile", { state: { tab: "history" } });
                     }}
                     className="w-full rounded-md px-4 py-2 text-left text-sm font-medium text-white hover:bg-white/10 transition"
                   >

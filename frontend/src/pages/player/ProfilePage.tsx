@@ -7,14 +7,28 @@ import {
 import type { PlayerBookingHistoryItem } from "../../features/account/types/account.types";
 import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { getPlayerBookings, updatePlayerProfile } from "../../features/account/api/account.api";
 import { subscribeProfileEvent } from "../../features/account/hooks/usePlayerProfile";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 
 export function ProfilePage() {
   const { userInfo, loadingUser, userError, refetch } = usePlayerProfile();
+  const location = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "history" | "terms">("profile");
+
+  // Sync activeTab when navigating via router state
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab as "profile" | "history" | "terms");
+    }
+  }, [location.state]);
+
+  // Smooth scroll window to top on activeTab change (important on mobile viewports)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab]);
 
   const [editData, setEditData] = useState({ username: "", phoneNumber: "", email: "" });
   const [isUpdating, setIsUpdating] = useState(false);
