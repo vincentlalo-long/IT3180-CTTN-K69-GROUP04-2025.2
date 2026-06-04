@@ -89,15 +89,15 @@ export function ProfileTab() {
               <label htmlFor="profile-full-name" className="flex items-center gap-1.5 text-sm font-semibold text-white/80">
                 <UserIcon size={14} /> Họ và tên
               </label>
-              <TextInput
+              <input
                 id="profile-full-name"
-                label="Họ và tên"
+                type="text"
                 value={profileForm.fullName}
                 onChange={(event) =>
                   updateProfileField("fullName", event.target.value)
                 }
                 placeholder="Nhập họ và tên"
-                className="text-base bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-[#84e30f] focus:ring-1 focus:ring-[#84e30f]"
+                className="w-full h-[50px] px-4 rounded-xl bg-[#0f4d2a] border border-emerald-600/40 text-white placeholder:text-emerald-200/40 focus:bg-[#135832] focus:ring-2 focus:ring-emerald-400 focus:outline-none text-base font-body"
                 required
               />
             </div>
@@ -105,15 +105,15 @@ export function ProfileTab() {
               <label htmlFor="profile-phone" className="flex items-center gap-1.5 text-sm font-semibold text-white/80">
                 <Phone size={14} /> Số điện thoại
               </label>
-              <TextInput
+              <input
                 id="profile-phone"
-                label="Số điện thoại"
+                type="text"
                 value={profileForm.phone}
                 onChange={(event) =>
                   updateProfileField("phone", event.target.value)
                 }
                 placeholder="Nhập số điện thoại"
-                className="text-base bg-white/5 border-white/15 text-white placeholder:text-white/30 focus:border-[#84e30f] focus:ring-1 focus:ring-[#84e30f]"
+                className="w-full h-[50px] px-4 rounded-xl bg-[#0f4d2a] border border-emerald-600/40 text-white placeholder:text-emerald-200/40 focus:bg-[#135832] focus:ring-2 focus:ring-emerald-400 focus:outline-none text-base font-body"
               />
             </div>
           </div>
@@ -123,14 +123,13 @@ export function ProfileTab() {
               <label htmlFor="profile-email" className="flex items-center gap-1.5 text-sm font-semibold text-white/50">
                 <Mail size={14} /> Địa chỉ Email
               </label>
-              <TextInput
+              <input
                 id="profile-email"
-                label="Địa chỉ Email"
                 type="email"
                 value={profileForm.email}
                 disabled
                 placeholder="Nhập email"
-                className="text-base bg-white/5 border-white/10 text-white/40 cursor-not-allowed"
+                className="w-full h-[50px] px-4 rounded-xl bg-[#0f4d2a] border border-emerald-600/40 text-white placeholder:text-emerald-200/40 focus:bg-[#135832] focus:ring-2 focus:ring-emerald-400 focus:outline-none text-base font-body opacity-60 cursor-not-allowed"
               />
               <p className="text-[11px] text-white/40">Email dùng để đăng nhập và không thể thay đổi.</p>
             </div>
@@ -138,12 +137,12 @@ export function ProfileTab() {
               <label htmlFor="profile-role" className="flex items-center gap-1.5 text-sm font-semibold text-white/50">
                 <Shield size={14} /> Quyền hạn tài khoản
               </label>
-              <TextInput
+              <input
                 id="profile-role"
-                label="Quyền hạn tài khoản"
+                type="text"
                 value={adminInfo?.role || "ADMIN"}
                 disabled
-                className="text-base bg-white/5 border-white/10 text-white/40 cursor-not-allowed"
+                className="w-full h-[50px] px-4 rounded-xl bg-[#0f4d2a] border border-emerald-600/40 text-white placeholder:text-emerald-200/40 focus:bg-[#135832] focus:ring-2 focus:ring-emerald-400 focus:outline-none text-base font-body opacity-60 cursor-not-allowed"
               />
             </div>
           </div>

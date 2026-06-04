@@ -6,11 +6,13 @@ export { SelectedSlotsBar } from "./components/player/SelectedSlotsBar";
 export { ServiceSelector } from "./components/player/ServiceSelector";
 export { SlotCard } from "./components/player/SlotCard";
 export { SlotsGrid } from "./components/player/SlotsGrid";
+export { BookingSlotsTable } from "./components/player/BookingSlotsTable";
 
 export { useAvailableSlots } from "./hooks/useAvailableSlots";
 export { useFieldSchedule } from "./hooks/useFieldSchedule";
 export { useOrderManagement } from "./hooks/useOrderManagement";
 export { useSlotSelection } from "./hooks/useSlotSelection";
+export { useBookingFieldFlow } from "./hooks/useBookingFieldFlow";
 
 export { slotStatusStyles } from "./constants/booking.constants";
 export {

@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -6,229 +5,47 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   DateSelector,
   SelectedSlotsBar,
-  ServiceSelector, // Hòa trộn từ HEAD
-  useAvailableSlots,
+  ServiceSelector,
+  BookingSlotsTable,
+  useBookingFieldFlow,
 } from "@/features/booking";
-import type {
-  ServiceItemResponse,
-  SlotStatusResponse,
-} from "@/features/venue/types/venue.types";
-import { createBooking } from "@/features/booking/api/bookingApi";
-import type { SlotDisplayItem } from "@/features/booking/components/player/SlotsGrid";
-import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 import { BookingConfirmModal } from "@/features/booking/components/player/BookingConfirmModal";
 import { PlayerNavBar } from "@/layouts/player/PlayerNavBar";
-
-const normalizeTime = (value: string) => value.slice(0, 5);
-const toNumber = (value: string | number | null | undefined) => Number(value ?? 0);
 
 export function BookingField() {
   const navigate = useNavigate();
   const { fieldId } = useParams();
   const venueId = Number(fieldId) || 1;
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // Các state quản lý Dịch vụ được giữ lại từ HEAD
-  const [selectedServices, setSelectedServices] = useState<Record<number, number>>({});
-  const [availableServices, setAvailableServices] = useState<ServiceItemResponse[]>([]);
-
-  const [pendingBooking, setPendingBooking] = useState<{
-    pitchId: number;
-    bookingDate: string;
-    slots: SlotDisplayItem[];
-    timeSlotIds: number[];
-    totalPrice: number;
-  } | null>(null);
-
-  // Custom state của ông: chọn slots trên nhiều sân con cùng lúc
-  interface SelectedSlot {
-    pitchId: number;
-    pitchName: string;
-    timeSlotId: number;
-    startTime: string;
-    endTime: string;
-    price: number;
-  }
-  const [selectedSlots, setSelectedSlots] = useState<SelectedSlot[]>([]);
-
   const {
+    selectedDate,
+    setSelectedDate,
+    showDatePicker,
+    setShowDatePicker,
+    autoRefresh,
+    setAutoRefresh,
     loading,
     error,
     venueAvailability,
-    refresh,
     lastUpdated,
-  } = useAvailableSlots(venueId, 0, selectedDate, {
-    refreshIntervalMs: 15000,
-    autoRefresh,
-  });
-
-  // Clear selections khi đổi ngày
-  useEffect(() => {
-    setSelectedSlots([]);
-    setSelectedServices({}); // Clear luôn dịch vụ từ HEAD
-    setSubmitError(null);
-    setSubmitSuccess(null);
-  }, [selectedDate]);
-
-  // Trích xuất các khung giờ độc nhất trên tất cả các sân con (Nhánh của ông)
-  const uniqueTimeRanges = useMemo(() => {
-    if (!venueAvailability?.pitches) return [];
-    const rangesMap = new Map<string, { startTime: string; endTime: string }>();
-
-    venueAvailability.pitches.forEach((p) => {
-      p.slots.forEach((s) => {
-        const startNorm = normalizeTime(s.startTime);
-        const endNorm = normalizeTime(s.endTime);
-        const key = `${startNorm}-${endNorm}`;
-        if (!rangesMap.has(key)) {
-          rangesMap.set(key, { startTime: startNorm, endTime: endNorm });
-        }
-      });
-    });
-
-    return Array.from(rangesMap.values()).sort((a, b) =>
-      a.startTime.localeCompare(b.startTime)
-    );
-  }, [venueAvailability]);
-
-  const handleToggleSlot = (pitchId: number, pitchName: string, slot: SlotStatusResponse) => {
-    const startNorm = normalizeTime(slot.startTime);
-    const endNorm = normalizeTime(slot.endTime);
-
-    setSelectedSlots((prev) => {
-      const exists = prev.some(
-        (s) => s.pitchId === pitchId && s.timeSlotId === slot.timeSlotId
-      );
-      if (exists) {
-        return prev.filter(
-          (s) => !(s.pitchId === pitchId && s.timeSlotId === slot.timeSlotId)
-        );
-      }
-      return [
-        ...prev,
-        {
-          pitchId,
-          pitchName,
-          timeSlotId: slot.timeSlotId,
-          startTime: startNorm,
-          endTime: endNorm,
-          price: slot.price != null ? Number(slot.price) : 0,
-        },
-      ];
-    });
-  };
-
-  const handleClearSlots = () => {
-    setSelectedSlots([]);
-    setSelectedServices({});
-  };
-
-  const formatPrice = (price: number) => {
-    if (price === 0) return "Liên hệ";
-    if (price >= 1000) {
-      return `${(price / 1000).toLocaleString("vi-VN")}k`;
-    }
-    return `${price.toLocaleString("vi-VN")}đ`;
-  };
-
-  // Tính tổng tiền Sân và Dịch vụ (Hòa trộn thuật toán từ HEAD)
-  const fieldTotal = useMemo(() => {
-    return selectedSlots.reduce((total, slot) => total + slot.price, 0);
-  }, [selectedSlots]);
-
-  const serviceTotal = useMemo(() => {
-    return availableServices.reduce((total, service) => {
-      const quantity = selectedServices[service.id] ?? 0;
-      return total + quantity * toNumber(service.price);
-    }, 0);
-  }, [availableServices, selectedServices]);
-
-  const selectedServicePayload = useMemo(() => {
-    return Object.entries(selectedServices)
-      .map(([serviceId, quantity]) => ({
-        serviceId: Number(serviceId),
-        quantity,
-      }))
-      .filter((item) => item.quantity > 0);
-  }, [selectedServices]);
-
-  const handleSubmit = () => {
-    if (!selectedSlots.length) {
-      setSubmitError("Vui lòng chọn ít nhất một khung giờ.");
-      return;
-    }
-
-    const timeSlotIds = selectedSlots.map((item) => item.timeSlotId);
-    const totalPrice = fieldTotal + serviceTotal;
-
-    const confirmSlots: SlotDisplayItem[] = selectedSlots.map((sel) => ({
-      slot: {
-        startTime: sel.startTime,
-        endTime: sel.endTime,
-      },
-      status: "selected",
-      timeSlotId: sel.timeSlotId,
-      price: sel.price,
-    }));
-
-    setSubmitError(null);
-    setPendingBooking({
-      pitchId: selectedSlots[0].pitchId,
-      bookingDate: format(selectedDate, "yyyy-MM-dd"),
-      slots: confirmSlots,
-      timeSlotIds,
-      totalPrice,
-    });
-    setShowConfirmModal(true);
-  };
-
-  const handleConfirmBooking = async () => {
-    if (!pendingBooking) return;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(null);
-
-    try {
-      // Đặt tất cả các sân kèm payload dịch vụ đính kèm ở item đầu tiên (Hòa trộn từ HEAD)
-      await Promise.all(
-        selectedSlots.map((sel, index) =>
-          createBooking({
-            pitchId: sel.pitchId,
-            bookingDate: pendingBooking.bookingDate,
-            timeSlotId: sel.timeSlotId,
-            services: index === 0 ? selectedServicePayload : [],
-          })
-        )
-      );
-
-      setShowConfirmModal(false);
-      setPendingBooking(null);
-      setSelectedSlots([]);
-      setSelectedServices({});
-      refresh();
-      setSubmitSuccess(
-        `Đặt sân thành công! ${selectedSlots.length} khung giờ đã được xác nhận.`
-      );
-    } catch (err) {
-      logApiError("BookingField.handleConfirmBooking", err, {
-        venueId,
-        selectedSlotCount: selectedSlots.length,
-      });
-      setSubmitError(
-        getApiErrorMessage(err, "Đặt sân thất bại. Vui lòng thử lại.")
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    uniqueTimeRanges,
+    selectedSlots,
+    selectedServices,
+    setSelectedServices,
+    setAvailableServices,
+    fieldTotal,
+    serviceTotal,
+    isSubmitting,
+    submitSuccess,
+    submitError,
+    showConfirmModal,
+    setShowConfirmModal,
+    pendingBooking,
+    handleToggleSlot,
+    handleClearSlots,
+    handleSubmit,
+    handleConfirmBooking,
+  } = useBookingFieldFlow(venueId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
@@ -256,7 +73,7 @@ export function BookingField() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Popover Chọn Ngày xịn mịn của ông */}
+            {/* Popover Chọn Ngày */}
             <div className="relative">
               <button
                 type="button"
@@ -324,7 +141,7 @@ export function BookingField() {
           </div>
         )}
 
-        {/* Bảng Ma trận Lưới Sân Con Xanh Lục Bảo (Nhánh của ông) */}
+        {/* Bảng Ma trận Sân Con */}
         {venueAvailability?.pitches.length ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between rounded-2xl bg-white/10 border border-white/10 p-4 text-sm font-medium text-white backdrop-blur">
@@ -336,136 +153,13 @@ export function BookingField() {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
-              <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/5">
-                    <th className="sticky left-0 top-0 z-20 bg-[#236f33] p-4 font-semibold text-emerald-100/90 min-w-[160px] border-r border-b border-white/10 whitespace-nowrap">
-                      Sân / Giờ
-                    </th>
-                    {uniqueTimeRanges.map((range) => (
-                      <th
-                        key={`${range.startTime}-${range.endTime}`}
-                        className="p-4 font-semibold text-emerald-100/90 text-center min-w-[150px] border-r border-b border-white/10 last:border-r-0 bg-[#236f33]/90 backdrop-blur-sm whitespace-nowrap"
-                      >
-                        <div className="font-semibold text-emerald-100/90 text-sm">
-                          {range.startTime} - {range.endTime}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  {venueAvailability.pitches.map((pitchItem) => (
-                    <tr key={pitchItem.pitchId} className="hover:bg-white/5 transition">
-                      <td className="sticky left-0 z-10 bg-[#236f33]/95 backdrop-blur-sm p-4 font-semibold text-emerald-100/90 border-r border-b border-white/10 min-w-[160px] whitespace-nowrap">
-                        <div className="text-sm font-semibold">{pitchItem.pitchName}</div>
-                      </td>
+            <BookingSlotsTable
+              venueAvailability={venueAvailability}
+              uniqueTimeRanges={uniqueTimeRanges}
+              selectedSlots={selectedSlots}
+              onToggleSlot={handleToggleSlot}
+            />
 
-                      {uniqueTimeRanges.map((range) => {
-                        const slot = pitchItem.slots.find(
-                          (s) =>
-                            normalizeTime(s.startTime) === range.startTime &&
-                            normalizeTime(s.endTime) === range.endTime
-                        );
-
-                        if (!slot) {
-                          return (
-                            <td
-                              key={`${range.startTime}-${range.endTime}`}
-                              className="p-3 text-center text-white/20 bg-white/2 border-r border-b border-white/10 last:border-r-0"
-                            >
-                              -
-                            </td>
-                          );
-                        }
-
-                        const isSelected = selectedSlots.some(
-                          (sel) =>
-                            sel.pitchId === pitchItem.pitchId &&
-                            sel.timeSlotId === slot.timeSlotId
-                        );
-
-                        if (slot.status === "PENDING") {
-                          return (
-                            <td
-                              key={`${range.startTime}-${range.endTime}`}
-                              className="p-3 text-center border-r border-b border-white/10 last:border-r-0"
-                            >
-                              <div className="flex h-14 w-full flex-col justify-center rounded-md bg-amber-500/10 border border-dashed border-amber-500/30 text-amber-200/70 text-left p-3 select-none cursor-not-allowed">
-                                <span className="font-bold text-xs">Đã giữ chỗ</span>
-                                <span className="text-[10px] opacity-70 mt-0.5">Chờ xác nhận</span>
-                              </div>
-                            </td>
-                          );
-                        }
-
-                        if (slot.status === "BOOKED") {
-                          return (
-                            <td
-                              key={`${range.startTime}-${range.endTime}`}
-                              className="p-3 text-center border-r border-b border-white/10 last:border-r-0"
-                            >
-                              <div className="flex h-14 w-full flex-col justify-center rounded-md bg-white/5 border border-dashed border-white/10 text-white/30 text-left p-3 select-none cursor-not-allowed">
-                                <span className="font-bold text-xs">Đã đặt</span>
-                                <span className="text-[10px] opacity-70 mt-0.5">-</span>
-                              </div>
-                            </td>
-                          );
-                        }
-
-                        if (slot.status !== "AVAILABLE") {
-                          return (
-                            <td
-                              key={`${range.startTime}-${range.endTime}`}
-                              className="p-3 text-center border-r border-b border-white/10 last:border-r-0"
-                            >
-                              <div className="flex h-14 w-full flex-col justify-center rounded-md bg-white/5 border border-dashed border-white/10 text-white/30 text-left p-3 select-none cursor-not-allowed">
-                                <span className="font-bold text-xs">Không khả dụng</span>
-                                <span className="text-[10px] opacity-70 mt-0.5">-</span>
-                              </div>
-                            </td>
-                          );
-                        }
-
-                        return (
-                          <td
-                            key={`${range.startTime}-${range.endTime}`}
-                            className="p-3 text-center border-r border-b border-white/10 last:border-r-0"
-                          >
-                            {isSelected ? (
-                              <button
-                                type="button"
-                                onClick={() => handleToggleSlot(pitchItem.pitchId, pitchItem.pitchName, slot)}
-                                className="flex h-14 w-full flex-col justify-center rounded-md bg-emerald-500 border border-emerald-400 text-white text-left p-3 shadow-md hover:bg-emerald-400 transition transform hover:scale-[1.02] active:scale-[0.98]"
-                              >
-                                <span className="font-bold text-xs">Đã chọn</span>
-                                <span className="text-[11px] font-medium mt-0.5">
-                                  {formatPrice(slot.price != null ? Number(slot.price) : 0)}
-                                </span>
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleToggleSlot(pitchItem.pitchId, pitchItem.pitchName, slot)}
-                                className="flex h-14 w-full flex-col justify-center rounded-md bg-white/5 border border-white/10 text-white text-left p-3 transition transform hover:bg-white/10 hover:border-white/30 hover:scale-[1.02] active:scale-[0.98]"
-                              >
-                                <span className="font-bold text-xs">Trống</span>
-                                <span className="text-[11px] text-white font-medium mt-0.5">
-                                  {formatPrice(slot.price != null ? Number(slot.price) : 0)}
-                                </span>
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* HOÀN TRỘN TỪ HEAD: Khối chọn dịch vụ đi kèm đặt ngay bên dưới bảng */}
             <ServiceSelector
               venueId={venueId}
               selectedServices={selectedServices}
@@ -481,7 +175,7 @@ export function BookingField() {
           </div>
         )}
 
-        {/* Thanh bar chốt đơn: truyền đầy đủ biến tổng tiền từ HEAD */}
+        {/* Thanh bar chốt đơn */}
         <SelectedSlotsBar
           selectedSlots={selectedSlots}
           onClear={handleClearSlots}
