@@ -4,6 +4,7 @@ import { Bell, CircleUserRound } from "lucide-react";
 import logoImage from "../../assets/images/logo-amixi.png";
 import { logoutUser } from "../../features/auth/api/authApi";
 import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
+import { LogoutConfirmModal } from "../../shared/components/LogoutConfirmModal";
 
 export function PlayerNavBar() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ export function PlayerNavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [prevAvatar, setPrevAvatar] = useState(user?.avatar);
   const [hasAvatarError, setHasAvatarError] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   if (user?.avatar !== prevAvatar) {
@@ -131,15 +134,9 @@ export function PlayerNavBar() {
                   <div className="my-1 border-t border-white/10" />
                   <button
                     type="button"
-                    onClick={async () => {
+                    onClick={() => {
                       setIsDropdownOpen(false);
-                      try {
-                        await logoutUser(); // Gọi API logout của Backend trước khi xóa state local
-                      } catch (err) {
-                        console.error("Backend logout failed:", err);
-                      }
-                      logout(); // Xóa sạch localStorage và Context state
-                      navigate("/");
+                      setIsLogoutModalOpen(true);
                     }}
                     className="w-full rounded-md px-4 py-2 text-left text-sm font-medium text-rose-300 hover:bg-rose-500/20 transition"
                   >
@@ -171,6 +168,25 @@ export function PlayerNavBar() {
           </button>
         </div>
       </div>
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          try {
+            await logoutUser();
+          } catch (err) {
+            console.error("Backend logout failed:", err);
+          } finally {
+            setIsLoggingOut(false);
+            setIsLogoutModalOpen(false);
+            logout();
+            navigate("/");
+          }
+        }}
+        isLoading={isLoggingOut}
+      />
     </header>
   );
 }

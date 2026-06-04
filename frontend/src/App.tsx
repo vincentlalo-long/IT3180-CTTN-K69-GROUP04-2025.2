@@ -10,6 +10,8 @@ import { TeamsPage } from "./pages/admin/TeamsPage.tsx";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { LandingPage } from "./pages/LandingPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
+import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/auth/ResetPasswordPage";
 import { BookingPage } from "./pages/player/BookingPage.tsx";
 import { BookingField } from "./pages/player/BookingField.tsx";
 import { MatchPage } from "./pages/player/MatchPage.tsx";
@@ -27,6 +29,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/booking/:fieldId" element={<BookingField />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/booking" element={<BookingPage />} />

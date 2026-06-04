@@ -42,15 +42,23 @@ export function LoginPage() {
       <div className="w-full flex flex-col gap-8">
         <LoginForm onSubmit={handleLogin} />
 
-        <p className="text-center text-sm text-white/85">
-          Chưa có tài khoản?{" "}
+        <div className="flex flex-col items-center gap-3 text-sm text-white/85">
           <Link
-            to="/register"
-            className="text-auth-link text-white font-medium hover:text-white/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
+            to="/forgot-password"
+            className="text-white hover:text-white/80 transition font-medium focus-visible:outline-none"
           >
-            Đăng ký ngay
+            Quên mật khẩu?
           </Link>
-        </p>
+          <p>
+            Chưa có tài khoản?{" "}
+            <Link
+              to="/register"
+              className="text-auth-link text-white font-medium hover:text-white/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
+            >
+              Đăng ký ngay
+            </Link>
+          </p>
+        </div>
       </div>
     </AuthLayout>
   );

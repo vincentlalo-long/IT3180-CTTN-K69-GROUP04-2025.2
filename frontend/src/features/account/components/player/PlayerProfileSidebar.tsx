@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { PlayerProfileInfo } from "../../types/account.types";
 import { useAuthContext } from "../../../auth/hooks/useAuthContext";
+import { logoutUser } from "../../../auth/api/authApi";
+import { LogoutConfirmModal } from "../../../../shared/components/LogoutConfirmModal";
 import { CircleUserRound, Camera, User, Activity, Shield, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -19,6 +21,8 @@ export function PlayerProfileSidebar({
 }: PlayerProfileSidebarProps) {
   const { user, logout } = useAuthContext();
   const navigate = useNavigate();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const avatarUrl = user?.avatar || userInfo.avatarUrl;
   const [prevAvatarUrl, setPrevAvatarUrl] = useState(avatarUrl);
   const [hasAvatarError, setHasAvatarError] = useState(false);
@@ -145,10 +149,7 @@ export function PlayerProfileSidebar({
 
           <button
             type="button"
-            onClick={() => {
-              logout();
-              navigate("/");
-            }}
+            onClick={() => setIsLogoutModalOpen(true)}
             className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition"
           >
             <LogOut size={16} />
@@ -156,6 +157,25 @@ export function PlayerProfileSidebar({
           </button>
         </nav>
       </div>
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          try {
+            await logoutUser();
+          } catch (err) {
+            console.error("Backend logout failed:", err);
+          } finally {
+            setIsLoggingOut(false);
+            setIsLogoutModalOpen(false);
+            logout();
+            navigate("/");
+          }
+        }}
+        isLoading={isLoggingOut}
+      />
     </div>
   );
 }

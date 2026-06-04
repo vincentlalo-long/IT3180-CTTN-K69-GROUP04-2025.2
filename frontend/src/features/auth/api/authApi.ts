@@ -80,11 +80,32 @@ export async function refreshToken(
 }
 
 export async function logoutUser(): Promise<void> {
-  // TODO: Gọi API logout ở đây nếu backend có cung cấp endpoint (ví dụ: POST /api/v1/auth/logout)
-  // try {
-  //   await apiClient.post(`${AUTH_API_PREFIX}/logout`);
-  // } catch (error) {
-  //   console.error("Logout API failed:", error);
-  // }
-  return Promise.resolve();
+  try {
+    await apiClient.post(`${AUTH_API_PREFIX}/logout`);
+  } catch (error) {
+    console.error("Logout API failed:", error);
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  try {
+    await apiClient.post(`${AUTH_API_PREFIX}/forgot-password`, { email });
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  try {
+    await apiClient.post(`${AUTH_API_PREFIX}/reset-password`, {
+      token,
+      newPassword,
+    });
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
 }
