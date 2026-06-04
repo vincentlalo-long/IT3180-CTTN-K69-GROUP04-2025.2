@@ -78,3 +78,13 @@ export async function refreshToken(
     throw new Error(getApiErrorMessage(error));
   }
 }
+
+export async function logoutUser(): Promise<void> {
+  // TODO: Gọi API logout ở đây nếu backend có cung cấp endpoint (ví dụ: POST /api/v1/auth/logout)
+  // try {
+  //   await apiClient.post(`${AUTH_API_PREFIX}/logout`);
+  // } catch (error) {
+  //   console.error("Logout API failed:", error);
+  // }
+  return Promise.resolve();
+}

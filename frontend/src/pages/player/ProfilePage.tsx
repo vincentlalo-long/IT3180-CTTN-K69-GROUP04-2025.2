@@ -9,8 +9,10 @@ import type { PlayerBookingHistoryItem } from "../../features/account/types/acco
 import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect, useCallback } from "react";
 import { getPlayerBookings, updatePlayerProfile } from "../../features/account/api/account.api";
-import { subscribeProfileEvent } from "../../features/account/hooks/usePlayerProfile";
+import { subscribeProfileEvent, emitProfileEvent } from "../../features/account/hooks/usePlayerProfile";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
+import { toast } from "../../shared/utils/toast";
+import { Loader2 } from "lucide-react";
 
 export function ProfilePage() {
   const { userInfo, loadingUser, userError, refetch } = usePlayerProfile();
@@ -82,10 +84,12 @@ export function ProfilePage() {
         setIsUpdating(true);
         await updatePlayerProfile(editData.username, editData.phoneNumber);
         refetch(); // fetch fresh data
+        emitProfileEvent(); // emit event to update other components like sidebar
+        toast.success("Cập nhật thông tin thành công!");
         setIsEditing(false);
       } catch (err) {
         logApiError("ProfilePage.updateProfile", err);
-        alert(getApiErrorMessage(err, "Lỗi khi cập nhật thông tin!"));
+        toast.error(getApiErrorMessage(err, "Lỗi khi cập nhật thông tin!"));
       } finally {
         setIsUpdating(false);
       }
@@ -137,7 +141,12 @@ export function ProfilePage() {
               onChangePhone={(value) => updateUserInfo("phoneNumber", value)}
               onChangeEmail={(value) => updateUserInfo("email", value)}
             />
-            {isUpdating && <div className="text-sm text-[#2E7D1E] font-medium mb-4">Đang lưu thay đổi...</div>}
+            {isUpdating && (
+              <div className="flex items-center text-sm text-[#2E7D1E] font-medium mb-4">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Đang lưu thay đổi...
+              </div>
+            )}
             <PlayerBookingHistory
               showHistory={showHistory}
               loadingHistory={loadingHistory}

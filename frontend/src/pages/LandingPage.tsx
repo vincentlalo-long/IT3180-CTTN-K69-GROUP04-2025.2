@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { Bell, CircleUserRound } from "lucide-react";
 import heroImg from "../assets/images/hero-lamine.webp";
-import logoAmixi from "../assets/images/logo-amixi.png";
+import { PlayerNavBar } from "../layouts/player/PlayerNavBar";
 
 
 const featureCards = [
@@ -13,64 +12,7 @@ const featureCards = [
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
-      <header className="border-b border-white/15 bg-[#005E2E]/55 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-5 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <img
-              src={logoAmixi}
-              alt="MIXIFOOT logo"
-              className="h-10 w-auto object-contain sm:h-12"
-            />
-            <div>
-              <p className="text-sm font-medium text-white/80">Công ty AMIXI</p>
-              <p
-                className="text-4xl leading-none tracking-widest text-white"
-                style={{ fontFamily: '"Jersey 10", sans-serif' }}
-              >
-                MIXIFOOT
-              </p>
-            </div>
-          </div>
-
-          <nav className="hidden items-center gap-10 text-lg font-semibold text-white lg:flex xl:gap-14">
-            <Link to="/" className="transition hover:text-white/75">
-              Home
-            </Link>
-            <Link to="/booking" className="transition hover:text-white/75">
-              Đặt sân
-            </Link>
-            <Link to="/match" className="transition hover:text-white/75">
-              Chợ kèo
-            </Link>
-            <Link to="/profile" className="transition hover:text-white/75">
-              Hồ sơ
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-3 sm:gap-4">
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/16"
-              aria-label="Thông báo"
-            >
-              <Bell size={20} />
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/16"
-              aria-label="Tài khoản"
-            >
-              <CircleUserRound size={22} />
-            </button>
-            <Link
-              to="/login"
-              className="inline-flex items-center rounded-md bg-[#29721D] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#225f19]"
-            >
-              Đăng nhập
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PlayerNavBar />
 
       <section className="relative h-[90vh] min-h-[620px] w-full overflow-hidden">
         <img
