@@ -20,7 +20,7 @@ export function subscribeProfileEvent(fn: ProfileEventListener) {
 
 export function usePlayerProfile() {
   const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
-  const [loadingUser, setLoadingUser] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [userError, setUserError] = useState<string | null>(null);
 
   const fetchUser = useCallback(() => {
