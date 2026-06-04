@@ -96,7 +96,7 @@ input:-webkit-autofill:active {
 .rounded-auth-control input:-webkit-autofill:hover,
 .rounded-auth-control input:-webkit-autofill:focus,
 .rounded-auth-control input:-webkit-autofill:active {
-    box-shadow: 0 0 0px 1000px #132519 inset !important;
+    box-shadow: 0 0 0px 1000px #575353 inset !important;
 }
 
 /* Khi có lỗi (error) trên ô input bất kỳ (kể cả Auth) */
