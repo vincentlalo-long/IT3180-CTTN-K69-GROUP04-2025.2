@@ -6,6 +6,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { ProfileTab } from "../../features/account/components/admin/ProfileTab";
 import { NotificationTab } from "../../features/account/components/admin/NotificationTab";
@@ -57,7 +58,18 @@ export function SettingsPage() {
   const {
     selectedVenue: selectedFacility,
   } = useFacilityContext();
-  const [activeTab, setActiveTab] = useState<SettingsTabId>("pitch-management");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<SettingsTabId>(
+    () => (location.state?.tab as SettingsTabId) || "pitch-management"
+  );
+  const [prevLocationKey, setPrevLocationKey] = useState(location.key);
+
+  if (location.key !== prevLocationKey) {
+    setPrevLocationKey(location.key);
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab as SettingsTabId);
+    }
+  }
 
 
   const renderActiveTab = () => {

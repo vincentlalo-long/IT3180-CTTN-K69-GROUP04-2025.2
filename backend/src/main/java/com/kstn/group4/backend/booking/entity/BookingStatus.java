@@ -6,5 +6,7 @@ public enum BookingStatus {
     PENDING,
     CANCELLED,
     RESERVED,
-    PLAYING
+    PLAYING,
+    BOOKED,
+    COMPLETED
 }

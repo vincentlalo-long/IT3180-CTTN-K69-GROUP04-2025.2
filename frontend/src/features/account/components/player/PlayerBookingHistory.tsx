@@ -8,6 +8,7 @@ interface PlayerBookingHistoryProps {
   historyError: string | null;
   history: PlayerBookingHistoryItem[];
   onToggleHistory: () => void;
+  isTab?: boolean;
 }
 
 export function PlayerBookingHistory({
@@ -16,26 +17,37 @@ export function PlayerBookingHistory({
   historyError,
   history,
   onToggleHistory,
+  isTab = false,
 }: PlayerBookingHistoryProps) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   const filteredHistory = history.filter((item) => {
     if (statusFilter === "ALL") return true;
+    if (statusFilter === "PENDING_RESERVED") {
+      return item.status === "PENDING" || item.status === "RESERVED";
+    }
+    if (statusFilter === "CONFIRMED_BOOKED") {
+      return item.status === "CONFIRMED" || item.status === "BOOKED";
+    }
     return item.status === statusFilter;
   });
 
   return (
     <>
-      <p className="mb-2 text-base font-bold text-[#2E7D1E]">Hoạt động</p>
-      <button
-        onClick={onToggleHistory}
-        className="mb-5 flex w-full items-center gap-3 rounded-xl bg-[#D9D9D9] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-[#ccc]"
-      >
-        <Calendar size={17} className="text-gray-500" />
-        Lịch sử đặt sân
-      </button>
-      {showHistory && (
-        <div className="mb-5 rounded-xl border p-4 sm:p-5 bg-gray-50">
+      {!isTab && (
+        <>
+          <p className="mb-2 text-base font-bold text-[#2E7D1E]">Hoạt động</p>
+          <button
+            onClick={onToggleHistory}
+            className="mb-5 flex w-full items-center gap-3 rounded-xl bg-[#D9D9D9] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-[#ccc]"
+          >
+            <Calendar size={17} className="text-gray-500" />
+            Lịch sử đặt sân
+          </button>
+        </>
+      )}
+      {(showHistory || isTab) && (
+        <div className="mb-5 rounded-xl border p-4 sm:p-5 bg-slate-50">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="font-semibold text-lg text-gray-800">Lịch sử đặt sân</div>
             
@@ -48,9 +60,9 @@ export function PlayerBookingHistory({
                 className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-[#2E7D1E]"
               >
                 <option value="ALL">Tất cả</option>
-                <option value="PENDING">Chờ xác nhận</option>
-                <option value="CONFIRMED">Đã xác nhận</option>
-                <option value="RESERVED">Đã giữ chỗ</option>
+                <option value="PENDING_RESERVED">Chờ xác nhận</option>
+                <option value="CONFIRMED_BOOKED">Đã đặt</option>
+                <option value="COMPLETED">Hoàn thành</option>
                 <option value="PLAYING">Đang đá</option>
                 <option value="CANCELLED">Đã hủy</option>
               </select>
@@ -107,18 +119,18 @@ export function PlayerBookingHistory({
                   <div className="flex justify-end sm:block">
                     <span
                       className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide border
-                        ${item.status === "PENDING" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
-                        ${item.status === "CONFIRMED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : ""}
-                        ${item.status === "PLAYING" ? "bg-green-50 text-green-700 border-green-200" : ""}
+                        ${(item.status === "PENDING" || item.status === "RESERVED") ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
+                        ${(item.status === "CONFIRMED" || item.status === "BOOKED") ? "bg-emerald-50 text-emerald-700 border-emerald-200" : ""}
+                        ${item.status === "COMPLETED" ? "bg-blue-50 text-blue-700 border-blue-200" : ""}
+                        ${item.status === "PLAYING" ? "bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd]" : ""}
                         ${item.status === "CANCELLED" ? "bg-red-50 text-red-700 border-red-200" : ""}
-                        ${item.status === "RESERVED" ? "bg-blue-50 text-blue-700 border-blue-200" : ""}
                       `}
                     >
-                      {item.status === "PENDING" && "Chờ xác nhận"}
-                      {item.status === "CONFIRMED" && "Đã xác nhận"}
-                      {item.status === "CANCELLED" && "Đã hủy"}
+                      {(item.status === "PENDING" || item.status === "RESERVED") && "Chờ xác nhận"}
+                      {(item.status === "CONFIRMED" || item.status === "BOOKED") && "Đã đặt"}
+                      {item.status === "COMPLETED" && "Hoàn thành"}
                       {item.status === "PLAYING" && "Đang đá"}
-                      {item.status === "RESERVED" && "Đã giữ chỗ"}
+                      {item.status === "CANCELLED" && "Đã hủy"}
                     </span>
                   </div>
                 </li>

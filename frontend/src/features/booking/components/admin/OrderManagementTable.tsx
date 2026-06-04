@@ -2,14 +2,18 @@ import type { AdminBookingSummaryResponse } from "../../api/bookingApi";
 import { formatCompactPrice } from "../../utils/booking.utils";
 
 const STATUS_LABELS: Record<string, string> = {
-  BOOKED: "Chờ xác nhận",
+  BOOKED: "Đã đặt",
+  RESERVED: "Chờ xác nhận",
+  PENDING: "Giữ chỗ",
   CONFIRMED: "Đã xác nhận cọc",
   PLAYING: "Đang đá",
   CANCELLED: "Đã hủy",
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  BOOKED: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
+  BOOKED: "border border-lime-100/85 bg-lime-300/45 text-[#123915]",
+  RESERVED: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
+  PENDING: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
   CONFIRMED: "border border-lime-100/85 bg-lime-300/45 text-[#123915]",
   PLAYING: "border border-sky-100/75 bg-sky-300/30 text-sky-50",
   CANCELLED: "border border-rose-100/80 bg-rose-400/35 text-rose-50",
@@ -69,9 +73,11 @@ export function OrderManagementTable({
             "border border-white/40 bg-white/15 text-white/80";
 
           const shiftLabel = `${formatTime(order.startTime)} - ${formatTime(order.endTime)}, ${formatDate(order.bookingDate)}`;
-          const isBooked = order.status === "BOOKED";
+          const canConfirm =
+            order.status === "RESERVED" ||
+            order.status === "PENDING";
           const isCancelled = order.status === "CANCELLED";
-          const disableCancel = isCancelled;
+          const disableCancel = isCancelled || order.status === "PLAYING" || order.status === "COMPLETED";
 
           const rowToneClass =
             index % 2 === 0 ? "bg-[#0d5a2f]/60" : "bg-[#0a4d29]/60";
@@ -121,13 +127,13 @@ export function OrderManagementTable({
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass} rounded-r-lg border-r border-white/15`}
               >
                 <div className="flex items-center gap-2">
-                  {isBooked ? (
+                  {canConfirm ? (
                     <button
                       type="button"
                       onClick={() => onConfirmDeposit(order.id)}
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                     >
-                      Xác nhận cọc
+                      Xác nhận đơn
                     </button>
                   ) : (
                     <span className="text-xs text-white/40">-</span>

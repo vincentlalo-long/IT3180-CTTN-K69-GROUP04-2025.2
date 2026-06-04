@@ -3,6 +3,7 @@ import { AuthLayout } from "../../layouts/AuthLayout";
 import { LoginForm } from "../../features/auth/components/LoginForm";
 import { saveTokenToStorage } from "../../shared/utils/tokenStorage";
 import { loginUser } from "../../features/auth/api/authApi";
+import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
 
 // Khai báo kiểu dữ liệu payload nhận được từ LoginForm
 interface LoginSubmitPayload {
@@ -12,6 +13,8 @@ interface LoginSubmitPayload {
 }
 
 export function LoginPage() {
+  const { checkAuth } = useAuthContext();
+
   const handleLogin = async (payload: LoginSubmitPayload) => {
     const loginData = {
       email: payload.identifier,
@@ -30,6 +33,8 @@ export function LoginPage() {
       email: data.email,
       username: data.username,
     });
+
+    checkAuth();
   };
 
   return (

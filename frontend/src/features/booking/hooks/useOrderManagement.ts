@@ -43,7 +43,7 @@ export function useOrderManagement() {
   const handleConfirmDeposit = async (orderId: number) => {
     setErrorMessage(null);
     try {
-      await updateOrderStatusApi(orderId, "CONFIRMED", "Xác nhận cọc");
+      await updateOrderStatusApi(orderId, "BOOKED", "Xác nhận cọc");
       await loadOrders();
     } catch (error) {
       logApiError("useOrderManagement.handleConfirmDeposit", error, {

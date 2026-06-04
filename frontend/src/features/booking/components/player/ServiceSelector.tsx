@@ -74,7 +74,7 @@ export function ServiceSelector({
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+      <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 backdrop-blur-md p-6 text-center text-sm font-medium text-emerald-100/70 shadow-xl">
         Đang tải dịch vụ...
       </div>
     );
@@ -82,7 +82,7 @@ export function ServiceSelector({
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200">
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-md p-6 text-center text-sm font-semibold text-amber-200/90 shadow-xl">
         {error}
       </div>
     );
@@ -93,44 +93,44 @@ export function ServiceSelector({
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+    <section className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-6 shadow-xl text-white">
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <h2 className="text-lg font-bold text-white tracking-tight">
           Dịch vụ kèm theo
         </h2>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {services.map((service) => {
           const quantity = selectedServices[service.id] ?? 0;
           return (
             <div
               key={service.id}
-              className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 first:border-t-0 first:pt-0 dark:border-slate-700"
+              className="flex items-center justify-between gap-3 border-t border-white/10 pt-4 first:border-t-0 first:pt-0"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-gray-900 dark:text-slate-100">
+                <p className="truncate text-sm font-semibold text-white">
                   {service.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">
+                <p className="text-xs text-emerald-300 font-medium mt-0.5">
                   {formatCurrency(service.price)} / {service.unit}
                 </p>
               </div>
-              <div className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-gray-200 dark:border-slate-600">
+              <div className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-white/20 bg-white/5">
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="flex h-9 w-9 items-center justify-center text-white/70 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 transition"
                   onClick={() => updateQuantity(service.id, quantity - 1)}
                   disabled={quantity === 0}
                   aria-label={`Giảm ${service.name}`}
                 >
                   <Minus size={15} />
                 </button>
-                <span className="flex h-9 w-10 items-center justify-center text-sm font-semibold text-gray-900 dark:text-slate-100">
+                <span className="flex h-9 w-10 items-center justify-center text-sm font-bold text-white bg-white/5 border-x border-white/10">
                   {quantity}
                 </span>
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center text-gray-600 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-700"
+                  className="flex h-9 w-9 items-center justify-center text-white/70 hover:bg-white/10 transition"
                   onClick={() => updateQuantity(service.id, quantity + 1)}
                   aria-label={`Tăng ${service.name}`}
                 >

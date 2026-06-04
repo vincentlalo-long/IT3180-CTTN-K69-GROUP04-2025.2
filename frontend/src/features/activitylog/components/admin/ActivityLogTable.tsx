@@ -2,7 +2,7 @@ import { useActivityLogs } from "../../hooks/useActivityLogs";
 
 function getActionBadgeClass(actionType: string) {
   const normalized = actionType.toUpperCase();
-  if (normalized.includes("CREATE")) {
+  if (normalized.includes("CREATE") || normalized.includes("CONFIRM")) {
     return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
   }
   if (normalized.includes("CANCEL") || normalized.includes("DELETE") || normalized.includes("BAN")) {

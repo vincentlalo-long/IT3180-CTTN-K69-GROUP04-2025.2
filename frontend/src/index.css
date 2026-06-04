@@ -41,6 +41,14 @@ body,
   min-height: 100vh;
   width: 100%;
   margin: 0;
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -53,6 +61,8 @@ body {
 
 * {
   box-sizing: border-box;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 @keyframes auth-reveal {
@@ -69,4 +79,30 @@ body {
 
 #root {
   animation: auth-reveal 420ms ease-out both;
+}
+
+/* Mặc định cho mọi input autofill (ví dụ: trong Admin Profile Tab) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: #ffffff !important;
+    transition: background-color 5000s ease-in-out 0s;
+    box-shadow: 0 0 0px 1000px #0f4d2a inset !important;
+}
+
+/* Cho các ô input trong trang Auth (Login / Register) ở trạng thái bình thường */
+.rounded-auth-control input:-webkit-autofill,
+.rounded-auth-control input:-webkit-autofill:hover,
+.rounded-auth-control input:-webkit-autofill:focus,
+.rounded-auth-control input:-webkit-autofill:active {
+    box-shadow: 0 0 0px 1000px #575353 inset !important;
+}
+
+/* Khi có lỗi (error) trên ô input bất kỳ (kể cả Auth) */
+div[class*="border-red-400"] input:-webkit-autofill,
+div[class*="border-red-400"] input:-webkit-autofill:hover,
+div[class*="border-red-400"] input:-webkit-autofill:focus,
+div[class*="border-red-400"] input:-webkit-autofill:active {
+    box-shadow: 0 0 0px 1000px #3d1a1a inset !important;
 }

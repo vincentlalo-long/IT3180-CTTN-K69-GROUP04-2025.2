@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import heroImg from "../assets/images/hero-lamine.webp";
 import { PlayerNavBar } from "../layouts/player/PlayerNavBar";
 
-
 const featureCards = [
   "Đặt sân trực tuyến",
   "Theo dõi lịch thi đấu",

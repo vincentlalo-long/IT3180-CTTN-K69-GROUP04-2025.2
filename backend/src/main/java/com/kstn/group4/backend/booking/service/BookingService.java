@@ -81,7 +81,7 @@ public class BookingService {
                 bookingStatus = BookingStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
                 throw new BusinessException(
-                        "Trạng thái tìm kiếm không hợp lệ: " + status + ". Các trạng thái hợp lệ: RESERVED, CANCELLED, PLAYING",
+                        "Trạng thái tìm kiếm không hợp lệ: " + status + ". Các trạng thái hợp lệ: " + java.util.Arrays.toString(BookingStatus.values()),
                         "INVALID_SEARCH_STATUS"
                 );
             }
@@ -140,12 +140,23 @@ public class BookingService {
                 }
                 activityLogService.log(adminId, adminName, "CANCEL_BOOKING", "BOOKING", bookingId.toString(), "Hủy đơn đặt sân", null, null);
             }
+            // Log confirm booking
+            if (newStatus == BookingStatus.BOOKED && booking.getStatus() != BookingStatus.BOOKED) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                Integer adminId = null;
+                String adminName = "System";
+                if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+                    adminId = principal.getId();
+                    adminName = principal.getAppUsername();
+                }
+                activityLogService.log(adminId, adminName, "CONFIRM_BOOKING", "BOOKING", bookingId.toString(), "Duyệt đơn đặt sân", null, null);
+            }
             
             booking.setStatus(newStatus);
             bookingRepository.save(booking);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(
-                    "Trạng thái không hợp lệ: " + statusString + ". Các trạng thái hợp lệ: RESERVED, CANCELLED, PLAYING",
+                    "Trạng thái không hợp lệ: " + statusString + ". Các trạng thái hợp lệ: " + java.util.Arrays.toString(BookingStatus.values()),
                     "INVALID_BOOKING_STATUS"
             );
         }
