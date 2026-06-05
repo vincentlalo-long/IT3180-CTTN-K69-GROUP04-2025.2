@@ -14,7 +14,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/admin/leagues")
+@RequestMapping("/admin/leagues")
 @PreAuthorize("hasRole('ADMIN')")
 public class LeagueController {
 
