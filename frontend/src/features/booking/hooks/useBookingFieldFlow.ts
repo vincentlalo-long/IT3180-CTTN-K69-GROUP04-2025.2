@@ -5,6 +5,7 @@ import { createBooking } from "@/features/booking/api/bookingApi";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 import type { SlotStatusResponse, ServiceItemResponse } from "@/features/venue/types/venue.types";
 import type { SlotDisplayItem } from "@/features/booking/components/player/SlotsGrid";
+import { useNavigate } from "react-router-dom";
 
 const normalizeTime = (value: string) => value.slice(0, 5);
 const toNumber = (value: string | number | null | undefined) => Number(value ?? 0);
@@ -19,6 +20,7 @@ export interface SelectedSlot {
 }
 
 export function useBookingFieldFlow(venueId: number) {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -167,7 +169,7 @@ export function useBookingFieldFlow(venueId: number) {
     setSubmitSuccess(null);
 
     try {
-      await Promise.all(
+      const bookingResponses = await Promise.all(
         selectedSlots.map((sel, index) =>
           createBooking({
             pitchId: sel.pitchId,
@@ -178,14 +180,34 @@ export function useBookingFieldFlow(venueId: number) {
         )
       );
 
+      const firstBooking = bookingResponses[0];
+
+      const pitchNameDisplay = selectedSlots.length > 1
+        ? `${selectedSlots[0].pitchName} và ${selectedSlots.length - 1} sân khác`
+        : selectedSlots[0].pitchName;
+      const bDate = pendingBooking.bookingDate;
+      const sTime = selectedSlots[0].startTime;
+      const eTime = selectedSlots[selectedSlots.length - 1].endTime;
+      const tPrice = pendingBooking.totalPrice;
+
       setShowConfirmModal(false);
       setPendingBooking(null);
       setSelectedSlots([]);
       setSelectedServices({});
       refresh();
-      setSubmitSuccess(
-        `Đặt sân thành công! ${selectedSlots.length} khung giờ đã được xác nhận.`
-      );
+
+      navigate("/checkout", {
+        state: {
+          bookingData: {
+            bookingId: firstBooking.id,
+            pitchName: pitchNameDisplay,
+            bookingDate: bDate,
+            startTime: sTime,
+            endTime: eTime,
+            totalPrice: tPrice
+          }
+        }
+      });
     } catch (err) {
       logApiError("BookingField.handleConfirmBooking", err, {
         venueId,

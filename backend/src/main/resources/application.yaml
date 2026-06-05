@@ -69,6 +69,12 @@ application:
     google:
       client-id: ${GOOGLE_CLIENT_ID:97945693765-5v8geqt8u5kduun9gcocajshjgeoofpl.apps.googleusercontent.com}
 
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE:DEMO1234}
+  hash-secret: ${VNPAY_HASH_SECRET:DEMOHASHDEMOHASHDEMOHASHDEMOHASHDEMOHASHDEMOHASHDEMO}
+  payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-return}
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

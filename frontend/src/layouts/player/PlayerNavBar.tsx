@@ -47,6 +47,7 @@ export function PlayerNavBar() {
     { label: "Đặt sân", path: "/booking" },
     { label: "Chợ kèo", path: "/match" },
     { label: "Đội bóng", path: "/team" },
+    { label: "Giải đấu", path: "/leagues" },
     { label: "Hồ sơ", path: "/profile" },
   ];
 

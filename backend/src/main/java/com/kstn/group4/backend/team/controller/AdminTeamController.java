@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({"/admin/teams", "/api/v1/admin/teams"})
+@RequestMapping("/admin/teams")
 @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
 public class AdminTeamController {
 

@@ -5,6 +5,7 @@ import {
   Settings,
   Shield,
   SquareChartGantt,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -26,6 +27,7 @@ const sidebarItems: AdminSidebarItem[] = [
   { label: "Đơn đặt sân", to: "/admin/orders", icon: SquareChartGantt },
   { label: "Lịch sân", to: "/admin/schedule", icon: CalendarDays },
   { label: "Cáp kèo", to: "/admin/matchmaking", icon: Handshake },
+  { label: "Giải đấu", to: "/admin/leagues", icon: Trophy },
   { label: "Cài đặt", to: "/admin/settings", icon: Settings },
 ];
 

@@ -1,3 +1,4 @@
+import { isAxiosError } from "axios";
 import apiClient from "@/shared/api/apiClient";
 import { logApiError } from "@/shared/utils/apiError";
 import type { Team, TeamStatus } from "../types/team.types";
@@ -101,6 +102,9 @@ export const getMyTeam = async (): Promise<Team | null> => {
     const response = await apiClient.get<Team | null>("/teams/my-team");
     return response.data;
   } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
     logApiError("getMyTeam", error);
     throw error;
   }

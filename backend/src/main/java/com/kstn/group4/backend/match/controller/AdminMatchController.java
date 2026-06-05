@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({"/admin/matches", "/api/v1/admin/matches"})
+@RequestMapping("/admin/matches")
 @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
 public class AdminMatchController {
 

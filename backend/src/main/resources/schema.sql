@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS `time_slots`;
 DROP TABLE IF EXISTS `pitches`;
 DROP TABLE IF EXISTS `match_requests`;
 DROP TABLE IF EXISTS `matches`;
+DROP TABLE IF EXISTS `leagues`;
 DROP TABLE IF EXISTS `venues`;
 DROP TABLE IF EXISTS `team_members`;
 DROP TABLE IF EXISTS `teams`;
@@ -35,6 +36,20 @@ CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_password_reset_tokens_user_id`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `leagues` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `format` VARCHAR(50) NOT NULL,
+    `number_of_teams` INT NOT NULL,
+    `prize` TEXT,
+    `status` VARCHAR(50) NOT NULL,
+    `manager_id` INT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_leagues_manager_id`
+        FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `venues` (

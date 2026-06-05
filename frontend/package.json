@@ -24,6 +24,7 @@
     "react-hook-form": "^7.73.1",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.14.0",
+    "react-toastify": "^11.1.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.14"
   },
