@@ -109,3 +109,17 @@ export async function resetPassword(
     throw new Error(getApiErrorMessage(error));
   }
 }
+
+export async function loginWithGoogle(
+  idToken: string,
+): Promise<JwtResponse> {
+  try {
+    const response = await apiClient.post<JwtResponse>(
+      `${AUTH_API_PREFIX}/google`,
+      { idToken },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}

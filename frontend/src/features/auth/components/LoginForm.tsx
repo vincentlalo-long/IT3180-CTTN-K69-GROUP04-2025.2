@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 import { Button } from "../../../shared/components/Button";
-import { SocialIconButton } from "../../../shared/components/SocialIconButton";
 import { TextInput } from "../../../shared/components/Input";
 import eyeIcon from "../../../assets/icons/eye.svg";
 import eyeOffIcon from "../../../assets/icons/eye-off.svg";
 import facebookIcon from "../../../assets/icons/facebook.svg";
-import googleIcon from "../../../assets/icons/google.svg";
 
 export type LoginRole = "OWNER" | "PLAYER" | "ADMIN";
 
@@ -31,11 +30,12 @@ interface LoginFormErrors {
 
 interface LoginFormProps {
   onSubmit?: (payload: LoginSubmitPayload) => Promise<void> | void;
+  onGoogleSuccess?: (idToken: string) => Promise<void> | void;
 }
 
 const EMAIL_OR_PHONE_REGEX = /^(?:\+?\d[\d\s-]{7,}|[^\s@]+@[^\s@]+\.[^\s@]+)$/;
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
+export function LoginForm({ onSubmit, onGoogleSuccess }: LoginFormProps) {
   const navigate = useNavigate();
   const [values, setValues] = useState<LoginFormValues>({
     identifier: "",
@@ -203,14 +203,35 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
         {/* Social login buttons */}
         <div className="flex items-center justify-center gap-3">
-          <SocialIconButton
-            iconSrc={googleIcon}
-            label="Đăng nhập với Google"
-          />
-          <SocialIconButton
-            iconSrc={facebookIcon}
-            label="Đăng nhập với Facebook"
-          />
+          <div className="w-10 h-10 flex items-center justify-center rounded-full overflow-hidden hover:opacity-90 transition duration-200 shadow-md">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  try {
+                    await onGoogleSuccess?.(credentialResponse.credential);
+                  } catch (err) {
+                    console.error("Google login error:", err);
+                    const errMsg = err instanceof Error ? err.message : "Đăng nhập Google thất bại.";
+                    setErrors({ global: errMsg });
+                  }
+                }
+              }}
+              onError={() => {
+                console.error("Google sign in failed");
+                setErrors({ global: "Đăng nhập Google thất bại." });
+              }}
+              theme="filled_blue"
+              shape="circle"
+              type="icon"
+            />
+          </div>
+          <button
+            type="button"
+            aria-label="Đăng nhập với Facebook"
+            className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden hover:opacity-90 transition duration-200 shadow-md bg-[#1877F2]"
+          >
+            <img src={facebookIcon} alt="" className="h-full w-full object-cover" />
+          </button>
         </div>
       </div>
     </form>

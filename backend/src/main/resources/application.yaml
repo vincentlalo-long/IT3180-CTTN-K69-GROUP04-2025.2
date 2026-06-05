@@ -37,7 +37,7 @@ spring:
   docker:
     compose:
       enabled: true
-      file: ./compose.yaml
+      file: ./docker-compose.yml
       lifecycle-management: start_and_stop
       wait-for-services: true
 
@@ -66,6 +66,8 @@ application:
         expiration: ${JWT_REFRESH_EXPIRATION:604800000}
     password-reset:
       expiration-minutes: 15
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:97945693765-5v8geqt8u5kduun9gcocajshjgeoofpl.apps.googleusercontent.com}
 
 logging:
   level:

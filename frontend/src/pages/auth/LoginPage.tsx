@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../layouts/AuthLayout";
 import { LoginForm } from "../../features/auth/components/LoginForm";
 import { saveTokenToStorage } from "../../shared/utils/tokenStorage";
-import { loginUser } from "../../features/auth/api/authApi";
+import { loginUser, loginWithGoogle } from "../../features/auth/api/authApi";
 import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
 
 // Khai báo kiểu dữ liệu payload nhận được từ LoginForm
@@ -14,6 +14,7 @@ interface LoginSubmitPayload {
 
 export function LoginPage() {
   const { checkAuth } = useAuthContext();
+  const navigate = useNavigate();
 
   const handleLogin = async (payload: LoginSubmitPayload) => {
     const loginData = {
@@ -37,6 +38,23 @@ export function LoginPage() {
     checkAuth();
   };
 
+  const handleGoogleSuccess = async (idToken: string) => {
+    const data = await loginWithGoogle(idToken);
+    if (!data.token) {
+      throw new Error("Đăng nhập Google thất bại");
+    }
+
+    saveTokenToStorage(data.token, {
+      type: data.type,
+      role: data.role,
+      email: data.email,
+      username: data.username,
+    });
+
+    checkAuth();
+    navigate("/");
+  };
+
   return (
     <AuthLayout>
       <div className="w-full flex flex-col gap-4">
@@ -49,7 +67,7 @@ export function LoginPage() {
           </p>
         </div>
 
-        <LoginForm onSubmit={handleLogin} />
+        <LoginForm onSubmit={handleLogin} onGoogleSuccess={handleGoogleSuccess} />
 
         <div className="mt-2">
           <Link

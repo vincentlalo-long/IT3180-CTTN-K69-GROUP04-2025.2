@@ -1,5 +1,9 @@
 package com.kstn.group4.backend.auth.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.kstn.group4.backend.auth.dto.*;
 import com.kstn.group4.backend.auth.entity.PasswordResetToken;
 import com.kstn.group4.backend.auth.repository.PasswordResetTokenRepository;
@@ -22,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.UUID;
 
 @Service
@@ -37,6 +42,9 @@ public class AuthService {
 
     @Value("${application.security.password-reset.expiration-minutes:15}")
     private int expirationMinutes;
+
+    @Value("${application.security.google.client-id}")
+    private String googleClientId;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -127,5 +135,66 @@ public class AuthService {
         passwordResetTokenRepository.delete(resetToken);
 
         return new AuthResponse(true, "Cập nhật mật khẩu mới thành công");
+    }
+
+    @Transactional
+    public JwtResponse loginWithGoogle(String idTokenString) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
+                    new GsonFactory()
+            )
+            .setAudience(Collections.singletonList(googleClientId))
+            .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken == null) {
+                throw new BusinessException("Token Google không hợp lệ hoặc đã hết hạn", "INVALID_GOOGLE_TOKEN");
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String avatarUrl = (String) payload.get("picture");
+
+            // Tìm kiếm hoặc tạo mới User
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                User newUser = new User();
+                newUser.setEmail(email);
+                // Tạo username từ name hoặc từ phần đầu của email
+                String baseUsername = name != null && !name.isBlank() ? name : email.split("@")[0];
+                // Đảm bảo username không trùng lặp
+                String finalUsername = baseUsername;
+                int counter = 1;
+                while (userRepository.existsByUsername(finalUsername)) {
+                    finalUsername = baseUsername + counter;
+                    counter++;
+                }
+                newUser.setUsername(finalUsername);
+                newUser.setPassword(null); // ĐỂ NULL ĐỂ NGĂN DÙNG FORM ĐĂNG NHẬP THÔNG THƯỜNG
+                newUser.setRole(Role.PLAYER.name());
+                newUser.setAvatarUrl(avatarUrl);
+                return userRepository.save(newUser);
+            });
+
+            // Sử dụng UserPrincipal để sinh Authentication
+            UserPrincipal userPrincipal = UserPrincipal.build(user);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userPrincipal, null, userPrincipal.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            String token = jwtTokenProvider.generateToken(authentication);
+            return new JwtResponse(
+                    token,
+                    userPrincipal.getAppUsername(),
+                    userPrincipal.getEmail(),
+                    userPrincipal.getRole()
+            );
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException("Xác thực Google thất bại: " + e.getMessage(), "GOOGLE_AUTH_ERROR");
+        }
     }
 }
