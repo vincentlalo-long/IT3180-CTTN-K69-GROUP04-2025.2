@@ -106,3 +106,12 @@ div[class*="border-red-400"] input:-webkit-autofill:focus,
 div[class*="border-red-400"] input:-webkit-autofill:active {
     box-shadow: 0 0 0px 1000px #3d1a1a inset !important;
 }
+
+/* Responsive height override for all auth text inputs */
+.bg-auth-shell .group.flex.w-full.items-center.border {
+  height: 52px !important;
+}
+
+.bg-auth-shell .group.flex.w-full.items-center.border input {
+  font-size: 14px !important;
+}

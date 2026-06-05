@@ -39,25 +39,25 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full flex flex-col gap-8">
+      <div className="w-full flex flex-col gap-4">
+        <div className="space-y-1.5 text-center">
+          <h1 className="font-body text-[26px] font-bold text-white">
+            Đăng nhập
+          </h1>
+          <p className="text-auth-placeholder text-xs text-white/70">
+            Chào mừng bạn quay lại với MIXIFOOT
+          </p>
+        </div>
+
         <LoginForm onSubmit={handleLogin} />
 
-        <div className="flex flex-col items-center gap-3 text-sm text-white/85">
+        <div className="mt-2">
           <Link
-            to="/forgot-password"
-            className="text-white hover:text-white/80 transition font-medium focus-visible:outline-none"
+            to="/register"
+            className="flex h-[48px] w-full items-center justify-center rounded-xl border border-white/15 bg-white/[0.02] text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 transition duration-200"
           >
-            Quên mật khẩu?
+            Chưa có tài khoản? Đăng ký ngay
           </Link>
-          <p>
-            Chưa có tài khoản?{" "}
-            <Link
-              to="/register"
-              className="text-auth-link text-white font-medium hover:text-white/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
-            >
-              Đăng ký ngay
-            </Link>
-          </p>
         </div>
       </div>
     </AuthLayout>

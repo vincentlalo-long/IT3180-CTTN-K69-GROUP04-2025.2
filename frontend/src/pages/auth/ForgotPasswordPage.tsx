@@ -39,12 +39,12 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full flex flex-col gap-6">
-        <div className="space-y-2">
-          <h1 className="font-display text-[32px] font-normal text-white">
+      <div className="w-full flex flex-col gap-4">
+        <div className="space-y-1.5 text-center">
+          <h1 className="font-body text-[26px] font-bold text-white">
             Quên mật khẩu
           </h1>
-          <p className="text-auth-placeholder text-sm text-white/70">
+          <p className="text-auth-placeholder text-xs text-white/70">
             Chúng tôi sẽ gửi một liên kết khôi phục tới email của bạn.
           </p>
         </div>
@@ -90,15 +90,14 @@ export function ForgotPasswordPage() {
         )}
 
         {!isSuccess && (
-          <p className="text-center text-sm text-white/85">
-            Nhớ ra mật khẩu?{" "}
+          <div className="mt-2">
             <Link
               to="/login"
-              className="text-white font-medium hover:text-white/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
+              className="flex h-[48px] w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.01] text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 transition duration-200"
             >
-              Đăng nhập ngay
+              Nhớ ra mật khẩu? Đăng nhập ngay
             </Link>
-          </p>
+          </div>
         )}
       </div>
     </AuthLayout>

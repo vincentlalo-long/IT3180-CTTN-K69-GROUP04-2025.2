@@ -77,12 +77,12 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full flex flex-col gap-6">
-        <div className="space-y-2">
-          <h1 className="font-display text-[32px] font-normal text-white">
+      <div className="w-full flex flex-col gap-4">
+        <div className="space-y-1.5 text-center">
+          <h1 className="font-body text-[26px] font-bold text-white">
             Đặt lại mật khẩu
           </h1>
-          <p className="text-auth-placeholder text-sm text-white/70">
+          <p className="text-auth-placeholder text-xs text-white/70">
             Tạo một mật khẩu mới an toàn cho tài khoản MIXIFOOT của bạn.
           </p>
         </div>
