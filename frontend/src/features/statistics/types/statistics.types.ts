@@ -34,3 +34,33 @@ export interface DashboardStatCard {
     direction: "up" | "down";
   };
 }
+
+export interface TournamentTeam {
+  id: number;
+  name: string;
+  logoUrl?: string;
+}
+
+export interface TournamentMatch {
+  id: number;
+  homeTeamId: number | null; // null if BYE or TBD
+  awayTeamId: number | null; // null if BYE or TBD
+  homeScore?: number;
+  awayScore?: number;
+  roundNumber: number;
+  nextMatchId?: number; // Used for Knockout bracket
+  status: "SCHEDULED" | "IN_PROGRESS" | "FINISHED";
+}
+
+export interface TeamStanding {
+  teamId: number;
+  teamName: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+}

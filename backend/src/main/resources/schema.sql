@@ -226,6 +226,10 @@ CREATE TABLE IF NOT EXISTS `matches` (
     `description` TEXT,
     `pitch_type` INT,
     `time_slot_id` INT,
+    `home_score` INT,
+    `away_score` INT,
+    `round_number` INT,
+    `next_match_id` INT,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_matches_venue_id`
         FOREIGN KEY (`venue_id`) REFERENCES `venues` (`id`),

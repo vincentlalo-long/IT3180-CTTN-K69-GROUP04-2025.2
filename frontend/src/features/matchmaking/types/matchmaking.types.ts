@@ -15,6 +15,10 @@ export interface MatchResponse {
   status: MatchStatus;
   description?: string;
   pitchType?: number;
+  homeScore?: number;
+  awayScore?: number;
+  roundNumber?: number;
+  nextMatchId?: number;
 }
 
 export interface MatchRequestResponse {

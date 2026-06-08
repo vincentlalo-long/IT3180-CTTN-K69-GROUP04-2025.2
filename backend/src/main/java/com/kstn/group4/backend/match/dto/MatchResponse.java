@@ -25,4 +25,8 @@ public class MatchResponse {
     private MatchStatus status;
     private String description;
     private Integer pitchType;
+    private Integer homeScore;
+    private Integer awayScore;
+    private Integer roundNumber;
+    private Integer nextMatchId;
 }

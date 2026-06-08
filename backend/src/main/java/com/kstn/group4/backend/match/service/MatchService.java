@@ -275,7 +275,11 @@ public class MatchService {
                 match.getMatchTime(),
                 match.getStatus(),
                 match.getDescription(),
-                match.getPitchType()
+                match.getPitchType(),
+                match.getHomeScore(),
+                match.getAwayScore(),
+                match.getRoundNumber(),
+                match.getNextMatchId()
         );
     }
 

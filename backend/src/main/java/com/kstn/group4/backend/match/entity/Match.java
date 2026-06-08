@@ -53,6 +53,18 @@ public class Match {
     @Column(nullable = false)
     private MatchStatus status;
 
+    @Column(name = "home_score")
+    private Integer homeScore;
+
+    @Column(name = "away_score")
+    private Integer awayScore;
+
+    @Column(name = "round_number")
+    private Integer roundNumber;
+
+    @Column(name = "next_match_id")
+    private Integer nextMatchId;
+
     public Match() {
         this.status = MatchStatus.OPEN;
     }
