@@ -1,8 +1,19 @@
 package com.kstn.group4.backend.team.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.kstn.group4.backend.activitylog.service.ActivityLogService;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import com.kstn.group4.backend.exception.BusinessException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
+import com.kstn.group4.backend.match.entity.Match;
+import com.kstn.group4.backend.match.repository.MatchRepository;
 import com.kstn.group4.backend.team.dto.CreateTeamRequest;
 import com.kstn.group4.backend.team.dto.TeamMemberResponse;
 import com.kstn.group4.backend.team.dto.TeamResponse;
@@ -15,17 +26,8 @@ import com.kstn.group4.backend.team.repository.TeamMemberRepository;
 import com.kstn.group4.backend.team.repository.TeamRepository;
 import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
-import com.kstn.group4.backend.match.repository.MatchRepository;
-import com.kstn.group4.backend.match.entity.Match;
-import com.kstn.group4.backend.activitylog.service.ActivityLogService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -426,6 +428,116 @@ public class TeamService {
         if (user.getTeamId() != null && user.getTeamId().equals(teamId)) {
             user.setTeamId(null);
             userRepository.save(user);
+        }
+    }
+
+    // ==================== IMPLEMENTS ĐẦY ĐỦ CÁC HÀM XỬ LÝ MỚI ====================
+
+    /**
+     * Nghiệp vụ 1: Đội trưởng gửi lời mời thành viên tham gia qua Email
+     */
+    @Transactional
+    public void inviteMember(UserPrincipal userPrincipal, Long teamId, String email) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + teamId, "Team"));
+
+        // 1. Kiểm tra xem người thao tác có phải Đội trưởng không
+        if (!team.getCaptain().getId().equals(userPrincipal.getId())) {
+            throw new BusinessException("Bạn không phải là đội trưởng của đội bóng này!");
+        }
+
+        String trimmedEmail = email.trim();
+
+        // 2. Không cho phép tự mời chính mình
+        if (trimmedEmail.equalsIgnoreCase(team.getCaptain().getEmail())) {
+            throw new BusinessException("Bạn đã là đội trưởng và đang tham gia đội bóng này!");
+        }
+
+        // 3. Kiểm tra email đã có trong đội chưa
+        List<TeamMember> currentMembers = teamMemberRepository.findByTeamId(teamId);
+        boolean isAlreadyInTeam = currentMembers.stream()
+                .anyMatch(m -> m.getId().getUserEmail().equalsIgnoreCase(trimmedEmail));
+        if (isAlreadyInTeam) {
+            throw new BusinessException("Người dùng này đã ở trong đội hoặc đã nhận được lời mời trước đó!");
+        }
+
+        // 4. Lưu bản ghi TeamMember mới với trạng thái INVITED
+        TeamMember newMember = new TeamMember(team, trimmedEmail, TeamMemberStatus.INVITED);
+        teamMemberRepository.save(newMember);
+
+        // 5. Nếu user đã đăng ký tài khoản hệ thống, cập nhật teamId của họ
+        var userOpt = userRepository.findByEmail(trimmedEmail);
+        if (userOpt.isPresent()) {
+            User existingUser = userOpt.get();
+            existingUser.setTeamId(team.getId());
+            userRepository.save(existingUser);
+        }
+    }
+
+    /**
+     * Nghiệp vụ 2: Đội trưởng duyệt thành viên từ INVITED thành ACTIVE
+     */
+    @Transactional
+    public void approveMember(UserPrincipal userPrincipal, Long teamId, String email) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + teamId, "Team"));
+
+        // 1. Kiểm tra quyền Đội trưởng
+        if (!team.getCaptain().getId().equals(userPrincipal.getId())) {
+            throw new BusinessException("Bạn không phải là đội trưởng của đội bóng này!");
+        }
+
+        // 2. Tìm thành viên trong danh sách đội dựa theo email ẩn phía dưới Composite Key
+        TeamMember targetMember = teamMemberRepository.findByTeamId(teamId).stream()
+                .filter(m -> m.getId().getUserEmail().equalsIgnoreCase(email.trim()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thành viên mang email này trong đội bóng", "TeamMember"));
+
+        // 3. Nếu thành viên đã active từ trước thì báo lỗi
+        if (targetMember.getStatus() == TeamMemberStatus.ACTIVE) {
+            throw new BusinessException("Thành viên này đã được phê duyệt hoạt động từ trước!");
+        }
+
+        // 4. Chuyển trạng thái sang ACTIVE
+        targetMember.setStatus(TeamMemberStatus.ACTIVE);
+        teamMemberRepository.save(targetMember);
+    }
+
+    /**
+     * Nghiệp vụ 3: Đội trưởng loại bỏ (Kick) thành viên ra khỏi đội
+     */
+    @Transactional
+    public void kickMember(UserPrincipal userPrincipal, Long teamId, String email) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + teamId, "Team"));
+
+        // 1. Kiểm tra quyền Đội trưởng
+        if (!team.getCaptain().getId().equals(userPrincipal.getId())) {
+            throw new BusinessException("Bạn không phải là đội trưởng của đội bóng này!");
+        }
+
+        String trimmedEmail = email.trim();
+
+        // 2. Không cho phép đội trưởng tự kick chính mình
+        if (trimmedEmail.equalsIgnoreCase(team.getCaptain().getEmail())) {
+            throw new BusinessException("Bạn là đội trưởng, không thể tự loại mình khỏi đội! Hãy chọn giải pháp xóa đội bóng.");
+        }
+
+        // 3. Tìm bản ghi thành viên để xóa
+        TeamMember targetMember = teamMemberRepository.findByTeamId(teamId).stream()
+                .filter(m -> m.getId().getUserEmail().equalsIgnoreCase(trimmedEmail))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Thành viên này không tồn tại trong đội bóng này", "TeamMember"));
+
+        // 4. Xóa bản ghi trong bảng team_member
+        teamMemberRepository.delete(targetMember);
+
+        // 5. Gỡ bỏ liên kết trường teamId về null trong bảng User của người bị kích
+        var userOpt = userRepository.findByEmail(trimmedEmail);
+        if (userOpt.isPresent()) {
+            User regularUser = userOpt.get();
+            regularUser.setTeamId(null);
+            userRepository.save(regularUser);
         }
     }
 }

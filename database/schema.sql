@@ -234,3 +234,24 @@ CREATE TABLE IF NOT EXISTS `matches` (
     CONSTRAINT `fk_matches_guest_team_id`
         FOREIGN KEY (`guest_team_id`) REFERENCES `teams` (`id`)
 );
+-- Tạo bảng lưu thông tin Đội bóng
+CREATE TABLE IF NOT EXISTS team (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    logo_url VARCHAR(255),
+    level VARCHAR(50) NOT NULL, -- Ví dụ: Chuyên nghiệp, Bán chuyên, Nghiệp dư
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo bảng lưu thành viên Đội bóng (Bao gồm Đội trưởng và Thành viên)
+CREATE TABLE IF NOT EXISTS team_member (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    team_id BIGINT NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    role VARCHAR(30) NOT NULL,      -- 'CAPTAIN' hoặc 'MEMBER'
+    status VARCHAR(30) NOT NULL,    -- 'APPROVED' hoặc 'PENDING' (Chờ duyệt khi được mời)
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_team FOREIGN KEY (team_id) REFERENCES team(id) ON DELETE CASCADE,
+    CONSTRAINT uq_team_user UNIQUE (team_id, username) -- Một người không thể tham gia 1 đội 2 lần
+);
