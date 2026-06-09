@@ -15,6 +15,7 @@ import com.kstn.group4.backend.exception.ResourceNotFoundException;
 import com.kstn.group4.backend.match.entity.Match;
 import com.kstn.group4.backend.match.repository.MatchRepository;
 import com.kstn.group4.backend.team.dto.CreateTeamRequest;
+import com.kstn.group4.backend.team.dto.TeamMemberResponse;
 import com.kstn.group4.backend.team.dto.TeamResponse;
 import com.kstn.group4.backend.team.dto.TeamStatusUpdateRequest;
 import com.kstn.group4.backend.team.entity.Team;
@@ -47,6 +48,10 @@ public class TeamService {
             throw new BusinessException("Bạn đã là đội trưởng của một đội bóng khác");
         }
 
+        if (captain.getTeamId() != null) {
+            throw new BusinessException("Bạn đã thuộc một đội bóng khác");
+        }
+
         if (teamRepository.existsByName(request.getName())) {
             throw new BusinessException("Tên đội bóng đã được sử dụng");
         }
@@ -73,6 +78,9 @@ public class TeamService {
                     var userOpt = userRepository.findByEmail(trimmedEmail);
                     if (userOpt.isPresent()) {
                         User existingUser = userOpt.get();
+                        if (existingUser.getTeamId() != null) {
+                            throw new BusinessException("Người dùng " + trimmedEmail + " đã thuộc một đội bóng khác");
+                        }
                         members.add(new TeamMember(savedTeam, trimmedEmail, TeamMemberStatus.INVITED));
                         existingUser.setTeamId(savedTeam.getId());
                         userRepository.save(existingUser);
@@ -85,22 +93,7 @@ public class TeamService {
 
         teamMemberRepository.saveAll(members);
 
-        List<String> emails = members.stream()
-                .map(m -> m.getId().getUserEmail())
-                .collect(Collectors.toList());
-
-        return new TeamResponse(
-                team.getId(),
-                team.getName(),
-                captain.getId(),
-                captain.getUsername(),
-                team.getDescription(),
-                team.getReputationScore(),
-                team.getStatus(),
-                null,
-                team.getCreatedAt(),
-                emails
-        );
+        return buildTeamResponse(savedTeam, members);
     }
 
     @Transactional(readOnly = true)
@@ -202,22 +195,7 @@ public class TeamService {
 
     private TeamResponse mapToResponse(Team team) {
         List<TeamMember> members = teamMemberRepository.findByTeamId(team.getId());
-        List<String> memberEmails = members.stream()
-                .map(m -> m.getId().getUserEmail())
-                .collect(Collectors.toList());
-
-        return new TeamResponse(
-                team.getId(),
-                team.getName(),
-                team.getCaptain().getId(),
-                team.getCaptain().getUsername(),
-                team.getDescription(),
-                team.getReputationScore(),
-                team.getStatus(),
-                team.getBannedUntil(),
-                team.getCreatedAt(),
-                memberEmails
-        );
+        return buildTeamResponse(team, members);
     }
 
     @Transactional(readOnly = true)
@@ -255,13 +233,26 @@ public class TeamService {
         List<Long> teamIds = teams.stream().map(Team::getId).collect(Collectors.toList());
         List<TeamMember> allMembers = teamMemberRepository.findByTeamIdIn(teamIds);
 
-        java.util.Map<Long, List<String>> membersMap = allMembers.stream()
+        java.util.Map<Long, List<TeamMember>> membersMap = allMembers.stream()
                 .collect(Collectors.groupingBy(
-                        m -> m.getTeam().getId(),
-                        Collectors.mapping(m -> m.getId().getUserEmail(), Collectors.toList())
+                        m -> m.getTeam().getId()
                 ));
 
-        return teams.stream().map(team -> new TeamResponse(
+        return teams.stream()
+                .map(team -> buildTeamResponse(team, membersMap.getOrDefault(team.getId(), new ArrayList<>())))
+                .collect(Collectors.toList());
+    }
+
+    private TeamResponse buildTeamResponse(Team team, List<TeamMember> members) {
+        List<TeamMember> orderedMembers = orderMembersWithCaptainFirst(team, members);
+        List<String> memberEmails = orderedMembers.stream()
+                .map(member -> member.getId().getUserEmail())
+                .collect(Collectors.toList());
+        List<TeamMemberResponse> memberDetails = orderedMembers.stream()
+                .map(member -> new TeamMemberResponse(member.getId().getUserEmail(), member.getStatus()))
+                .collect(Collectors.toList());
+
+        return new TeamResponse(
                 team.getId(),
                 team.getName(),
                 team.getCaptain().getId(),
@@ -271,8 +262,30 @@ public class TeamService {
                 team.getStatus(),
                 team.getBannedUntil(),
                 team.getCreatedAt(),
-                membersMap.getOrDefault(team.getId(), new ArrayList<>())
-        )).collect(Collectors.toList());
+                memberEmails,
+                memberDetails
+        );
+    }
+
+    private List<TeamMember> orderMembersWithCaptainFirst(Team team, List<TeamMember> members) {
+        String captainEmail = team.getCaptain().getEmail();
+        List<TeamMember> membersWithCaptain = new ArrayList<>(members);
+        boolean hasCaptainMember = membersWithCaptain.stream()
+                .anyMatch(member -> member.getId().getUserEmail().equalsIgnoreCase(captainEmail));
+        if (!hasCaptainMember) {
+            membersWithCaptain.add(new TeamMember(team, captainEmail, TeamMemberStatus.ACTIVE));
+        }
+
+        return membersWithCaptain.stream()
+                .sorted((left, right) -> {
+                    boolean leftIsCaptain = left.getId().getUserEmail().equalsIgnoreCase(captainEmail);
+                    boolean rightIsCaptain = right.getId().getUserEmail().equalsIgnoreCase(captainEmail);
+                    if (leftIsCaptain == rightIsCaptain) {
+                        return left.getId().getUserEmail().compareToIgnoreCase(right.getId().getUserEmail());
+                    }
+                    return leftIsCaptain ? -1 : 1;
+                })
+                .collect(Collectors.toList());
     }
 
     // ==================== IMPLEMENTS ĐẦY ĐỦ CÁC HÀM XỬ LÝ MỚI ====================
@@ -305,12 +318,19 @@ public class TeamService {
             throw new BusinessException("Người dùng này đã ở trong đội hoặc đã nhận được lời mời trước đó!");
         }
 
+        var userOpt = userRepository.findByEmail(trimmedEmail);
+        if (userOpt.isPresent()) {
+            User existingUser = userOpt.get();
+            if (existingUser.getTeamId() != null && !existingUser.getTeamId().equals(team.getId())) {
+                throw new BusinessException("Người dùng này đang thuộc một đội bóng khác!");
+            }
+        }
+
         // 4. Lưu bản ghi TeamMember mới với trạng thái INVITED
         TeamMember newMember = new TeamMember(team, trimmedEmail, TeamMemberStatus.INVITED);
         teamMemberRepository.save(newMember);
 
         // 5. Nếu user đã đăng ký tài khoản hệ thống, cập nhật teamId của họ
-        var userOpt = userRepository.findByEmail(trimmedEmail);
         if (userOpt.isPresent()) {
             User existingUser = userOpt.get();
             existingUser.setTeamId(team.getId());
@@ -382,6 +402,32 @@ public class TeamService {
             User regularUser = userOpt.get();
             regularUser.setTeamId(null);
             userRepository.save(regularUser);
+        }
+    }
+
+    @Transactional
+    public void leaveTeam(UserPrincipal userPrincipal, Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + teamId, "Team"));
+
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng", "User"));
+
+        if (team.getCaptain().getId().equals(userPrincipal.getId())
+                || user.getEmail().equalsIgnoreCase(team.getCaptain().getEmail())) {
+            throw new BusinessException("Đội trưởng không thể rời đội bằng chức năng này. Hãy liên hệ quản trị viên nếu cần giải tán đội.");
+        }
+
+        TeamMember targetMember = teamMemberRepository.findByTeamId(teamId).stream()
+                .filter(member -> member.getId().getUserEmail().equalsIgnoreCase(user.getEmail()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Bạn không thuộc đội bóng này", "TeamMember"));
+
+        teamMemberRepository.delete(targetMember);
+
+        if (user.getTeamId() != null && user.getTeamId().equals(teamId)) {
+            user.setTeamId(null);
+            userRepository.save(user);
         }
     }
 }

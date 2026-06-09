@@ -163,3 +163,12 @@ export const kickMember = async (teamId: number, email: string): Promise<void> =
     throw error;
   }
 };
+
+export const leaveTeam = async (teamId: number): Promise<void> => {
+  try {
+    await apiClient.delete(`/teams/${teamId}/members/me`);
+  } catch (error) {
+    logApiError("leaveTeam", error, { teamId });
+    throw error;
+  }
+};

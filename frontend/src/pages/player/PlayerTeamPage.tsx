@@ -13,7 +13,7 @@ import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 import { useAuthContext } from "@/features/auth/hooks/useAuthContext";
 
 export function PlayerTeamPage() {
-  const { user } = useAuthContext(); // Lấy thông tin user hiện tại (chứa id) từ hệ thống Auth
+  const { user } = useAuthContext();
   const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [approvedTeams, setApprovedTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,12 +93,12 @@ export function PlayerTeamPage() {
             </button>
           </div>
         ) : myTeam ? (
-          // Nếu đã thuộc về một đội bóng -> Truyền đủ 3 tham số Props cho MyTeamDetails
+          // Nếu đã thuộc về một đội bóng
           <div className="max-w-4xl mx-auto">
-            <MyTeamDetails 
-              team={myTeam} 
-              currentUserId={Number(user?.userId) || 0}
-              onRefresh={fetchData} 
+            <MyTeamDetails
+              team={myTeam}
+              currentUserEmail={user?.email}
+              onRefresh={fetchData}
             />
           </div>
         ) : (

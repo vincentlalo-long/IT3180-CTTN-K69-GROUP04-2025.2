@@ -99,4 +99,18 @@ public class TeamController {
         teamService.kickMember(userPrincipal, teamId, email);
         return ResponseEntity.ok("Đã xóa thành viên ra khỏi đội bóng!");
     }
+
+    /**
+     * API: Thành viên tự rời khỏi đội bóng
+     * DELETE /teams/{teamId}/members/me
+     */
+    @DeleteMapping("/{teamId}/members/me")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<String> leaveTeam(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long teamId
+    ) {
+        teamService.leaveTeam(userPrincipal, teamId);
+        return ResponseEntity.ok("Đã rời khỏi đội bóng!");
+    }
 }
