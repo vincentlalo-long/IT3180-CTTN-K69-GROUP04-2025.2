@@ -14,7 +14,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@react-oauth/google": "^0.13.5",
     "@tanstack/react-query": "^5.101.0",
-    "axios": "^1.11.0",
+    "axios": "^1.17.0",
     "date-fns": "^4.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.8.0",
