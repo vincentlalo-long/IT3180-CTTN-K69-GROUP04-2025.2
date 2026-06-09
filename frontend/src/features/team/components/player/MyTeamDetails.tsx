@@ -1,4 +1,4 @@
-import type { Team } from "../../types/team.types"; // Thêm chữ "type" vào đây
+import type { Team } from "../../types/team.types"; // Giữ nguyên type-only import chuẩn xác
 import { ShieldAlert, CheckCircle2, Users, User, Clock, Award, Mail, PlusCircle, Check, UserMinus } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -8,7 +8,7 @@ import { inviteMember, approveMember, kickMember } from "../../api/teamApi";
 
 interface MyTeamDetailsProps {
   team: Team;
-  currentUserId: number; // Thêm ID người dùng hiện tại để check quyền Captain
+  currentUserId: number; // ID người dùng hiện tại để check quyền Captain
   onRefresh: () => void; // Hàm re-fetch dữ liệu sau khi thực hiện thao tác
 }
 
@@ -62,25 +62,25 @@ export function MyTeamDetails({ team, currentUserId, onRefresh }: MyTeamDetailsP
     }
   };
 
-  // 2. Thao tác Duyệt thành viên
+  // 2. Thao tác Duyệt thành viên - ĐÃ KHẮC PHỤC LỖI UNUSED-VARS
   const handleApprove = async (email: string) => {
     try {
       await approveMember(team.id, email);
       showAlert(`Đã duyệt thành viên ${email} vào đội!`, "success");
       onRefresh();
-    } catch (error) {
+    } catch {
       showAlert("Phê duyệt thành viên thất bại", "error");
     }
   };
 
-  // 3. Thao tác Kích thành viên
+  // 3. Thao tác Kích thành viên - ĐÃ KHẮC PHỤC LỖI UNUSED-VARS
   const handleKick = async (email: string) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa thành viên ${email} ra khỏi đội?`)) {
       try {
         await kickMember(team.id, email);
         showAlert(`Đã xóa thành viên ${email} ra khỏi đội bóng!`, "success");
         onRefresh();
-      } catch (error) {
+      } catch {
         showAlert("Xóa thành viên thất bại", "error");
       }
     }
@@ -159,7 +159,7 @@ export function MyTeamDetails({ team, currentUserId, onRefresh }: MyTeamDetailsP
           </p>
         </div>
 
-        {/* Thông tin chung */}
+        {/* Informational Section */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-4">
             <Award size={24} className="text-[#F8B416]" />
@@ -186,7 +186,7 @@ export function MyTeamDetails({ team, currentUserId, onRefresh }: MyTeamDetailsP
           </div>
         </div>
 
-        {/* PHẦN MỚI: FORM MỜI THÀNH VIÊN (CHỈ DÀNH CHO ĐỘI TRƯỞNG) */}
+        {/* FORM MỜI THÀNH VIÊN (CHỈ DÀNH CHO ĐỘI TRƯỞNG) */}
         {isCaptain && (
           <div className="mt-8 pt-6 border-t border-gray-100">
             <div className="flex items-center gap-2 mb-4">
@@ -220,7 +220,7 @@ export function MyTeamDetails({ team, currentUserId, onRefresh }: MyTeamDetailsP
           </div>
         )}
 
-        {/* Danh sách thành viên (Bao gồm bổ sung tính năng Duyệt/Kích hành động cho Captain) */}
+        {/* Danh sách thành viên */}
         <div className="mt-8">
           <div className="flex items-center gap-2 border-b border-gray-200 pb-3 mb-4">
             <Users size={20} className="text-[#005E2E]" />
