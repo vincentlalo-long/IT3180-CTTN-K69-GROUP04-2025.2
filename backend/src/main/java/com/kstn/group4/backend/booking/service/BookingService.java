@@ -22,6 +22,7 @@ import com.kstn.group4.backend.venue.entity.PriceRule;
 import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.venue.repository.AddonServiceRepository;
 import com.kstn.group4.backend.venue.repository.PitchRepository;
+import com.kstn.group4.backend.venue.repository.PitchReviewRepository;
 import com.kstn.group4.backend.venue.repository.PriceRuleRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
 import com.kstn.group4.backend.activitylog.service.ActivityLogService;
@@ -55,6 +56,7 @@ public class BookingService {
     private final BookingServiceItemRepository bookingServiceItemRepository;
     private final UserRepository userRepository;
     private final PitchRepository pitchRepository;
+    private final PitchReviewRepository pitchReviewRepository;
     private final PriceRuleRepository priceRuleRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final AddonServiceRepository addonServiceRepository;
@@ -498,7 +500,8 @@ public class BookingService {
                 booking.getEndTime(),
                 totalPrice,
                 depositAmount,
-                status
+                status,
+                booking.getId() != null && pitchReviewRepository.existsByBookingId(booking.getId())
         );
     }
 

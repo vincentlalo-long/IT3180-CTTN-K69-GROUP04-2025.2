@@ -78,9 +78,9 @@ INSERT INTO `bookings` (
 (2, 1, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '20:00:00', '21:30:00', 'CANCELLED', 'FRIENDLY', 350000.00, NOW());
 
 -- 6) Seed reviews (optional cho demo)
-INSERT INTO `pitch_reviews` (`pitch_id`, `player_id`, `rating`, `content`, `created_at`) VALUES
-(1, 2, 5, 'San dep, chat luong tot', NOW()),
-(2, 2, 4, 'Gia hop ly, anh sang on', NOW());
+INSERT INTO `pitch_reviews` (`pitch_id`, `player_id`, `booking_id`, `rating`, `content`, `created_at`) VALUES
+(1, 2, 1, 5, 'Sân đẹp, chất lượng tốt', NOW()),
+(2, 2, 2, 4, 'Giá hợp lý, ánh sáng ổn', NOW());
 
 DELETE FROM `team_members`;
 
@@ -128,7 +128,8 @@ INSERT INTO
     `role`,
     `created_at`,
     `phone_number`,
-    `avatar_url`
+    `avatar_url`,
+    `membership_points`
 )
 VALUES
     (
@@ -139,7 +140,8 @@ VALUES
         'ADMIN',
         NOW(),
         '0909123456',
-        NULL
+        NULL,
+        0
     ),
     (
         2,
@@ -149,7 +151,8 @@ VALUES
         'PLAYER',
         NOW(),
         '0912345678',
-        NULL
+        NULL,
+        0
     ),
     (
         3,
@@ -159,7 +162,8 @@ VALUES
         'PLAYER',
         NOW(),
         '0987654321',
-        NULL
+        NULL,
+        0
     );
 
 -- =========================

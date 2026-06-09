@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
@@ -109,6 +110,26 @@ public class GlobalExceptionHandler {
                 ex.getErrorCode(),
                 request.getDescription(false)
         );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            WebRequest request
+    ) {
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Request body is invalid",
+                "VALIDATION_ERROR",
+                request.getDescription(false)
+        );
+        response.put("fields", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

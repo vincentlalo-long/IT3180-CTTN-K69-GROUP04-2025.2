@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `team_id` BIGINT,
     `phone_number` VARCHAR(20),
     `avatar_url` VARCHAR(255),
+    `membership_points` INT NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`)
 );
 
@@ -138,6 +139,7 @@ CREATE TABLE IF NOT EXISTS `pitch_reviews` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `pitch_id` INT NOT NULL,
     `player_id` INT NOT NULL,
+    `booking_id` INT NOT NULL,
     `rating` INT NOT NULL,
     `content` TEXT NOT NULL,
     `created_at` DATETIME NOT NULL,
@@ -145,7 +147,11 @@ CREATE TABLE IF NOT EXISTS `pitch_reviews` (
     CONSTRAINT `fk_pitch_reviews_pitch_id`
         FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`),
     CONSTRAINT `fk_pitch_reviews_player_id`
-        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`)
+        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`),
+    CONSTRAINT `fk_pitch_reviews_booking_id`
+        FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `uk_pitch_reviews_booking_id`
+        UNIQUE (`booking_id`)
 );
 
 CREATE TABLE IF NOT EXISTS `booking_services` (
