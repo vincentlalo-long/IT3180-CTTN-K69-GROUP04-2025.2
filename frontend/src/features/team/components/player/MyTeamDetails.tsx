@@ -1,19 +1,90 @@
-import type { Team } from "../../types/team.types";
-import { ShieldAlert, CheckCircle2, Users, User, Clock, Award, Mail } from "lucide-react";
+import type { Team } from "../../types/team.types"; // Thêm chữ "type" vào đây
+import { ShieldAlert, CheckCircle2, Users, User, Clock, Award, Mail, PlusCircle, Check, UserMinus } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import React, { useState } from "react";
+import { isAxiosError } from "axios";
+import { inviteMember, approveMember, kickMember } from "../../api/teamApi";
 
 interface MyTeamDetailsProps {
   team: Team;
+  currentUserId: number; // Thêm ID người dùng hiện tại để check quyền Captain
+  onRefresh: () => void; // Hàm re-fetch dữ liệu sau khi thực hiện thao tác
 }
 
-export function MyTeamDetails({ team }: MyTeamDetailsProps) {
+export function MyTeamDetails({ team, currentUserId, onRefresh }: MyTeamDetailsProps) {
+  const [emailInput, setEmailInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Kiểm tra xem user đang xem trang này có phải là Đội trưởng không
+  const isCaptain = team.captainId === currentUserId;
+
   let formattedDate = "";
   try {
     formattedDate = format(new Date(team.createdAt), "dd/MM/yyyy", { locale: vi });
   } catch {
     formattedDate = team.createdAt;
   }
+
+  const showAlert = (msg: string, type: "success" | "error") => {
+    if (type === "success") {
+      setSuccessMessage(msg);
+      setErrorMessage("");
+    } else {
+      setErrorMessage(msg);
+      setSuccessMessage("");
+    }
+    setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 4000);
+  };
+
+  // 1. Thao tác Mời thành viên
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+
+    setLoading(true);
+    try {
+      await inviteMember(team.id, emailInput.trim());
+      showAlert("Đã gửi lời mời tham gia thành công!", "success");
+      setEmailInput("");
+      onRefresh();
+    } catch (error) {
+      if (isAxiosError(error)) {
+        showAlert(error.response?.data?.message || "Gửi lời mời thất bại", "error");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. Thao tác Duyệt thành viên
+  const handleApprove = async (email: string) => {
+    try {
+      await approveMember(team.id, email);
+      showAlert(`Đã duyệt thành viên ${email} vào đội!`, "success");
+      onRefresh();
+    } catch (error) {
+      showAlert("Phê duyệt thành viên thất bại", "error");
+    }
+  };
+
+  // 3. Thao tác Kích thành viên
+  const handleKick = async (email: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa thành viên ${email} ra khỏi đội?`)) {
+      try {
+        await kickMember(team.id, email);
+        showAlert(`Đã xóa thành viên ${email} ra khỏi đội bóng!`, "success");
+        onRefresh();
+      } catch (error) {
+        showAlert("Xóa thành viên thất bại", "error");
+      }
+    }
+  };
 
   const renderStatusBanner = () => {
     switch (team.status) {
@@ -115,7 +186,41 @@ export function MyTeamDetails({ team }: MyTeamDetailsProps) {
           </div>
         </div>
 
-        {/* Danh sách thành viên */}
+        {/* PHẦN MỚI: FORM MỜI THÀNH VIÊN (CHỈ DÀNH CHO ĐỘI TRƯỞNG) */}
+        {isCaptain && (
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <PlusCircle size={20} className="text-[#005E2E]" />
+              <h3 className="text-base font-extrabold text-gray-800 uppercase tracking-wider">
+                Mời thành viên mới
+              </h3>
+            </div>
+
+            {/* Thông báo kết quả thao tác nhanh */}
+            {successMessage && <div className="p-3 mb-4 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl">{successMessage}</div>}
+            {errorMessage && <div className="p-3 mb-4 text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-xl">{errorMessage}</div>}
+
+            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Nhập chính xác địa chỉ email người chơi..."
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="flex-1 px-4 py-2.5 border-2 border-black/40 rounded-xl text-sm font-semibold focus:outline-none focus:border-[#005E2E] transition"
+                required
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 bg-[#005E2E] text-white text-sm font-black uppercase tracking-wider rounded-xl border-2 border-black/80 shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-[#0b4d29] disabled:opacity-50 transition active:translate-y-0.5 active:shadow-none"
+              >
+                {loading ? "Đang gửi..." : "Gửi lời mời"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Danh sách thành viên (Bao gồm bổ sung tính năng Duyệt/Kích hành động cho Captain) */}
         <div className="mt-8">
           <div className="flex items-center gap-2 border-b border-gray-200 pb-3 mb-4">
             <Users size={20} className="text-[#005E2E]" />
@@ -131,15 +236,37 @@ export function MyTeamDetails({ team }: MyTeamDetailsProps) {
               {team.memberEmails.map((email, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 bg-white hover:bg-gray-50 transition"
+                  className="flex items-center justify-between border border-gray-200 rounded-xl p-3 bg-white hover:bg-gray-50 transition shadow-sm"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 border border-emerald-100 text-[#005E2E] font-black text-xs">
-                    {idx + 1}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-100 text-[#005E2E] font-black text-xs">
+                      {idx + 1}
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Mail size={14} className="text-gray-400 shrink-0" />
+                      <span className="text-sm font-semibold text-gray-700 truncate">{email}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Mail size={14} className="text-gray-400 shrink-0" />
-                    <span className="text-sm font-semibold text-gray-700 truncate">{email}</span>
-                  </div>
+
+                  {/* NÚT THAO TÁC QUẢN TRỊ (CHỈ ĐỘI TRƯỞNG MỚI NHÌN THẤY) */}
+                  {isCaptain && (
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <button
+                        title="Phê duyệt thành viên"
+                        onClick={() => handleApprove(email)}
+                        className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#005E2E] rounded-lg border border-emerald-200 transition"
+                      >
+                        <Check size={14} className="stroke-[3]" />
+                      </button>
+                      <button
+                        title="Kích khỏi đội"
+                        onClick={() => handleKick(email)}
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition"
+                      >
+                        <UserMinus size={14} className="stroke-[3]" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

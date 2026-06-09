@@ -52,4 +52,51 @@ public class TeamController {
     public ResponseEntity<List<TeamResponse>> getApprovedTeams() {
         return ResponseEntity.ok(teamService.getApprovedTeams());
     }
+
+    // ==================== CÁC API BỔ SUNG MỚI (DÀNH CHO ĐỘI TRƯỞNG) ====================
+
+    /**
+     * API: Mời người chơi khác tham gia qua Email
+     * POST /teams/{teamId}/invite?email=abc@gmail.com
+     */
+    @PostMapping("/{teamId}/invite")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<String> inviteMember(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long teamId,
+            @RequestParam String email
+    ) {
+        teamService.inviteMember(userPrincipal, teamId, email);
+        return ResponseEntity.ok("Đã gửi lời mời tham gia đội bóng!");
+    }
+
+    /**
+     * API: Phê duyệt thành viên vào đội
+     * PUT /teams/{teamId}/members/approve?email=abc@gmail.com
+     */
+    @PutMapping("/{teamId}/members/approve")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<String> approveMember(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long teamId,
+            @RequestParam String email
+    ) {
+        teamService.approveMember(userPrincipal, teamId, email);
+        return ResponseEntity.ok("Đã duyệt thành viên vào đội bóng!");
+    }
+
+    /**
+     * API: Kick thành viên ra khỏi đội bóng
+     * DELETE /teams/{teamId}/members?email=abc@gmail.com
+     */
+    @DeleteMapping("/{teamId}/members")
+    @PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<String> kickMember(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable Long teamId,
+            @RequestParam String email
+    ) {
+        teamService.kickMember(userPrincipal, teamId, email);
+        return ResponseEntity.ok("Đã xóa thành viên ra khỏi đội bóng!");
+    }
 }
