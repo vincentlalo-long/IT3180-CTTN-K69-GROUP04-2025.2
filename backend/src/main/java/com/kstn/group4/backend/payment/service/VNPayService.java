@@ -1,21 +1,40 @@
 package com.kstn.group4.backend.payment.service;
 
+import com.kstn.group4.backend.booking.entity.Booking;
+import com.kstn.group4.backend.booking.repository.BookingRepository;
+import com.kstn.group4.backend.exception.BusinessException;
+import com.kstn.group4.backend.exception.ForbiddenException;
+import com.kstn.group4.backend.exception.ResourceNotFoundException;
 import com.kstn.group4.backend.payment.dto.CreatePaymentRequest;
+import com.kstn.group4.backend.payment.dto.CreatePaymentResponse;
+import com.kstn.group4.backend.user.entity.User;
+import com.kstn.group4.backend.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class VNPayService {
+
+    private static final BigDecimal POINT_VALUE = BigDecimal.valueOf(100);
+
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
 
     @Value("${vnpay.tmn-code}")
     private String tmnCode;
@@ -33,9 +52,38 @@ public class VNPayService {
      * Build the VNPay payment URL from a CreatePaymentRequest.
      * Amount is multiplied by 100 per VNPay spec (VND, no decimals).
      */
-    public String buildPaymentUrl(CreatePaymentRequest request, HttpServletRequest httpRequest) {
+    @Transactional
+    public CreatePaymentResponse buildPaymentUrl(CreatePaymentRequest request, HttpServletRequest httpRequest, Integer payerId) {
+        Booking booking = bookingRepository.findByIdWithDetails(request.bookingId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt sân", "Booking"));
+
+        if (booking.getPlayer() == null || !booking.getPlayer().getId().equals(payerId)) {
+            throw new ForbiddenException("Bạn không có quyền thanh toán đơn đặt sân này");
+        }
+
+        if (booking.getPointsRedeemedAt() != null) {
+            throw new BusinessException("Đơn đặt sân này đã được xác nhận thanh toán", "BOOKING_ALREADY_PAID");
+        }
+
+        User payer = userRepository.findById(payerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng", "User"));
+
+        int pointsToUse = request.pointsToUse() != null ? request.pointsToUse() : 0;
+        BigDecimal originalAmount = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal discountAmount = calculateDiscountAmount(pointsToUse, originalAmount, payer);
+        BigDecimal payableAmount = originalAmount.subtract(discountAmount).setScale(0, RoundingMode.HALF_UP);
+
+        if (payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("Số điểm sử dụng phải nhỏ hơn tổng tiền thanh toán", "INVALID_POINTS_REDEMPTION");
+        }
+
+        booking.setPointsUsed(pointsToUse);
+        booking.setPointsDiscountAmount(discountAmount);
+        booking.setPointsRedeemedAt(null);
+        bookingRepository.save(booking);
+
         String vnpTxnRef = String.valueOf(request.bookingId());
-        long vnpAmount = request.amount().longValue() * 100L;
+        long vnpAmount = payableAmount.longValue() * 100L;
 
         String vnpCreateDate = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         // Expire after 15 minutes
@@ -84,7 +132,7 @@ public class VNPayService {
         String fullUrl = paymentUrl + "?" + query + "&vnp_SecureHash=" + secureHash;
 
         log.info("VNPay URL built for booking #{}: {}", request.bookingId(), fullUrl);
-        return fullUrl;
+        return new CreatePaymentResponse(fullUrl, payableAmount, discountAmount, pointsToUse);
     }
 
     /**
@@ -110,6 +158,82 @@ public class VNPayService {
         String computedHash = hmacSha512(hashSecret, hashData);
 
         return computedHash.equalsIgnoreCase(receivedHash);
+    }
+
+    @Transactional
+    public boolean settleSuccessfulPayment(String txnRef, String rawVnpAmount) {
+        Integer bookingId;
+        try {
+            bookingId = Integer.valueOf(txnRef);
+        } catch (NumberFormatException ex) {
+            log.warn("Cannot settle membership points because txnRef is invalid: {}", txnRef);
+            return false;
+        }
+
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId).orElse(null);
+        if (booking == null) {
+            log.warn("Cannot settle membership points because booking {} was not found", bookingId);
+            return false;
+        }
+
+        if (booking.getPointsRedeemedAt() != null) {
+            return true;
+        }
+
+        int pointsUsed = booking.getPointsUsed() != null ? booking.getPointsUsed() : 0;
+        BigDecimal discountAmount = booking.getPointsDiscountAmount() != null
+                ? booking.getPointsDiscountAmount()
+                : BigDecimal.ZERO;
+
+        if (!matchesExpectedAmount(booking, discountAmount, rawVnpAmount)) {
+            log.warn("VNPay amount does not match booking {} payable amount", bookingId);
+            return false;
+        }
+
+        if (pointsUsed > 0) {
+            Integer playerId = booking.getPlayer() != null ? booking.getPlayer().getId() : null;
+            if (playerId == null || userRepository.deductMembershipPoints(playerId, pointsUsed) == 0) {
+                log.warn("Cannot deduct {} membership points for booking {}", pointsUsed, bookingId);
+                return false;
+            }
+        }
+
+        booking.setPointsRedeemedAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+        return true;
+    }
+
+    private BigDecimal calculateDiscountAmount(int pointsToUse, BigDecimal originalAmount, User payer) {
+        if (pointsToUse < 0) {
+            throw new BusinessException("Số điểm sử dụng không hợp lệ", "INVALID_POINTS_REDEMPTION");
+        }
+
+        if (pointsToUse == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        int currentPoints = payer.getMembershipPoints() != null ? payer.getMembershipPoints() : 0;
+        if (pointsToUse > currentPoints) {
+            throw new BusinessException("Bạn không có đủ điểm thành viên", "INSUFFICIENT_MEMBERSHIP_POINTS");
+        }
+
+        BigDecimal discountAmount = BigDecimal.valueOf(pointsToUse).multiply(POINT_VALUE);
+        if (discountAmount.compareTo(originalAmount) >= 0) {
+            throw new BusinessException("Số điểm sử dụng phải nhỏ hơn tổng tiền thanh toán", "INVALID_POINTS_REDEMPTION");
+        }
+
+        return discountAmount.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private boolean matchesExpectedAmount(Booking booking, BigDecimal discountAmount, String rawVnpAmount) {
+        if (rawVnpAmount == null || rawVnpAmount.isBlank()) {
+            return false;
+        }
+
+        BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal payableAmount = totalPrice.subtract(discountAmount).setScale(0, RoundingMode.HALF_UP);
+        String expectedVnpAmount = String.valueOf(payableAmount.longValue() * 100L);
+        return expectedVnpAmount.equals(rawVnpAmount);
     }
 
     private String hmacSha512(String key, String data) {

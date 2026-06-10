@@ -2,16 +2,44 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { createVNPayUrl } from "@/features/payment/api/paymentApi";
+import { PointsRedemptionBox } from "@/features/payment/components/PointsRedemptionBox";
+import { usePlayerProfile } from "@/features/account/hooks/usePlayerProfile";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
+
+const POINT_VALUE = 100;
+
+const toNumber = (value: unknown): number => {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return Number(value);
+  }
+
+  return 0;
+};
+
+const formatCurrency = (amount: number): string =>
+  amount.toLocaleString("vi-VN") + " VNĐ";
 
 export const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const { userInfo, loadingUser } = usePlayerProfile();
 
   // Expecting booking details passed via location.state
   const bookingData = location.state?.bookingData || null;
+  const originalAmount = toNumber(bookingData?.totalPrice);
+  const availablePoints = userInfo?.membershipPoints ?? 0;
+  const maxPointsByAmount = Math.max(0, Math.ceil(originalAmount / POINT_VALUE) - 1);
+  const maxRedeemablePoints = Math.min(availablePoints, maxPointsByAmount);
+  const safePointsToUse = Math.min(pointsToUse, maxRedeemablePoints);
+  const discountAmount = safePointsToUse * POINT_VALUE;
+  const payableAmount = Math.max(0, originalAmount - discountAmount);
 
   if (!bookingData) {
     return (
@@ -25,8 +53,12 @@ export const CheckoutPage = () => {
   const handlePayment = async () => {
     setIsLoading(true);
     try {
-      const url = await createVNPayUrl(bookingData.bookingId, bookingData.totalPrice);
-      window.location.href = url; // Redirect to VNPay
+      const payment = await createVNPayUrl(
+        bookingData.bookingId,
+        originalAmount,
+        safePointsToUse,
+      );
+      window.location.href = payment.paymentUrl; // Redirect to VNPay
     } catch (error) {
       console.error("Lỗi khi tạo payment URL", error);
       toast.error("Không thể tạo kết nối thanh toán. Vui lòng thử lại!");
@@ -79,11 +111,37 @@ export const CheckoutPage = () => {
             <span className="text-gray-600">Giờ chơi:</span>
             <span className="font-semibold text-gray-900">{bookingData.startTime} - {bookingData.endTime}</span>
           </div>
-          <div className="flex justify-between pt-2">
-            <span className="text-lg font-bold text-gray-800">Tổng tiền:</span>
-            <span className="text-xl font-bold text-[#1a5f7a]">
-              {bookingData.totalPrice?.toLocaleString('vi-VN')} VNĐ
-            </span>
+          <PointsRedemptionBox
+            availablePoints={availablePoints}
+            originalAmount={originalAmount}
+            pointsToUse={safePointsToUse}
+            onPointsChange={setPointsToUse}
+            disabled={loadingUser || isLoading}
+          />
+
+          <div className="space-y-2 pt-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Tạm tính:</span>
+              <span className="font-semibold text-gray-900">
+                {formatCurrency(originalAmount)}
+              </span>
+            </div>
+            {safePointsToUse > 0 ? (
+              <div className="flex justify-between text-sm text-emerald-700">
+                <span>Giảm bằng điểm:</span>
+                <span className="font-semibold">
+                  -{formatCurrency(discountAmount)}
+                </span>
+              </div>
+            ) : null}
+            <div className="flex justify-between border-t border-gray-100 pt-3">
+              <span className="text-lg font-bold text-gray-800">
+                Tổng thanh toán:
+              </span>
+              <span className="text-xl font-bold text-[#1a5f7a]">
+                {formatCurrency(payableAmount)}
+              </span>
+            </div>
           </div>
         </div>
 
