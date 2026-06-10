@@ -60,3 +60,49 @@ export interface PlayerBookingResponse {
   depositAmount: string | number;
   status: string;
 }
+
+export type RecurrenceType = "WEEKLY" | "MONTHLY";
+
+export type RecurringDayOfWeek =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
+
+export interface RecurringBookingRequest {
+  pitchId: number;
+  timeSlotId: number;
+  startDate: string; // YYYY-MM-DD
+  recurrenceType: RecurrenceType;
+  daysOfWeek?: RecurringDayOfWeek[];
+  numberOfWeeks?: number;
+  numberOfMonths?: number;
+  dayOfMonth?: number;
+  skipConflicts?: boolean;
+  services?: Array<{
+    serviceId: number;
+    quantity: number;
+  }>;
+}
+
+export interface RecurringBookingSkippedOccurrence {
+  bookingDate: string;
+  pitchId: number;
+  timeSlotId: number;
+  reasonCode: string;
+  reason: string;
+}
+
+export interface RecurringBookingResponse {
+  requestedCount: number;
+  createdCount: number;
+  skippedCount: number;
+  totalPrice: string | number;
+  totalDepositAmount: string | number;
+  bookings: PlayerBookingResponse[];
+  skippedOccurrences: RecurringBookingSkippedOccurrence[];
+  message: string;
+}

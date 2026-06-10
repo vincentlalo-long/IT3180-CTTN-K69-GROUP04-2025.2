@@ -1,4 +1,4 @@
-import { X, CalendarDays, MapPin, Clock, Banknote, AlertCircle } from "lucide-react";
+import { X, CalendarDays, MapPin, Clock, Banknote, AlertCircle, Repeat } from "lucide-react";
 import type { SlotDisplayItem } from "./SlotsGrid";
 
 export interface BookingConfirmModalProps {
@@ -10,6 +10,7 @@ export interface BookingConfirmModalProps {
   bookingDate: string; // "yyyy-MM-dd"
   slots: SlotDisplayItem[];
   totalPrice: number;
+  recurringSummary?: string | null;
   error: string | null;
 }
 
@@ -30,6 +31,7 @@ export function BookingConfirmModal({
   bookingDate,
   slots,
   totalPrice,
+  recurringSummary,
   error,
 }: BookingConfirmModalProps) {
   if (!open) return null;
@@ -90,6 +92,13 @@ export function BookingConfirmModal({
             </div>
           </div>
 
+          {recurringSummary && (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <Repeat size={15} className="shrink-0" />
+              <span>{recurringSummary}</span>
+            </div>
+          )}
+
           {/* slot list */}
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
@@ -139,7 +148,7 @@ export function BookingConfirmModal({
               className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-300"
             >
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
-              <span>{error}</span>
+              <span className="whitespace-pre-line">{error}</span>
             </div>
           )}
         </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { createVNPayUrl } from "@/features/payment/api/paymentApi";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
 
 export const CheckoutPage = () => {
@@ -46,6 +46,25 @@ export const CheckoutPage = () => {
 
       <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
         <h1 className="text-2xl font-bold mb-6 text-center border-b pb-4 text-gray-900">Thanh Toán Đơn Đặt Sân</h1>
+
+        {bookingData.recurringWarning && (
+          <div className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="whitespace-pre-line">{bookingData.recurringWarning}</span>
+          </div>
+        )}
+
+        {bookingData.recurringSummary && (
+          <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+            <div>{bookingData.recurringSummary}</div>
+            {bookingData.createdCount && (
+              <div className="mt-1 text-emerald-700">
+                Tạo {bookingData.createdCount} lịch
+                {bookingData.skippedCount ? `, bỏ qua ${bookingData.skippedCount}` : ""}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-4 mb-8">
           <div className="flex justify-between border-b border-gray-100 pb-2">
