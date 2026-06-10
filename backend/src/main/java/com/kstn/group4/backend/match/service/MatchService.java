@@ -36,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -90,9 +92,230 @@ public class MatchService {
 
     @Transactional(readOnly = true)
     public List<MatchResponse> getOpenMatches(Integer venueId, MatchSkillLevel skillLevel) {
-        return matchRepository.findOpenMatches(venueId, skillLevel).stream()
-                .map(this::mapToResponse)
+        return getOpenMatches(null, venueId, skillLevel);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getOpenMatches(UserPrincipal userPrincipal, Integer venueId, MatchSkillLevel skillLevel) {
+        List<Match> matches = matchRepository.findOpenMatches(venueId, skillLevel);
+
+        if (userPrincipal == null) {
+            return matches.stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+        }
+
+        User user = userRepository.findById(userPrincipal.getId()).orElse(null);
+        if (user == null || user.getTeamId() == null) {
+            return matches.stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+        }
+
+        Long teamId = user.getTeamId();
+        Team userTeam = teamRepository.findById(teamId).orElse(null);
+        String teamName = userTeam != null ? userTeam.getName() : "";
+        String teamDesc = userTeam != null ? userTeam.getDescription() : "";
+
+        List<Match> history = matchRepository.findByHostOrGuestTeamId(teamId);
+
+        Double avgSkillLevel = null;
+        Double avgSlotNumber = null;
+        Map<Integer, Long> venueFrequencies = new HashMap<>();
+        Long maxVenueCount = 0L;
+        Integer favoriteVenueId = null;
+        Venue favoriteVenue = null;
+
+        int totalMatches = history.size();
+        if (totalMatches > 0) {
+            double skillSum = 0;
+            double slotSum = 0;
+            int slotCount = 0;
+
+            for (Match m : history) {
+                // Skill Level
+                double skillVal = 2.0;
+                if (m.getSkillLevel() != null) {
+                    skillVal = switch (m.getSkillLevel()) {
+                        case WEAK -> 1.0;
+                        case AVERAGE -> 2.0;
+                        case GOOD -> 3.0;
+                    };
+                }
+                skillSum += skillVal;
+
+                // Time Slot
+                if (m.getTimeSlot() != null && m.getTimeSlot().getSlotNumber() != null) {
+                    slotSum += m.getTimeSlot().getSlotNumber();
+                    slotCount++;
+                }
+
+                // Venue
+                if (m.getVenue() != null) {
+                    Integer vId = m.getVenue().getId();
+                    venueFrequencies.put(vId, venueFrequencies.getOrDefault(vId, 0L) + 1);
+                }
+            }
+
+            avgSkillLevel = skillSum / totalMatches;
+            if (slotCount > 0) {
+                avgSlotNumber = slotSum / slotCount;
+            } else {
+                avgSlotNumber = 6.0;
+            }
+
+            for (Map.Entry<Integer, Long> entry : venueFrequencies.entrySet()) {
+                if (entry.getValue() > maxVenueCount) {
+                    maxVenueCount = entry.getValue();
+                    favoriteVenueId = entry.getKey();
+                }
+            }
+
+            if (favoriteVenueId != null) {
+                for (Match m : history) {
+                    if (m.getVenue() != null && favoriteVenueId.equals(m.getVenue().getId())) {
+                        favoriteVenue = m.getVenue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        final Double finalAvgSkillLevel = (avgSkillLevel != null) ? avgSkillLevel : getDefaultSkillLevel(teamName, teamDesc);
+        final Double finalAvgSlotNumber = (avgSlotNumber != null) ? avgSlotNumber : getDefaultSlotNumber(teamName, teamDesc);
+        final Long finalMaxVenueCount = maxVenueCount;
+        final Venue finalFavoriteVenue = favoriteVenue;
+        final Long finalTeamId = teamId;
+
+        return matches.stream()
+                .sorted((m1, m2) -> {
+                    double score1 = computeSimilarityScore(m1, totalMatches, venueFrequencies, finalMaxVenueCount, finalFavoriteVenue, finalAvgSkillLevel, finalAvgSlotNumber, teamName, teamDesc);
+                    double score2 = computeSimilarityScore(m2, totalMatches, venueFrequencies, finalMaxVenueCount, finalFavoriteVenue, finalAvgSkillLevel, finalAvgSlotNumber, teamName, teamDesc);
+                    
+                    if (Math.abs(score1 - score2) < 1e-5) {
+                        if (m1.getMatchTime() != null && m2.getMatchTime() != null) {
+                            return m1.getMatchTime().compareTo(m2.getMatchTime());
+                        }
+                        return 0;
+                    }
+                    return Double.compare(score2, score1); // Descending score
+                })
+                .map(m -> {
+                    MatchResponse resp = this.mapToResponse(m);
+                    double score = computeSimilarityScore(m, totalMatches, venueFrequencies, finalMaxVenueCount, finalFavoriteVenue, finalAvgSkillLevel, finalAvgSlotNumber, teamName, teamDesc);
+                    if (score >= 0.65 && !m.getHostTeam().getId().equals(finalTeamId)) {
+                        resp.setRecommended(true);
+                    }
+                    return resp;
+                })
                 .collect(Collectors.toList());
+    }
+
+    private double computeSimilarityScore(Match m, int totalMatches, Map<Integer, Long> venueFrequencies, 
+                                          Long maxVenueCount, Venue favoriteVenue, Double avgSkillLevel, 
+                                          Double avgSlotNumber, String teamName, String teamDesc) {
+        // 1. Area Similarity
+        double areaScore = 0.0;
+        if (m.getVenue() != null) {
+            Integer vId = m.getVenue().getId();
+            if (totalMatches > 0) {
+                if (venueFrequencies.containsKey(vId)) {
+                    double freq = venueFrequencies.get(vId);
+                    areaScore = 0.5 + 0.5 * (freq / maxVenueCount);
+                } else if (favoriteVenue != null && favoriteVenue.getLatitude() != null && favoriteVenue.getLongitude() != null
+                        && m.getVenue().getLatitude() != null && m.getVenue().getLongitude() != null) {
+                    double dist = calculateDistance(
+                            favoriteVenue.getLatitude(), favoriteVenue.getLongitude(),
+                            m.getVenue().getLatitude(), m.getVenue().getLongitude()
+                    );
+                    areaScore = Math.exp(-0.1 * dist);
+                } else {
+                    String favVenueInfo = favoriteVenue != null ? (favoriteVenue.getName() + " " + favoriteVenue.getAddress()) : "";
+                    String candidateVenueInfo = m.getVenue().getName() + " " + (m.getVenue().getAddress() != null ? m.getVenue().getAddress() : "");
+                    if (hasKeywordOverlap(favVenueInfo, candidateVenueInfo) || hasKeywordOverlap(teamDesc, candidateVenueInfo)) {
+                        areaScore = 0.4;
+                    }
+                }
+            } else {
+                String candidateVenueInfo = m.getVenue().getName() + " " + (m.getVenue().getAddress() != null ? m.getVenue().getAddress() : "");
+                if (hasKeywordOverlap(teamName + " " + teamDesc, candidateVenueInfo)) {
+                    areaScore = 0.8;
+                }
+            }
+        }
+
+        // 2. Skill Level Similarity
+        double skillScore = 1.0;
+        if (m.getSkillLevel() != null) {
+            double candSkillVal = switch (m.getSkillLevel()) {
+                case WEAK -> 1.0;
+                case AVERAGE -> 2.0;
+                case GOOD -> 3.0;
+            };
+            skillScore = 1.0 - (Math.abs(candSkillVal - avgSkillLevel) / 2.0);
+        }
+
+        // 3. Time Slot Similarity
+        double timeScore = 1.0;
+        if (m.getTimeSlot() != null && m.getTimeSlot().getSlotNumber() != null) {
+            double candSlotVal = m.getTimeSlot().getSlotNumber();
+            timeScore = 1.0 - (Math.abs(candSlotVal - avgSlotNumber) / 10.0);
+        }
+
+        return 0.40 * areaScore + 0.35 * skillScore + 0.25 * timeScore;
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadius = 6371.0; // in kilometers
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadius * c;
+    }
+
+    private boolean hasKeywordOverlap(String text1, String text2) {
+        if (text1 == null || text2 == null) return false;
+        String t1 = text1.toLowerCase();
+        String t2 = text2.toLowerCase();
+        String[] keywords = {
+            "cầu giấy", "đống đa", "thanh xuân", "hai bà trưng", "hoàn kiếm", 
+            "ba đình", "tây hồ", "long biên", "hoàng mai", "hà đông", 
+            "nam từ liêm", "bắc từ liêm", "yên hòa", "dịch vọng"
+        };
+        for (String keyword : keywords) {
+            if (t1.contains(keyword) && t2.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private double getDefaultSkillLevel(String teamName, String teamDesc) {
+        String combined = (teamName + " " + (teamDesc != null ? teamDesc : "")).toLowerCase();
+        if (combined.contains("yếu") || combined.contains("mới chơi") || combined.contains("weak") || combined.contains("sơ cấp")) {
+            return 1.0;
+        }
+        if (combined.contains("mạnh") || combined.contains("cứng") || combined.contains("pro") || combined.contains("khá") || combined.contains("giỏi") || combined.contains("good")) {
+            return 3.0;
+        }
+        return 2.0;
+    }
+
+    private double getDefaultSlotNumber(String teamName, String teamDesc) {
+        String combined = (teamName + " " + (teamDesc != null ? teamDesc : "")).toLowerCase();
+        if (combined.contains("sáng") || combined.contains("morning")) {
+            return 2.0;
+        }
+        if (combined.contains("tối") || combined.contains("đêm") || combined.contains("evening") || combined.contains("night")) {
+            return 9.5;
+        }
+        if (combined.contains("chiều") || combined.contains("afternoon")) {
+            return 5.5;
+        }
+        return 6.0;
     }
 
     @Transactional
@@ -279,7 +502,8 @@ public class MatchService {
                 match.getHomeScore(),
                 match.getAwayScore(),
                 match.getRoundNumber(),
-                match.getNextMatchId()
+                match.getNextMatchId(),
+                false
         );
     }
 

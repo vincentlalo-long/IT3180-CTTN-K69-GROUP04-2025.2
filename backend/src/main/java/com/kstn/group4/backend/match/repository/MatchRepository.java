@@ -20,6 +20,7 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
            "LEFT JOIN FETCH m.venue " +
            "LEFT JOIN FETCH m.hostTeam " +
            "LEFT JOIN FETCH m.guestTeam " +
+           "LEFT JOIN FETCH m.timeSlot " +
            "WHERE m.status = 'OPEN' " +
            "AND (:venueId IS NULL OR m.venue.id = :venueId) " +
            "AND (:skillLevel IS NULL OR m.skillLevel = :skillLevel)")
@@ -34,7 +35,12 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
 
     List<Match> findByStatus(MatchStatus status);
 
-    @Query("SELECT m FROM Match m WHERE m.hostTeam.id = :teamId OR m.guestTeam.id = :teamId")
+    @Query("SELECT m FROM Match m " +
+           "LEFT JOIN FETCH m.venue " +
+           "LEFT JOIN FETCH m.timeSlot " +
+           "LEFT JOIN FETCH m.hostTeam " +
+           "LEFT JOIN FETCH m.guestTeam " +
+           "WHERE m.hostTeam.id = :teamId OR m.guestTeam.id = :teamId")
     List<Match> findByHostOrGuestTeamId(@Param("teamId") Long teamId);
 
     @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})
