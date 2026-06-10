@@ -117,9 +117,9 @@ VALUES
 INSERT INTO
     `services` (`venue_id`, `pitch_id`, `name`, `description`, `price`, `unit`, `status`)
 VALUES
-    (1, NULL, 'Nuoc khoang', 'Nuoc uong dong chai', 10000.00, 'chai', 'ACTIVE'),
-    (1, NULL, 'Thue ao bib', 'Ao bib phan doi', 25000.00, 'bo', 'ACTIVE'),
-    (1, NULL, 'Bong thi dau', 'Bong tieu chuan san 5/7/11', 150000.00, 'qua', 'ACTIVE');
+    (1, NULL, 'Nước khoáng', 'Nước uống đóng chai', 10000.00, 'chai', 'ACTIVE'),
+    (1, NULL, 'Thuê áo bib', 'Áo bib phân đội', 25000.00, 'bộ', 'ACTIVE'),
+    (1, NULL, 'Bóng thi đấu', 'Bóng tiêu chuẩn sân 5/7/11', 150000.00, 'quả', 'ACTIVE');
 
 -- ==========================================
 -- 7. TEAMS & TEAM MEMBERS

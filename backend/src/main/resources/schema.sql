@@ -1,20 +1,21 @@
-DROP TABLE IF EXISTS `league_registrations`;
-DROP TABLE IF EXISTS `activity_logs`;
+DROP TABLE IF EXISTS `booking_services`;
 DROP TABLE IF EXISTS `booking_payments`;
 DROP TABLE IF EXISTS `pitch_reviews`;
 DROP TABLE IF EXISTS `bookings`;
 DROP TABLE IF EXISTS `services`;
 DROP TABLE IF EXISTS `price_rules`;
-DROP TABLE IF EXISTS `time_slots`;
 DROP TABLE IF EXISTS `pitches`;
 DROP TABLE IF EXISTS `match_requests`;
 DROP TABLE IF EXISTS `matches`;
+DROP TABLE IF EXISTS `league_registrations`;
 DROP TABLE IF EXISTS `leagues`;
 DROP TABLE IF EXISTS `venues`;
 DROP TABLE IF EXISTS `team_members`;
 DROP TABLE IF EXISTS `teams`;
 DROP TABLE IF EXISTS `password_reset_tokens`;
 DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `activity_logs`;
+DROP TABLE IF EXISTS `time_slots`;
 
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT NOT NULL AUTO_INCREMENT,

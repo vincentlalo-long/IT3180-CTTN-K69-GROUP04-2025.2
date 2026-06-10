@@ -45,20 +45,20 @@ export const CheckoutPage = () => {
       </button>
 
       <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <h1 className="text-2xl font-bold mb-6 text-center border-b pb-4">Thanh Toán Đơn Đặt Sân</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center border-b pb-4 text-gray-900">Thanh Toán Đơn Đặt Sân</h1>
 
         <div className="space-y-4 mb-8">
           <div className="flex justify-between border-b border-gray-100 pb-2">
             <span className="text-gray-600">Sân bóng:</span>
-            <span className="font-semibold">{bookingData.pitchName || "Sân chưa xác định"}</span>
+            <span className="font-semibold text-gray-900">{bookingData.pitchName || "Sân chưa xác định"}</span>
           </div>
           <div className="flex justify-between border-b border-gray-100 pb-2">
             <span className="text-gray-600">Ngày đặt:</span>
-            <span className="font-semibold">{bookingData.bookingDate}</span>
+            <span className="font-semibold text-gray-900">{bookingData.bookingDate}</span>
           </div>
           <div className="flex justify-between border-b border-gray-100 pb-2">
             <span className="text-gray-600">Giờ chơi:</span>
-            <span className="font-semibold">{bookingData.startTime} - {bookingData.endTime}</span>
+            <span className="font-semibold text-gray-900">{bookingData.startTime} - {bookingData.endTime}</span>
           </div>
           <div className="flex justify-between pt-2">
             <span className="text-lg font-bold text-gray-800">Tổng tiền:</span>
