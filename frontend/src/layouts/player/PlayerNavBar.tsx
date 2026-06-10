@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bell, CircleUserRound } from "lucide-react";
+import { CircleUserRound } from "lucide-react";
 import logoImage from "../../assets/images/logo-amixi.png";
 import { logoutUser } from "../../features/auth/api/authApi";
 import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
 import { LogoutConfirmModal } from "../../shared/components/LogoutConfirmModal";
+import { NotificationDropdown } from "../../shared/components/NotificationDropdown";
 
 export function PlayerNavBar() {
   const navigate = useNavigate();
@@ -156,17 +157,12 @@ export function PlayerNavBar() {
             </button>
           )}
 
-          {/* Nút chuông thông báo nằm bên phải Avatar chuẩn UX */}
-          <button
-            type="button"
-            onClick={() => {
-              /* TODO */
-            }}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20"
-            aria-label="Thông báo"
-          >
-            <Bell size={18} />
-          </button>
+          {isAuthenticated ? (
+            <NotificationDropdown
+              buttonClassName="border-white/25 bg-white/10 hover:bg-white/20"
+              panelClassName="bg-[#005E2E]"
+            />
+          ) : null}
         </div>
       </div>
 
