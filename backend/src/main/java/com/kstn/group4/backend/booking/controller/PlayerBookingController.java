@@ -2,6 +2,8 @@ package com.kstn.group4.backend.booking.controller;
 
 import com.kstn.group4.backend.booking.dto.player.CreateBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.PlayerBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RecurringBookingRequest;
+import com.kstn.group4.backend.booking.dto.player.RecurringBookingResponse;
 import com.kstn.group4.backend.booking.service.BookingService;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import jakarta.validation.Valid;
@@ -35,6 +37,16 @@ public class PlayerBookingController {
 	) {
 		PlayerBookingResponse response = bookingService.createBooking(principal.getId(), request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	@PostMapping("/recurring")
+	public ResponseEntity<RecurringBookingResponse> createRecurringBooking(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@Valid @RequestBody RecurringBookingRequest request
+	) {
+		RecurringBookingResponse response = bookingService.createRecurringBooking(principal.getId(), request);
+		HttpStatus status = response.createdCount() > 0 ? HttpStatus.CREATED : HttpStatus.OK;
+		return ResponseEntity.status(status).body(response);
 	}
 
 	@PatchMapping("/{bookingId}/cancel")
