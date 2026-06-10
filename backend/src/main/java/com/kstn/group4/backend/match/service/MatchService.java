@@ -30,11 +30,18 @@ import com.kstn.group4.backend.venue.repository.PitchRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
 import com.kstn.group4.backend.venue.repository.VenueRepository;
 import com.kstn.group4.backend.activitylog.service.ActivityLogService;
+import com.kstn.group4.backend.match.dto.MatchResultSubmitRequest;
+import com.kstn.group4.backend.match.dto.PlayerStatDto;
+import com.kstn.group4.backend.match.event.MatchResultSubmittedEvent;
+import com.kstn.group4.backend.statistics.entity.PlayerMatchStatistic;
+import com.kstn.group4.backend.statistics.repository.PlayerMatchStatisticRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -54,6 +61,64 @@ public class MatchService {
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final ActivityLogService activityLogService;
+    private final PlayerMatchStatisticRepository playerMatchStatisticRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional
+    public MatchResponse submitMatchResult(Integer matchId, MatchResultSubmitRequest request) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trận đấu", "Match"));
+
+        if (match.getStatus() == MatchStatus.CANCELLED || match.getStatus() == MatchStatus.OPEN) {
+            throw new BusinessException("Trận đấu ở trạng thái " + match.getStatus() + " không thể nộp kết quả");
+        }
+
+        match.setHomeScore(request.getHomeScore());
+        match.setAwayScore(request.getAwayScore());
+        match.setStatus(MatchStatus.COMPLETED);
+        matchRepository.save(match);
+
+        // Save player statistics
+        if (request.getPlayerStats() != null && !request.getPlayerStats().isEmpty()) {
+            List<PlayerMatchStatistic> statistics = new ArrayList<>();
+            for (PlayerStatDto statDto : request.getPlayerStats()) {
+                PlayerMatchStatistic stat = new PlayerMatchStatistic();
+                stat.setMatch(match);
+                stat.setPlayer(userRepository.findById(statDto.getPlayerId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cầu thủ ID: " + statDto.getPlayerId(), "User")));
+                stat.setTeam(teamRepository.findById(statDto.getTeamId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng ID: " + statDto.getTeamId(), "Team")));
+                stat.setGoals(statDto.getGoals());
+                stat.setAssists(statDto.getAssists());
+                statistics.add(stat);
+            }
+            playerMatchStatisticRepository.saveAll(statistics);
+        }
+
+        // Publish Event
+        Integer leagueId = match.getLeague() != null ? match.getLeague().getId() : null;
+        eventPublisher.publishEvent(new MatchResultSubmittedEvent(
+                match.getId(),
+                leagueId,
+                match.getHostTeam().getId(),
+                match.getGuestTeam() != null ? match.getGuestTeam().getId() : null,
+                match.getHomeScore(),
+                match.getAwayScore()
+        ));
+
+        // Log activity
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Integer adminId = null;
+        String adminName = "System";
+        if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+            adminId = principal.getId();
+            adminName = principal.getAppUsername();
+        }
+        activityLogService.log(adminId, adminName, "SUBMIT_MATCH_RESULT", "MATCH", match.getId().toString(), 
+                "Nộp kết quả trận đấu: " + request.getHomeScore() + " - " + request.getAwayScore(), null, null);
+
+        return mapToResponse(match);
+    }
 
     @Transactional
     public MatchResponse createMatch(UserPrincipal userPrincipal, CreateMatchRequest request) {

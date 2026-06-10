@@ -1,5 +1,6 @@
 package com.kstn.group4.backend.match.entity;
 
+import com.kstn.group4.backend.league.entity.League;
 import com.kstn.group4.backend.team.entity.Team;
 import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.venue.entity.Venue;
@@ -9,16 +10,25 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "matches")
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class Match {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "league_id")
+    private League league;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id", nullable = false)
@@ -50,8 +60,8 @@ public class Match {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MatchStatus status;
+    @Column(name = "status", nullable = false)
+    private MatchStatus status = MatchStatus.OPEN;
 
     @Column(name = "home_score")
     private Integer homeScore;
@@ -64,8 +74,4 @@ public class Match {
 
     @Column(name = "next_match_id")
     private Integer nextMatchId;
-
-    public Match() {
-        this.status = MatchStatus.OPEN;
-    }
 }

@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS `player_match_statistics`;
+DROP TABLE IF EXISTS `league_standings`;
 DROP TABLE IF EXISTS `booking_services`;
 DROP TABLE IF EXISTS `booking_payments`;
 DROP TABLE IF EXISTS `pitch_reviews`;
@@ -224,6 +226,7 @@ CREATE TABLE IF NOT EXISTS `team_members` (
 
 CREATE TABLE IF NOT EXISTS `matches` (
     `id` INT NOT NULL AUTO_INCREMENT,
+    `league_id` INT,
     `venue_id` INT NOT NULL,
     `host_team_id` BIGINT NOT NULL,
     `guest_team_id` BIGINT,
@@ -238,6 +241,8 @@ CREATE TABLE IF NOT EXISTS `matches` (
     `round_number` INT,
     `next_match_id` INT,
     PRIMARY KEY (`id`),
+    CONSTRAINT `fk_matches_league_id`
+        FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
     CONSTRAINT `fk_matches_venue_id`
         FOREIGN KEY (`venue_id`) REFERENCES `venues` (`id`),
     CONSTRAINT `fk_matches_host_team_id`
@@ -280,6 +285,45 @@ CREATE TABLE IF NOT EXISTS `league_registrations` (
         FOREIGN KEY (`captain_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
     CONSTRAINT `uk_league_registrations_league_team`
         UNIQUE (`league_id`, `team_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `league_standings` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `league_id` INT NOT NULL,
+    `team_id` BIGINT NOT NULL,
+    `played` INT NOT NULL DEFAULT 0,
+    `won` INT NOT NULL DEFAULT 0,
+    `drawn` INT NOT NULL DEFAULT 0,
+    `lost` INT NOT NULL DEFAULT 0,
+    `goals_for` INT NOT NULL DEFAULT 0,
+    `goals_against` INT NOT NULL DEFAULT 0,
+    `goal_difference` INT NOT NULL DEFAULT 0,
+    `points` INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_league_standings_league_id`
+        FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_league_standings_team_id`
+        FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `uk_league_standings_league_team`
+        UNIQUE (`league_id`, `team_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `player_match_statistics` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `match_id` INT NOT NULL,
+    `player_id` INT NOT NULL,
+    `team_id` BIGINT NOT NULL,
+    `goals` INT NOT NULL DEFAULT 0,
+    `assists` INT NOT NULL DEFAULT 0,
+    `yellow_cards` INT NOT NULL DEFAULT 0,
+    `red_cards` INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_player_match_statistics_match_id`
+        FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_player_match_statistics_player_id`
+        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_player_match_statistics_team_id`
+        FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `activity_logs` (

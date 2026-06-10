@@ -6,6 +6,10 @@ import com.kstn.group4.backend.league.dto.LeagueRequest;
 import com.kstn.group4.backend.league.dto.LeagueResponse;
 import com.kstn.group4.backend.league.entity.League;
 import com.kstn.group4.backend.league.repository.LeagueRepository;
+import com.kstn.group4.backend.league.dto.LeagueStandingResponse;
+import com.kstn.group4.backend.league.repository.LeagueStandingRepository;
+import com.kstn.group4.backend.statistics.dto.TopPlayerStatDto;
+import com.kstn.group4.backend.statistics.repository.PlayerMatchStatisticRepository;
 import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -19,10 +23,47 @@ public class LeagueServiceImpl implements LeagueService {
 
     private final LeagueRepository leagueRepository;
     private final UserRepository userRepository;
+    private final LeagueStandingRepository leagueStandingRepository;
+    private final PlayerMatchStatisticRepository playerMatchStatisticRepository;
 
-    public LeagueServiceImpl(LeagueRepository leagueRepository, UserRepository userRepository) {
+    public LeagueServiceImpl(LeagueRepository leagueRepository, 
+                             UserRepository userRepository,
+                             LeagueStandingRepository leagueStandingRepository,
+                             PlayerMatchStatisticRepository playerMatchStatisticRepository) {
         this.leagueRepository = leagueRepository;
         this.userRepository = userRepository;
+        this.leagueStandingRepository = leagueStandingRepository;
+        this.playerMatchStatisticRepository = playerMatchStatisticRepository;
+    }
+
+    @Override
+    public List<LeagueStandingResponse> getLeagueStandings(Integer leagueId) {
+        return leagueStandingRepository.findByLeagueIdOrderByPointsDescGoalDifferenceDescGoalsForDesc(leagueId)
+                .stream()
+                .map(s -> new LeagueStandingResponse(
+                        s.getId(),
+                        s.getTeam().getId(),
+                        s.getTeam().getName(),
+                        s.getPlayed(),
+                        s.getWon(),
+                        s.getDrawn(),
+                        s.getLost(),
+                        s.getGoalsFor(),
+                        s.getGoalsAgainst(),
+                        s.getGoalDifference(),
+                        s.getPoints()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TopPlayerStatDto> getTopScorers(Integer leagueId) {
+        return playerMatchStatisticRepository.findTopScorersByLeagueId(leagueId);
+    }
+
+    @Override
+    public List<TopPlayerStatDto> getTopAssists(Integer leagueId) {
+        return playerMatchStatisticRepository.findTopAssistsByLeagueId(leagueId);
     }
 
     @Override
