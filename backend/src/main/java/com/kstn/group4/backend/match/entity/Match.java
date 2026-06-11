@@ -35,7 +35,7 @@ public class Match {
     private Venue venue;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_team_id", nullable = false)
+    @JoinColumn(name = "host_team_id")
     private Team hostTeam;
 
     @ManyToOne(fetch = FetchType.LAZY)

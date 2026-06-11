@@ -43,6 +43,9 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
            "WHERE m.hostTeam.id = :teamId OR m.guestTeam.id = :teamId")
     List<Match> findByHostOrGuestTeamId(@Param("teamId") Long teamId);
 
+    @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam", "timeSlot"})
+    List<Match> findByLeagueId(Integer leagueId);
+
     @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})
     List<Match> findByVenueId(Integer venueId);
 

@@ -5,6 +5,8 @@ import com.kstn.group4.backend.league.dto.LeagueResponse;
 import com.kstn.group4.backend.league.dto.LeagueStandingResponse;
 import com.kstn.group4.backend.statistics.dto.TopPlayerStatDto;
 
+import com.kstn.group4.backend.match.dto.MatchResponse;
+
 import java.util.List;
 
 public interface LeagueService {
@@ -17,4 +19,6 @@ public interface LeagueService {
     List<LeagueStandingResponse> getLeagueStandings(Integer leagueId);
     List<TopPlayerStatDto> getTopScorers(Integer leagueId);
     List<TopPlayerStatDto> getTopAssists(Integer leagueId);
+    List<MatchResponse> generateSchedule(Integer leagueId, Integer managerId);
+    List<MatchResponse> getLeagueMatches(Integer leagueId);
 }

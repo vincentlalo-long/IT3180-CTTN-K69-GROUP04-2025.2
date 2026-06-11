@@ -3,6 +3,7 @@ package com.kstn.group4.backend.league.controller;
 import com.kstn.group4.backend.league.dto.LeagueResponse;
 import com.kstn.group4.backend.league.dto.LeagueStandingResponse;
 import com.kstn.group4.backend.league.service.LeagueService;
+import com.kstn.group4.backend.match.dto.MatchResponse;
 import com.kstn.group4.backend.statistics.dto.TopPlayerStatDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,5 +48,10 @@ public class PublicLeagueController {
     @GetMapping("/{id}/statistics/top-assists")
     public ResponseEntity<List<TopPlayerStatDto>> getTopAssists(@PathVariable Integer id) {
         return ResponseEntity.ok(leagueService.getTopAssists(id));
+    }
+
+    @GetMapping("/{id}/matches")
+    public ResponseEntity<List<MatchResponse>> getLeagueMatches(@PathVariable Integer id) {
+        return ResponseEntity.ok(leagueService.getLeagueMatches(id));
     }
 }

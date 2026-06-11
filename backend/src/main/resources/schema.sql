@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS `matches` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `league_id` INT,
     `venue_id` INT NOT NULL,
-    `host_team_id` BIGINT NOT NULL,
+    `host_team_id` BIGINT,
     `guest_team_id` BIGINT,
     `skill_level` VARCHAR(50) NOT NULL,
     `match_time` DATETIME NOT NULL,
