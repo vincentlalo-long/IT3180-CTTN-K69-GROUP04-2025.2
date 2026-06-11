@@ -68,10 +68,10 @@ export function PlayerLeaguePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D] flex flex-col font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
       <PlayerNavBar />
       
-      <main className="flex-1 w-full max-w-[1280px] mx-auto px-6 py-10">
+      <main className="mx-auto w-full max-w-[1280px] px-6 py-10">
         <div className="mb-8 flex items-end justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
