@@ -132,7 +132,7 @@ export function PlayerLeaguePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#00170B] flex flex-col font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D] flex flex-col font-sans">
       <PlayerNavBar />
       
       <main className="flex-1 w-full max-w-[1280px] mx-auto px-6 py-10">
