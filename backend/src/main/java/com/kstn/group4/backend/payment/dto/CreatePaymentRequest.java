@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record CreatePaymentRequest(
         Integer bookingId,
-        BigDecimal amount
+        BigDecimal amount,
+        Integer pointsToUse
 ) {
 }

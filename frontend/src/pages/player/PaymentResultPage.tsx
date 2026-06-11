@@ -1,18 +1,36 @@
 
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { CheckCircle, XCircle, Home, Calendar } from "lucide-react";
 import { Button } from "@/shared/components/Button";
+import { confirmVNPayReturn } from "@/features/payment/api/paymentApi";
 
 export const PaymentResultPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   
   const responseCode = searchParams.get("vnp_ResponseCode");
   const txnRef = searchParams.get("vnp_TxnRef");
   const amountStr = searchParams.get("vnp_Amount");
+  const returnParams = useMemo(
+    () => Object.fromEntries(searchParams.entries()),
+    [searchParams],
+  );
   
   const isSuccess = responseCode === "00";
   const amount = amountStr ? (parseInt(amountStr, 10) / 100).toLocaleString('vi-VN') : "0";
+
+  useEffect(() => {
+    if (!isSuccess || !txnRef) {
+      return;
+    }
+
+    void confirmVNPayReturn(returnParams).catch((error) => {
+      console.error("Không thể xác nhận thanh toán VNPay", error);
+      setConfirmError("Thanh toán thành công nhưng chưa thể cập nhật điểm thành viên. Vui lòng liên hệ quản trị viên.");
+    });
+  }, [isSuccess, returnParams, txnRef]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-4">
@@ -47,6 +65,12 @@ export const PaymentResultPage = () => {
               <span className="text-gray-500">Số tiền:</span>
               <span className="font-medium text-[#1a5f7a]">{amount} VNĐ</span>
             </div>
+          </div>
+        )}
+
+        {confirmError && (
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            {confirmError}
           </div>
         )}
 

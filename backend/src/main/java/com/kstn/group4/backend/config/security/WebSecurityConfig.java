@@ -87,6 +87,7 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/payment/vnpay/ipn").permitAll()
                         .requestMatchers("/teams", "/teams/**").hasAnyRole("PLAYER", "ADMIN")
                         .requestMatchers("/match/**", "/matches", "/matches/**").hasAnyRole("PLAYER", "ADMIN")
+                        .requestMatchers("/notifications", "/notifications/**").hasAnyRole("PLAYER", "ADMIN")
 .requestMatchers("/player/**").hasRole("PLAYER")
 .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

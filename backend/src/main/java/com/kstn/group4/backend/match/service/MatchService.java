@@ -33,6 +33,7 @@ import com.kstn.group4.backend.activitylog.service.ActivityLogService;
 import com.kstn.group4.backend.match.dto.MatchResultSubmitRequest;
 import com.kstn.group4.backend.match.dto.PlayerStatDto;
 import com.kstn.group4.backend.match.event.MatchResultSubmittedEvent;
+import com.kstn.group4.backend.notification.event.MatchScheduleChangedEvent;
 import com.kstn.group4.backend.statistics.entity.PlayerMatchStatistic;
 import com.kstn.group4.backend.statistics.repository.PlayerMatchStatisticRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -485,6 +486,7 @@ public class MatchService {
             match.setGuestTeam(matchRequest.getGuestTeam());
             match.setStatus(MatchStatus.SCHEDULED);
             matchRepository.save(match);
+            publishMatchScheduleChanged(match, "SCHEDULED");
 
             matchRequest.setStatus(MatchRequestStatus.APPROVED);
             matchRequestRepository.save(matchRequest);
@@ -538,7 +540,10 @@ public class MatchService {
         if (!matchRepository.existsById(id)) {
             throw new ResourceNotFoundException("Không tìm thấy trận đấu với ID: " + id, "Match");
         }
-        matchRepository.deleteById(id);
+        Match match = matchRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found", "Match"));
+        publishMatchScheduleChanged(match, "CANCELLED");
+        matchRepository.delete(match);
 
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         Integer adminId = null;
@@ -581,5 +586,27 @@ public class MatchService {
             case 11 -> PitchType.SAN_11;
             default -> PitchType.SAN_5;
         };
+    }
+
+    private void publishMatchScheduleChanged(Match match, String changeType) {
+        List<Long> teamIds = new ArrayList<>();
+        if (match.getHostTeam() != null) {
+            teamIds.add(match.getHostTeam().getId());
+        }
+        if (match.getGuestTeam() != null) {
+            teamIds.add(match.getGuestTeam().getId());
+        }
+
+        if (teamIds.isEmpty()) {
+            return;
+        }
+
+        eventPublisher.publishEvent(new MatchScheduleChangedEvent(
+                match.getId(),
+                teamIds,
+                changeType,
+                match.getVenue() != null ? match.getVenue().getName() : "N/A",
+                match.getMatchTime()
+        ));
     }
 }

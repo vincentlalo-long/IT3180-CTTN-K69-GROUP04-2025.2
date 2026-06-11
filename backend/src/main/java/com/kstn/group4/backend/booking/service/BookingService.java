@@ -16,6 +16,7 @@ import com.kstn.group4.backend.exception.BusinessException;
 import com.kstn.group4.backend.exception.ForbiddenException;
 import com.kstn.group4.backend.exception.ResourceConflictException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
+import com.kstn.group4.backend.notification.event.BookingStatusChangedEvent;
 import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
 import com.kstn.group4.backend.venue.entity.AddonService;
@@ -29,6 +30,7 @@ import com.kstn.group4.backend.venue.repository.PriceRuleRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
 import com.kstn.group4.backend.activitylog.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -65,6 +67,7 @@ public class BookingService {
     private final TimeSlotRepository timeSlotRepository;
     private final AddonServiceRepository addonServiceRepository;
     private final ActivityLogService activityLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ==================== ADMIN METHODS ====================
 
@@ -129,9 +132,10 @@ public class BookingService {
 
         try {
             BookingStatus newStatus = BookingStatus.valueOf(statusString.toUpperCase());
+            BookingStatus oldStatus = booking.getStatus();
             
             // Handle pricing logic on cancellation
-            if (newStatus == BookingStatus.CANCELLED && booking.getStatus() != BookingStatus.CANCELLED) {
+            if (newStatus == BookingStatus.CANCELLED && oldStatus != BookingStatus.CANCELLED) {
                 if (booking.getPricingMode() != com.kstn.group4.backend.booking.entity.PricingMode.MANUAL) {
                     BigDecimal deposit = calculateDepositAmount(booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO);
                     booking.setTotalPrice(deposit);
@@ -147,7 +151,7 @@ public class BookingService {
                 activityLogService.log(adminId, adminName, "CANCEL_BOOKING", "BOOKING", bookingId.toString(), "Hủy đơn đặt sân", null, null);
             }
             // Log confirm booking
-            if (newStatus == BookingStatus.BOOKED && booking.getStatus() != BookingStatus.BOOKED) {
+            if (newStatus == BookingStatus.BOOKED && oldStatus != BookingStatus.BOOKED) {
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
                 Integer adminId = null;
                 String adminName = "System";
@@ -160,6 +164,7 @@ public class BookingService {
             
             booking.setStatus(newStatus);
             bookingRepository.save(booking);
+            publishBookingStatusChanged(booking, oldStatus, newStatus);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(
                     "Trạng thái không hợp lệ: " + statusString + ". Các trạng thái hợp lệ: " + java.util.Arrays.toString(BookingStatus.values()),
@@ -538,8 +543,10 @@ public class BookingService {
             booking.setTotalPrice(deposit);
         }
 
+        BookingStatus oldStatus = booking.getStatus();
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+        publishBookingStatusChanged(booking, oldStatus, BookingStatus.CANCELLED);
     }
 
     /**
@@ -833,6 +840,26 @@ public class BookingService {
 
     private BigDecimal calculateDepositAmount(BigDecimal totalPrice) {
         return totalPrice.multiply(BigDecimal.valueOf(0.5)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private void publishBookingStatusChanged(Booking booking, BookingStatus oldStatus, BookingStatus newStatus) {
+        if (booking.getPlayer() == null || oldStatus == newStatus) {
+            return;
+        }
+
+        String pitchName = booking.getPitch() != null && booking.getPitch().getName() != null
+                ? booking.getPitch().getName()
+                : "N/A";
+
+        eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                booking.getId(),
+                booking.getPlayer().getId(),
+                oldStatus,
+                newStatus,
+                pitchName,
+                booking.getBookingDate(),
+                booking.getStartTime()
+        ));
     }
 
     @Transactional

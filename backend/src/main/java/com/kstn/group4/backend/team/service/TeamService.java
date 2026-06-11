@@ -14,6 +14,7 @@ import com.kstn.group4.backend.exception.BusinessException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
 import com.kstn.group4.backend.match.entity.Match;
 import com.kstn.group4.backend.match.repository.MatchRepository;
+import com.kstn.group4.backend.notification.event.TeamInvitationCreatedEvent;
 import com.kstn.group4.backend.team.dto.CreateTeamRequest;
 import com.kstn.group4.backend.team.dto.TeamMemberResponse;
 import com.kstn.group4.backend.team.dto.TeamResponse;
@@ -28,6 +29,7 @@ import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +40,7 @@ public class TeamService {
     private final UserRepository userRepository;
     private final MatchRepository matchRepository;
     private final ActivityLogService activityLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public TeamResponse createTeam(UserPrincipal userPrincipal, CreateTeamRequest request) {
@@ -69,6 +72,7 @@ public class TeamService {
         List<TeamMember> members = new ArrayList<>();
         // Add captain as ACTIVE member
         members.add(new TeamMember(savedTeam, captain.getEmail(), TeamMemberStatus.ACTIVE));
+        List<User> invitedRegisteredUsers = new ArrayList<>();
 
         // Add invited members
         if (request.getMemberEmails() != null) {
@@ -84,6 +88,7 @@ public class TeamService {
                         members.add(new TeamMember(savedTeam, trimmedEmail, TeamMemberStatus.INVITED));
                         existingUser.setTeamId(savedTeam.getId());
                         userRepository.save(existingUser);
+                        invitedRegisteredUsers.add(existingUser);
                     } else {
                         members.add(new TeamMember(savedTeam, trimmedEmail, TeamMemberStatus.INVITED));
                     }
@@ -92,6 +97,7 @@ public class TeamService {
         }
 
         teamMemberRepository.saveAll(members);
+        publishTeamInvitations(savedTeam, captain.getUsername(), invitedRegisteredUsers);
 
         return buildTeamResponse(savedTeam, members);
     }
@@ -335,6 +341,12 @@ public class TeamService {
             User existingUser = userOpt.get();
             existingUser.setTeamId(team.getId());
             userRepository.save(existingUser);
+            eventPublisher.publishEvent(new TeamInvitationCreatedEvent(
+                    existingUser.getId(),
+                    team.getId(),
+                    team.getName(),
+                    team.getCaptain().getUsername()
+            ));
         }
     }
 
@@ -428,6 +440,17 @@ public class TeamService {
         if (user.getTeamId() != null && user.getTeamId().equals(teamId)) {
             user.setTeamId(null);
             userRepository.save(user);
+        }
+    }
+
+    private void publishTeamInvitations(Team team, String captainName, List<User> invitedUsers) {
+        for (User invitedUser : invitedUsers) {
+            eventPublisher.publishEvent(new TeamInvitationCreatedEvent(
+                    invitedUser.getId(),
+                    team.getId(),
+                    team.getName(),
+                    captainName
+            ));
         }
     }
 }

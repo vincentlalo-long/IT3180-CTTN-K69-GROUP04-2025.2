@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS `league_standings`;
 DROP TABLE IF EXISTS `booking_services`;
 DROP TABLE IF EXISTS `booking_payments`;
 DROP TABLE IF EXISTS `pitch_reviews`;
+DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `bookings`;
 DROP TABLE IF EXISTS `services`;
 DROP TABLE IF EXISTS `price_rules`;
@@ -41,6 +42,23 @@ CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_password_reset_tokens_user_id`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `notifications` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `recipient_id` INT NOT NULL,
+    `type` VARCHAR(50) NOT NULL,
+    `title` VARCHAR(180) NOT NULL,
+    `message` TEXT NOT NULL,
+    `target_type` VARCHAR(50),
+    `target_id` VARCHAR(80),
+    `read_at` DATETIME,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `idx_notifications_recipient_created_at` (`recipient_id`, `created_at`),
+    INDEX `idx_notifications_recipient_read_at` (`recipient_id`, `read_at`),
+    CONSTRAINT `fk_notifications_recipient_id`
+        FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `leagues` (
@@ -139,6 +157,9 @@ CREATE TABLE IF NOT EXISTS `bookings` (
     `status` VARCHAR(255),
     `booking_type` VARCHAR(255),
     `total_price` DECIMAL(38,2),
+    `points_used` INT NOT NULL DEFAULT 0,
+    `points_discount_amount` DECIMAL(38,2) NOT NULL DEFAULT 0,
+    `points_redeemed_at` DATETIME,
     `pricing_mode` VARCHAR(50) DEFAULT 'AUTO',
     `created_at` DATETIME,
     `time_slot_id` INT NOT NULL,
