@@ -18,6 +18,7 @@ import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.venue.entity.Venue;
 import com.kstn.group4.backend.venue.repository.AddonServiceRepository;
 import com.kstn.group4.backend.venue.repository.PitchRepository;
+import com.kstn.group4.backend.venue.repository.PitchReviewRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
 import com.kstn.group4.backend.venue.repository.VenueRepository;
 import java.math.BigDecimal;
@@ -42,6 +43,7 @@ public class VenuePlayerService {
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final AddonServiceRepository addonServiceRepository;
+    private final PitchReviewRepository pitchReviewRepository;
 
     public Page<VenueResponseDTO> getActiveVenues(Pageable pageable) {
         return venueRepository.findActiveVenuesForPlayer(pageable)
@@ -281,6 +283,9 @@ public class VenuePlayerService {
                 .map(Pitch::getBasePrice)
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
+        Double averageRating = pitchReviewRepository.averageRatingByVenueId(venue.getId());
+        Long reviewCount = pitchReviewRepository.countByVenueId(venue.getId());
+        double normalizedRating = averageRating == null ? 0.0 : Math.round(averageRating * 10.0) / 10.0;
 
         return new VenueResponseDTO(
                 venue.getId(),
@@ -289,7 +294,9 @@ public class VenuePlayerService {
                 venue.getImageUrl(),
                 minPrice,
                 venue.getLatitude(),
-                venue.getLongitude()
+                venue.getLongitude(),
+                normalizedRating,
+                reviewCount == null ? 0L : reviewCount
         );
     }
 }

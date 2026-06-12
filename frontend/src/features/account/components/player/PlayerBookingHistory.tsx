@@ -1,6 +1,7 @@
-import { Calendar, Filter, Loader2 } from "lucide-react";
+import { Calendar, CheckCircle, Filter, Loader2, Star } from "lucide-react";
 import type { PlayerBookingHistoryItem } from "../../types/account.types";
 import { useState } from "react";
+import { PitchReviewModal } from "@/features/venue/components/player/PitchReviewModal";
 
 interface PlayerBookingHistoryProps {
   showHistory: boolean;
@@ -8,6 +9,8 @@ interface PlayerBookingHistoryProps {
   historyError: string | null;
   history: PlayerBookingHistoryItem[];
   onToggleHistory: () => void;
+  onSubmitReview?: (bookingId: number, rating: number, content: string) => Promise<void> | void;
+  reviewingBookingId?: number | null;
   isTab?: boolean;
 }
 
@@ -17,9 +20,12 @@ export function PlayerBookingHistory({
   historyError,
   history,
   onToggleHistory,
+  onSubmitReview,
+  reviewingBookingId = null,
   isTab = false,
 }: PlayerBookingHistoryProps) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [reviewTarget, setReviewTarget] = useState<PlayerBookingHistoryItem | null>(null);
 
   const filteredHistory = history.filter((item) => {
     if (statusFilter === "ALL") return true;
@@ -31,6 +37,14 @@ export function PlayerBookingHistory({
     }
     return item.status === statusFilter;
   });
+
+  const handleSubmitReview = async (bookingId: number, rating: number, content: string) => {
+    if (!onSubmitReview) {
+      return;
+    }
+    await onSubmitReview(bookingId, rating, content);
+    setReviewTarget(null);
+  };
 
   return (
     <>
@@ -116,7 +130,7 @@ export function PlayerBookingHistory({
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-end sm:block">
+                  <div className="flex items-end justify-end gap-2 sm:min-w-[140px] sm:flex-col">
                     <span
                       className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide border
                         ${(item.status === "PENDING" || item.status === "RESERVED") ? "bg-yellow-50 text-yellow-700 border-yellow-200" : ""}
@@ -132,6 +146,28 @@ export function PlayerBookingHistory({
                       {item.status === "PLAYING" && "Đang đá"}
                       {item.status === "CANCELLED" && "Đã hủy"}
                     </span>
+                    {item.status === "COMPLETED" && onSubmitReview && (
+                      item.reviewed ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                          <CheckCircle size={14} />
+                          Đã đánh giá
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setReviewTarget(item)}
+                          disabled={reviewingBookingId === item.id}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-[#2E7D1E] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#236117] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {reviewingBookingId === item.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Star size={14} />
+                          )}
+                          Đánh giá
+                        </button>
+                      )
+                    )}
                   </div>
                 </li>
               ))}
@@ -139,6 +175,13 @@ export function PlayerBookingHistory({
           )}
         </div>
       )}
+      <PitchReviewModal
+        isOpen={reviewTarget !== null}
+        booking={reviewTarget}
+        isSubmitting={reviewTarget !== null && reviewingBookingId === reviewTarget.id}
+        onClose={() => setReviewTarget(null)}
+        onSubmit={handleSubmitReview}
+      />
     </>
   );
 }

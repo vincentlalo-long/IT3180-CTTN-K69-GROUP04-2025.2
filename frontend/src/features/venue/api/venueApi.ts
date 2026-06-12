@@ -6,6 +6,8 @@ import type {
   VenueResponseDTO,
   AdminVenueResponseDTO,
   PitchDetailResponse,
+  CreatePitchReviewRequest,
+  PitchReviewResponse,
 } from "@/features/venue/types/venue.types";
 
 export interface SpringPageResponse<T> {
@@ -196,6 +198,18 @@ export const getVenueServices = async (
     return response.data;
   } catch (error) {
     logApiError("getVenueServices", error, { venueId });
+    throw error;
+  }
+};
+
+export const createPitchReview = async (
+  payload: CreatePitchReviewRequest,
+): Promise<PitchReviewResponse> => {
+  try {
+    const response = await apiClient.post<PitchReviewResponse>("/player/reviews", payload);
+    return response.data;
+  } catch (error) {
+    logApiError("createPitchReview", error, { bookingId: payload.bookingId });
     throw error;
   }
 };

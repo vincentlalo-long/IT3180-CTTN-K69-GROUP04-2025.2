@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, CalendarDays, Repeat } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -24,6 +24,11 @@ export function BookingField() {
     setShowDatePicker,
     autoRefresh,
     setAutoRefresh,
+    recurringEnabled,
+    recurringWeeks,
+    recurringDays,
+    recurringDayOptions,
+    recurringOccurrenceCount,
     loading,
     error,
     venueAvailability,
@@ -35,6 +40,7 @@ export function BookingField() {
     setAvailableServices,
     fieldTotal,
     serviceTotal,
+    totalPrice,
     isSubmitting,
     submitSuccess,
     submitError,
@@ -43,6 +49,9 @@ export function BookingField() {
     pendingBooking,
     handleToggleSlot,
     handleClearSlots,
+    handleRecurringEnabledChange,
+    handleRecurringWeeksChange,
+    handleToggleRecurringDay,
     handleSubmit,
     handleConfirmBooking,
   } = useBookingFieldFlow(venueId);
@@ -160,6 +169,72 @@ export function BookingField() {
               onToggleSlot={handleToggleSlot}
             />
 
+            <section className="rounded-2xl border border-white/10 bg-white/5 p-5 text-white shadow-xl backdrop-blur-md">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <label className="inline-flex items-center gap-3 text-sm font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={recurringEnabled}
+                    onChange={(event) => handleRecurringEnabledChange(event.target.checked)}
+                    className="h-4 w-4 rounded border-white/30 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0"
+                  />
+                  <span className="inline-flex items-center gap-2">
+                    <Repeat size={16} className="text-emerald-200" />
+                    Đặt sân định kỳ
+                  </span>
+                </label>
+
+                {recurringEnabled && (
+                  <div className="text-xs font-semibold text-emerald-100/80">
+                    {recurringOccurrenceCount} ngày sẽ được kiểm tra lịch trống
+                  </div>
+                )}
+              </div>
+
+              {recurringEnabled && (
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_180px]">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-100/70">
+                      Lặp lại vào thứ
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {recurringDayOptions.map((option) => {
+                        const active = recurringDays.includes(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleToggleRecurringDay(option.value)}
+                            className={`h-9 min-w-10 rounded-lg border px-3 text-xs font-bold transition ${
+                              active
+                                ? "border-emerald-300 bg-emerald-500 text-white shadow"
+                                : "border-white/15 bg-white/5 text-emerald-100 hover:bg-white/10"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-emerald-100/70">
+                      Số tuần
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={52}
+                      value={recurringWeeks}
+                      onChange={(event) => handleRecurringWeeksChange(Number(event.target.value))}
+                      className="h-10 w-full rounded-lg border border-white/15 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400"
+                    />
+                  </label>
+                </div>
+              )}
+            </section>
+
             <ServiceSelector
               venueId={venueId}
               selectedServices={selectedServices}
@@ -182,9 +257,10 @@ export function BookingField() {
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           disableSubmit={!selectedSlots.length || loading}
+          submitLabel={recurringEnabled ? "Đặt định kỳ" : undefined}
           fieldTotal={fieldTotal}
           serviceTotal={serviceTotal}
-          totalPrice={fieldTotal + serviceTotal}
+          totalPrice={totalPrice}
         />
 
         {showConfirmModal && pendingBooking && (
@@ -201,6 +277,7 @@ export function BookingField() {
             bookingDate={pendingBooking.bookingDate}
             slots={pendingBooking.slots}
             totalPrice={pendingBooking.totalPrice}
+            recurringSummary={pendingBooking.recurringSummary}
             error={submitError ?? null}
           />
         )}

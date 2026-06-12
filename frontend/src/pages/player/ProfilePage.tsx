@@ -9,6 +9,7 @@ import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getPlayerBookings, updatePlayerProfile } from "../../features/account/api/account.api";
+import { createPitchReview } from "@/features/venue/api/venueApi";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 import { toast } from "../../shared/utils/toast";
 import { Loader2 } from "lucide-react";
@@ -95,6 +96,19 @@ export function ProfilePage() {
     },
   });
 
+  const reviewMutation = useMutation({
+    mutationFn: createPitchReview,
+    onSuccess: (response) => {
+      void queryClient.invalidateQueries({ queryKey: ["playerBookings"] });
+      void queryClient.invalidateQueries({ queryKey: ["playerProfile"] });
+      toast.success(`Đánh giá thành công! +${response.rewardPoints ?? 0} điểm`);
+    },
+    onError: (err) => {
+      logApiError("ProfilePage.createPitchReview", err);
+      toast.error(getApiErrorMessage(err, "Không thể gửi đánh giá."));
+    },
+  });
+
   const toggleEditing = async () => {
     if (isEditing) {
       updateProfileMutation.mutate();
@@ -160,6 +174,12 @@ export function ProfilePage() {
                   historyError={historyError}
                   history={history}
                   onToggleHistory={() => { }}
+                  onSubmitReview={async (bookingId, rating, content) => {
+                    await reviewMutation.mutateAsync({ bookingId, rating, content });
+                  }}
+                  reviewingBookingId={
+                    reviewMutation.isPending ? reviewMutation.variables?.bookingId ?? null : null
+                  }
                   isTab={true}
                 />
               )}

@@ -94,10 +94,10 @@ export function PlayerProfileSidebar({
           </div>
           <div className="p-2 bg-slate-50 rounded-xl">
             <span className="block text-base font-bold text-emerald-600">
-              +98
+              {userInfo.membershipPoints ?? 0}
             </span>
             <span className="text-[9px] font-semibold text-slate-400 uppercase">
-              Uy tín
+              Điểm
             </span>
           </div>
         </div>

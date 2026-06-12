@@ -27,6 +27,7 @@ export function usePlayerProfile() {
         avatarUrl: dto.avatarUrl,
         role: dto.role,
         teamId: dto.teamId,
+        membershipPoints: dto.membershipPoints ?? 0,
         createdAt: dto.createdAt,
       };
     },
