@@ -35,10 +35,11 @@ public class MatchController {
 
     @GetMapping
     public ResponseEntity<List<MatchResponse>> getOpenMatches(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(required = false) Integer venueId,
             @RequestParam(required = false) MatchSkillLevel skillLevel
     ) {
-        return ResponseEntity.ok(matchService.getOpenMatches(venueId, skillLevel));
+        return ResponseEntity.ok(matchService.getOpenMatches(userPrincipal, venueId, skillLevel));
     }
 
     @PostMapping("/{id}/join")

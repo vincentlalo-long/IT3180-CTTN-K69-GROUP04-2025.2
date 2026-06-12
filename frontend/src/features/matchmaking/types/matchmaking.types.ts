@@ -19,6 +19,7 @@ export interface MatchResponse {
   awayScore?: number;
   roundNumber?: number;
   nextMatchId?: number;
+  recommended?: boolean;
 }
 
 export interface MatchRequestResponse {

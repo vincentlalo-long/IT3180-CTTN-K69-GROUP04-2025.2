@@ -4,6 +4,7 @@ import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import com.kstn.group4.backend.league.dto.LeagueRequest;
 import com.kstn.group4.backend.league.dto.LeagueResponse;
 import com.kstn.group4.backend.league.service.LeagueService;
+import com.kstn.group4.backend.match.dto.MatchResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -60,5 +61,19 @@ public class LeagueController {
             @AuthenticationPrincipal UserPrincipal userDetails) {
         leagueService.deleteLeague(id, userDetails.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/generate-schedule")
+    public ResponseEntity<List<MatchResponse>> generateSchedule(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserPrincipal userDetails) {
+        List<MatchResponse> schedule = leagueService.generateSchedule(id, userDetails.getId());
+        return ResponseEntity.ok(schedule);
+    }
+
+    @GetMapping("/{id}/matches")
+    public ResponseEntity<List<MatchResponse>> getLeagueMatches(@PathVariable Integer id) {
+        List<MatchResponse> matches = leagueService.getLeagueMatches(id);
+        return ResponseEntity.ok(matches);
     }
 }

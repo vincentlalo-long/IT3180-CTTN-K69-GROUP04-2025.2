@@ -28,6 +28,8 @@ export function useVenueList() {
             minPrice: typeof v.minPrice === "string" ? parseFloat(v.minPrice) : v.minPrice,
             latitude: v.latitude,
             longitude: v.longitude,
+            averageRating: v.averageRating,
+            reviewCount: v.reviewCount,
           }));
           setVenues(transformedVenues);
         }

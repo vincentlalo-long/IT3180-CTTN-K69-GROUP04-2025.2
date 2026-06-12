@@ -29,4 +29,5 @@ public class MatchResponse {
     private Integer awayScore;
     private Integer roundNumber;
     private Integer nextMatchId;
+    private Boolean recommended;
 }

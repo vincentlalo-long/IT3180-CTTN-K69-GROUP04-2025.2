@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, ChevronDown, Menu, Search, Settings, LogOut, User as UserIcon } from "lucide-react";
+import { ChevronDown, Menu, Search, Settings, LogOut, User as UserIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
 import { logoutUser } from "../../features/auth/api/authApi";
 import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { useVenueContext as useFacilityContext } from "../../features/venue/hooks/useVenueContext";
+import { NotificationDropdown } from "../../shared/components/NotificationDropdown";
 
 interface AdminTopBarProps {
   onMenuToggle?: () => void;
@@ -167,14 +168,11 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
             <Settings size={18} />
           </button>
 
-          <button
-            type="button"
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#005E2E]/45 text-admin-text-secondary transition hover:bg-white/12 hover:text-admin-alert"
-            aria-label="Thông báo"
-          >
-            <Bell size={18} />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-admin-alert" />
-          </button>
+          <NotificationDropdown
+            buttonClassName="border-white/20 bg-[#005E2E]/45 text-admin-text-secondary hover:bg-white/12 hover:text-admin-alert"
+            panelClassName="bg-[#004f27]/95 backdrop-blur-md"
+            unreadBadgeClassName="bg-admin-alert text-[#005E2E]"
+          />
 
           <div className="relative flex items-center gap-3" ref={dropdownRef}>
             <button

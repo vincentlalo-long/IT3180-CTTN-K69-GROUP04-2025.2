@@ -1,17 +1,23 @@
-DROP TABLE IF EXISTS `league_registrations`;
-DROP TABLE IF EXISTS `leagues`;
+DROP TABLE IF EXISTS `booking_services`;
 DROP TABLE IF EXISTS `booking_payments`;
 DROP TABLE IF EXISTS `pitch_reviews`;
+DROP TABLE IF EXISTS `league_announcement_comments`;
+DROP TABLE IF EXISTS `league_announcements`;
 DROP TABLE IF EXISTS `bookings`;
 DROP TABLE IF EXISTS `services`;
 DROP TABLE IF EXISTS `price_rules`;
-DROP TABLE IF EXISTS `time_slots`;
 DROP TABLE IF EXISTS `pitches`;
 DROP TABLE IF EXISTS `matches`;
+DROP TABLE IF EXISTS `league_registrations`;
+DROP TABLE IF EXISTS `leagues`;
 DROP TABLE IF EXISTS `venues`;
 DROP TABLE IF EXISTS `team_members`;
 DROP TABLE IF EXISTS `teams`;
+DROP TABLE IF EXISTS `password_reset_tokens`;
 DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `time_slots`;
+DROP TABLE IF EXISTS `team_member`;
+DROP TABLE IF EXISTS `team`;
 
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT NOT NULL AUTO_INCREMENT,
@@ -23,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `team_id` BIGINT,
     `phone_number` VARCHAR(20),
     `avatar_url` VARCHAR(255),
+    `membership_points` INT NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`)
 );
 
@@ -38,6 +45,31 @@ CREATE TABLE IF NOT EXISTS `leagues` (
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_leagues_manager_id`
         FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `league_announcements` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `league_id` INT NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `content` TEXT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_league_announcements_league_id`
+        FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `league_announcement_comments` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `announcement_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
+    `content` TEXT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_lac_announcement_id`
+        FOREIGN KEY (`announcement_id`) REFERENCES `league_announcements` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_lac_user_id`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `venues` (
@@ -138,6 +170,7 @@ CREATE TABLE IF NOT EXISTS `pitch_reviews` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `pitch_id` INT NOT NULL,
     `player_id` INT NOT NULL,
+    `booking_id` INT NOT NULL,
     `rating` INT NOT NULL,
     `content` TEXT NOT NULL,
     `created_at` DATETIME NOT NULL,
@@ -145,7 +178,11 @@ CREATE TABLE IF NOT EXISTS `pitch_reviews` (
     CONSTRAINT `fk_pitch_reviews_pitch_id`
         FOREIGN KEY (`pitch_id`) REFERENCES `pitches` (`id`),
     CONSTRAINT `fk_pitch_reviews_player_id`
-        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`)
+        FOREIGN KEY (`player_id`) REFERENCES `users` (`id`),
+    CONSTRAINT `fk_pitch_reviews_booking_id`
+        FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `uk_pitch_reviews_booking_id`
+        UNIQUE (`booking_id`)
 );
 
 CREATE TABLE IF NOT EXISTS `booking_services` (
@@ -221,7 +258,7 @@ CREATE TABLE IF NOT EXISTS `team_members` (
 CREATE TABLE IF NOT EXISTS `matches` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `venue_id` INT NOT NULL,
-    `host_team_id` BIGINT NOT NULL,
+    `host_team_id` BIGINT,
     `guest_team_id` BIGINT,
     `skill_level` VARCHAR(50) NOT NULL,
     `match_time` DATETIME NOT NULL,
@@ -233,4 +270,25 @@ CREATE TABLE IF NOT EXISTS `matches` (
         FOREIGN KEY (`host_team_id`) REFERENCES `teams` (`id`),
     CONSTRAINT `fk_matches_guest_team_id`
         FOREIGN KEY (`guest_team_id`) REFERENCES `teams` (`id`)
+);
+-- Tạo bảng lưu thông tin Đội bóng
+CREATE TABLE IF NOT EXISTS team (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    logo_url VARCHAR(255),
+    level VARCHAR(50) NOT NULL, -- Ví dụ: Chuyên nghiệp, Bán chuyên, Nghiệp dư
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo bảng lưu thành viên Đội bóng (Bao gồm Đội trưởng và Thành viên)
+CREATE TABLE IF NOT EXISTS team_member (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    team_id BIGINT NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    role VARCHAR(30) NOT NULL,      -- 'CAPTAIN' hoặc 'MEMBER'
+    status VARCHAR(30) NOT NULL,    -- 'APPROVED' hoặc 'PENDING' (Chờ duyệt khi được mời)
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_team FOREIGN KEY (team_id) REFERENCES team(id) ON DELETE CASCADE,
+    CONSTRAINT uq_team_user UNIQUE (team_id, username) -- Một người không thể tham gia 1 đội 2 lần
 );

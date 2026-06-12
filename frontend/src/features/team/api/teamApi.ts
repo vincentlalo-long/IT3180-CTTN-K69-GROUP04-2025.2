@@ -129,3 +129,46 @@ export const getApprovedTeams = async (): Promise<Team[]> => {
     throw error;
   }
 };
+export const inviteMember = async (teamId: number, email: string): Promise<string> => {
+  try {
+    const response = await apiClient.post<string>(`/teams/${teamId}/invite`, null, {
+      params: { email },
+    });
+    return response.data;
+  } catch (error) {
+    logApiError("inviteMember", error, { teamId, email });
+    throw error;
+  }
+};
+
+export const approveMember = async (teamId: number, email: string): Promise<string> => {
+  try {
+    const response = await apiClient.put<string>(`/teams/${teamId}/members/approve`, null, {
+      params: { email },
+    });
+    return response.data;
+  } catch (error) {
+    logApiError("approveMember", error, { teamId, email });
+    throw error;
+  }
+};
+
+export const kickMember = async (teamId: number, email: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/teams/${teamId}/members`, {
+      params: { email },
+    });
+  } catch (error) {
+    logApiError("kickMember", error, { teamId, email });
+    throw error;
+  }
+};
+
+export const leaveTeam = async (teamId: number): Promise<void> => {
+  try {
+    await apiClient.delete(`/teams/${teamId}/members/me`);
+  } catch (error) {
+    logApiError("leaveTeam", error, { teamId });
+    throw error;
+  }
+};

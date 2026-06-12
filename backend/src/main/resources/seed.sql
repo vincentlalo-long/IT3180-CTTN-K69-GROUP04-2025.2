@@ -41,11 +41,11 @@ ALTER TABLE `league_registrations` AUTO_INCREMENT = 1;
 -- ==========================================
 -- 1. USERS (INSERT IGNORE TO PROTECT ACTIVE TOKENS)
 -- ==========================================
-INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `phone_number`, `avatar_url`)
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `phone_number`, `avatar_url`, `membership_points`)
 VALUES
-    (1, 'owner_hoang', 'hoang.owner@football.vn', '$2a$10$gI6fyFeS.5m5GStiXfpl9OLT1UUZ7r6A7gt466M7H/boSx1ppfUzq', 'ADMIN', NOW(), '0909123456', NULL),
-    (2, 'player_minh', 'minh.player@football.vn', '$2a$10$gI6fyFeS.5m5GStiXfpl9OLT1UUZ7r6A7gt466M7H/boSx1ppfUzq', 'PLAYER', NOW(), '0912345678', NULL),
-    (3, 'player_tuan', 'tuan.player@football.vn', '$2a$10$gI6fyFeS.5m5GStiXfpl9OLT1UUZ7r6A7gt466M7H/boSx1ppfUzq', 'PLAYER', NOW(), '0987654321', NULL)
+    (1, 'owner_hoang', 'hoang.owner@football.vn', '$2a$10$gI6fyFeS.5m5GStiXfpl9OLT1UUZ7r6A7gt466M7H/boSx1ppfUzq', 'ADMIN', NOW(), '0909123456', NULL, 0),
+    (2, 'player_minh', 'minh.player@football.vn', '$2a$10$gI6fyFeS.5m5GStiXfpl9OLT1UUZ7r6A7gt466M7H/boSx1ppfUzq', 'PLAYER', NOW(), '0912345678', NULL, 0),
+    (3, 'player_tuan', 'tuan.player@football.vn', '$2a$10$gI6fyFeS.5m5GStiXfpl9OLT1UUZ7r6A7gt466M7H/boSx1ppfUzq', 'PLAYER', NOW(), '0987654321', NULL, 0)
 ON DUPLICATE KEY UPDATE `password` = VALUES(`password`);
 
 -- ==========================================
@@ -117,9 +117,9 @@ VALUES
 INSERT INTO
     `services` (`venue_id`, `pitch_id`, `name`, `description`, `price`, `unit`, `status`)
 VALUES
-    (1, NULL, 'Nuoc khoang', 'Nuoc uong dong chai', 10000.00, 'chai', 'ACTIVE'),
-    (1, NULL, 'Thue ao bib', 'Ao bib phan doi', 25000.00, 'bo', 'ACTIVE'),
-    (1, NULL, 'Bong thi dau', 'Bong tieu chuan san 5/7/11', 150000.00, 'qua', 'ACTIVE');
+    (1, NULL, 'Nước khoáng', 'Nước uống đóng chai', 10000.00, 'chai', 'ACTIVE'),
+    (1, NULL, 'Thuê áo bib', 'Áo bib phân đội', 25000.00, 'bộ', 'ACTIVE'),
+    (1, NULL, 'Bóng thi đấu', 'Bóng tiêu chuẩn sân 5/7/11', 150000.00, 'quả', 'ACTIVE');
 
 -- ==========================================
 -- 7. TEAMS & TEAM MEMBERS
@@ -150,11 +150,11 @@ UPDATE `users` SET `team_id` = 2 WHERE `id` = 3;
 INSERT INTO `bookings` (`id`, `player_id`, `pitch_id`, `booking_date`, `start_time`, `end_time`, `status`, `booking_type`, `total_price`, `created_at`, `time_slot_id`)
 VALUES
     -- 2026-05-25
-    (1, 2, 1, '2026-05-25', '17:00:00', '18:30:00', 'CONFIRMED', 'SINGLE', 150000.00, '2026-05-24 10:00:00', 8),
-    (2, 3, 1, '2026-05-25', '18:30:00', '20:00:00', 'CONFIRMED', 'SINGLE', 180000.00, '2026-05-24 11:00:00', 9),
+    (1, 2, 1, '2026-05-25', '17:00:00', '18:30:00', 'COMPLETED', 'SINGLE', 150000.00, '2026-05-24 10:00:00', 8),
+    (2, 3, 1, '2026-05-25', '18:30:00', '20:00:00', 'COMPLETED', 'SINGLE', 180000.00, '2026-05-24 11:00:00', 9),
     (3, 2, 2, '2026-05-25', '17:00:00', '18:30:00', 'CANCELLED', 'SINGLE', 150000.00, '2026-05-24 12:00:00', 8),
     -- 2026-05-26
-    (4, 2, 1, '2026-05-26', '20:00:00', '21:30:00', 'CONFIRMED', 'SINGLE', 180000.00, '2026-05-25 09:00:00', 10),
+    (4, 2, 1, '2026-05-26', '20:00:00', '21:30:00', 'COMPLETED', 'SINGLE', 180000.00, '2026-05-25 09:00:00', 10),
     (5, 3, 3, '2026-05-26', '17:00:00', '18:30:00', 'CONFIRMED', 'SINGLE', 250000.00, '2026-05-25 14:00:00', 8),
     -- 2026-05-27
     (6, 2, 2, '2026-05-27', '18:30:00', '20:00:00', 'PLAYING', 'SINGLE', 150000.00, '2026-05-26 15:00:00', 9),
@@ -184,6 +184,13 @@ VALUES
     (24, 2, 3, '2026-06-02', '17:00:00', '18:30:00', 'CONFIRMED', 'SINGLE', 250000.00, '2026-06-01 12:00:00', 8),
     (25, 3, 4, '2026-06-02', '18:30:00', '20:00:00', 'PENDING', 'SINGLE', 260000.00, '2026-06-01 13:00:00', 9),
     (26, 2, 5, '2026-06-02', '17:00:00', '18:30:00', 'CANCELLED', 'SINGLE', 550000.00, '2026-06-01 14:00:00', 8);
+
+INSERT INTO `pitch_reviews` (`id`, `pitch_id`, `player_id`, `booking_id`, `rating`, `content`, `created_at`)
+VALUES
+    (1, 1, 2, 1, 5, 'Sân đẹp, mặt cỏ tốt', '2026-05-25 21:00:00'),
+    (2, 1, 3, 2, 4, 'Ánh sáng ổn, đặt sân nhanh', '2026-05-25 22:00:00');
+
+UPDATE `users` SET `membership_points` = 10 WHERE `id` IN (2, 3);
 
 -- ==========================================
 -- 9. MATCHES

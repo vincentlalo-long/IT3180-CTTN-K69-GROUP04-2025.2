@@ -64,3 +64,11 @@ export interface TeamStanding {
   goalDifference: number;
   points: number;
 }
+
+export interface TopPlayerStatDto {
+  playerId: number;
+  playerName: string;
+  teamId: number;
+  teamName: string;
+  totalValue: number;
+}
