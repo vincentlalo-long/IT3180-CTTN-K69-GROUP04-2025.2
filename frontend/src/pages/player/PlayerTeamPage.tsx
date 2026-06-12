@@ -10,8 +10,10 @@ import {
 import type { Team } from "@/features/team";
 import { Trophy, Users, PlusCircle, Search } from "lucide-react";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
+import { useAuthContext } from "@/features/auth/hooks/useAuthContext";
 
 export function PlayerTeamPage() {
+  const { user } = useAuthContext();
   const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [approvedTeams, setApprovedTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,11 @@ export function PlayerTeamPage() {
         ) : myTeam ? (
           // Nếu đã thuộc về một đội bóng
           <div className="max-w-4xl mx-auto">
-            <MyTeamDetails team={myTeam} />
+            <MyTeamDetails
+              team={myTeam}
+              currentUserEmail={user?.email}
+              onRefresh={fetchData}
+            />
           </div>
         ) : (
           // Nếu chưa có đội bóng, hiển thị giao diện Tab

@@ -28,6 +28,7 @@ export function RegisterPage() {
         type: data.type,
         role: data.role || "PLAYER",
         email: data.email || payload.emailOrPhone,
+        userId: data.id?.toString(),
         username: data.username || payload.fullName,
       });
     }

@@ -1,5 +1,6 @@
 export { VenueCard } from "./components/player/VenueCard";
 export { VenueSkeleton } from "./components/player/VenueSkeleton";
+export { PitchReviewModal } from "./components/player/PitchReviewModal";
 export { MapSearch } from "./components/MapSearch";
 export { useVenueList } from "./hooks/useVenueList";
 export { useVenueContext } from "./hooks/useVenueContext";

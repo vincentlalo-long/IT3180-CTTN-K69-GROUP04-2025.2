@@ -1,4 +1,5 @@
 package com.kstn.group4.backend.venue.entity;
+import com.kstn.group4.backend.booking.entity.Booking;
 import com.kstn.group4.backend.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -32,6 +33,10 @@ public class PitchReview {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     private User player;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
 
     @Column(name = "rating", nullable = false)
     private Integer rating;

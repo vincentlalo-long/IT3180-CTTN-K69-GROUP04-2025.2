@@ -39,6 +39,9 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "membership_points", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer membershipPoints = 0;
+
     public User() {
         this.createdAt = LocalDateTime.now();
     }

@@ -7,6 +7,66 @@ import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { LeagueRegistrationComponent } from "../../features/matchmaking/components/LeagueRegistration";
 import { LeagueAnnouncementTab } from "../../features/matchmaking/components/LeagueAnnouncementTab";
 
+const LeagueDetails = ({ league }: { league: League }) => {
+  const [activeTab, setActiveTab] = useState<"info" | "standings" | "stats" | "announcements">("info");
+
+  return (
+    <div className="mt-4 bg-black/20 rounded-xl overflow-hidden border border-white/5">
+      <div className="flex border-b border-white/10 bg-white/5">
+        <button 
+          onClick={() => setActiveTab("info")} 
+          className={`flex-1 py-3 text-sm font-semibold transition ${activeTab === "info" ? "text-emerald-400 border-b-2 border-emerald-500" : "text-white/60 hover:text-white"}`}
+        >
+          {league.status === "OPENING" ? "Đăng ký" : "Thông tin"}
+        </button>
+        <button 
+          onClick={() => setActiveTab("announcements")} 
+          className={`flex-1 py-3 text-sm font-semibold transition ${activeTab === "announcements" ? "text-emerald-400 border-b-2 border-emerald-500" : "text-white/60 hover:text-white"}`}
+        >
+          Bảng tin
+        </button>
+        {league.status === "IN_PROGRESS" && (
+          <>
+            <button 
+              onClick={() => setActiveTab("standings")} 
+              className={`flex-1 py-3 text-sm font-semibold transition ${activeTab === "standings" ? "text-emerald-400 border-b-2 border-emerald-500" : "text-white/60 hover:text-white"}`}
+            >
+              Bảng xếp hạng
+            </button>
+            <button 
+              onClick={() => setActiveTab("stats")} 
+              className={`flex-1 py-3 text-sm font-semibold transition ${activeTab === "stats" ? "text-emerald-400 border-b-2 border-emerald-500" : "text-white/60 hover:text-white"}`}
+            >
+              Thống kê
+            </button>
+          </>
+        )}
+      </div>
+      
+      <div className="p-4">
+        {activeTab === "info" && (
+          <LeagueRegistrationComponent 
+            leagueId={league.id} 
+            isManager={false} 
+            leagueStatus={league.status}
+          />
+        )}
+        {activeTab === "announcements" && (
+          <LeagueAnnouncementTab leagueId={league.id} isAdmin={false} />
+        )}
+        {activeTab === "standings" && league.status === "IN_PROGRESS" && (
+          <LeagueStandingsTable leagueId={league.id} />
+        )}
+        {activeTab === "stats" && league.status === "IN_PROGRESS" && (
+          <div className="space-y-6">
+            <TopScorersList leagueId={league.id} />
+            <HeadToHeadStats leagueId={league.id} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 export function PlayerLeaguePage() {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);

@@ -10,6 +10,7 @@ public record UserResponseDTO(
         String phoneNumber,
         String avatarUrl,
         Long teamId,
+        Integer membershipPoints,
         LocalDateTime createdAt
 ) {
 }

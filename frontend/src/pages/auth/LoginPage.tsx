@@ -32,6 +32,7 @@ export function LoginPage() {
       type: data.type,
       role: data.role,
       email: data.email,
+      userId: data.id?.toString(),
       username: data.username,
     });
 
@@ -48,6 +49,7 @@ export function LoginPage() {
       type: data.type,
       role: data.role,
       email: data.email,
+      userId: data.id?.toString(),
       username: data.username,
     });
 

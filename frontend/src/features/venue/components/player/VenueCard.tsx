@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Star } from "lucide-react";
 
 import fieldImage from "../../../../assets/images/Old_Trafford.jpg";
 import logoFootball from "../../../../assets/images/logo-ball.jpg";
@@ -56,6 +57,12 @@ export function VenueCard({ data }: VenueCardProps) {
               {data.address}
             </p>
             <p className="text-[10px] text-gray-400 font-bold">{data.openTime}</p>
+            <p className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
+              <Star size={12} className={data.reviewCount ? "fill-current" : ""} />
+              {data.reviewCount
+                ? `${(data.averageRating ?? 0).toFixed(1)} (${data.reviewCount})`
+                : "Chưa có đánh giá"}
+            </p>
           </div>
         </div>
       </div>

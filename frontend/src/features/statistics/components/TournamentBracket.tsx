@@ -5,9 +5,16 @@ import type { MatchResponse } from '../../matchmaking/types/matchmaking.types';
 interface TournamentBracketProps {
   matches: MatchResponse[];
   teams: TournamentTeam[];
+  isAdmin?: boolean;
+  onUpdateResult?: (matchId: number) => void;
 }
 
-export const TournamentBracket: React.FC<TournamentBracketProps> = ({ matches, teams }) => {
+export const TournamentBracket: React.FC<TournamentBracketProps> = ({ 
+  matches, 
+  teams,
+  isAdmin = false,
+  onUpdateResult,
+}) => {
   const teamMap = useMemo(() => {
     const map = new Map<number, string>();
     teams.forEach(t => map.set(t.id, t.name));
@@ -70,7 +77,17 @@ export const TournamentBracket: React.FC<TournamentBracketProps> = ({ matches, t
                     <div className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden z-10">
                       <div className="flex justify-between items-center px-3 py-1.5 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                         <span className="text-[11px] text-gray-500 font-medium">Trận {match.id}</span>
-                        {match.status === 'COMPLETED' && <span className="text-[11px] text-green-600 font-bold">FT</span>}
+                        <div className="flex items-center gap-1.5">
+                          {match.status === 'COMPLETED' && <span className="text-[11px] text-green-600 font-bold">FT</span>}
+                          {isAdmin && match.hostTeamId !== null && (
+                            <button
+                              onClick={() => onUpdateResult?.(match.id)}
+                              className="text-[10px] text-[#005E2E] dark:text-emerald-400 hover:underline font-bold"
+                            >
+                              Nhập KQ
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-col text-sm">
                         <div className={`flex justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-600 ${match.status === 'COMPLETED' && match.homeScore! > match.awayScore! ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>

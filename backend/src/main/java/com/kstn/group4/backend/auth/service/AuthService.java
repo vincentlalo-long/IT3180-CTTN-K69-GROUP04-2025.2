@@ -91,6 +91,7 @@ public class AuthService {
         String token = jwtTokenProvider.generateToken(authentication);
         return new JwtResponse(
                 token,
+                userPrincipal.getId(),
                 userPrincipal.getAppUsername(),
                 userPrincipal.getEmail(),
                 userPrincipal.getRole()
@@ -187,6 +188,7 @@ public class AuthService {
             String token = jwtTokenProvider.generateToken(authentication);
             return new JwtResponse(
                     token,
+                    userPrincipal.getId(),
                     userPrincipal.getAppUsername(),
                     userPrincipal.getEmail(),
                     userPrincipal.getRole()

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,7 +33,7 @@ class ScheduleGeneratorServiceTest {
         assertEquals(3, maxRound);
         
         // Count matches per team
-        long team1Matches = schedule.stream().filter(m -> m.getHomeTeamId().equals(1) || m.getAwayTeamId().equals(1)).count();
+        long team1Matches = schedule.stream().filter(m -> Objects.equals(m.getHomeTeamId(), 1) || Objects.equals(m.getAwayTeamId(), 1)).count();
         assertEquals(3, team1Matches);
     }
 

@@ -70,10 +70,10 @@ application:
       client-id: ${GOOGLE_CLIENT_ID:97945693765-5v8geqt8u5kduun9gcocajshjgeoofpl.apps.googleusercontent.com}
 
 vnpay:
-  tmn-code: 8Q6BT6GG
-  hash-secret: C2VD4KX9K5P9ZJPWT1U9L7MKHMN0WWMP
+  tmn-code: ${VNPAY_TMN_CODE:5Z9DS56R}
+  hash-secret: ${VNPAY_HASH_SECRET:3P1J6YGGFFHS7B7SGOSL5JRRSZLQMDAI}
   payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-  return-url: https://repeated-chariot-prowess.ngrok-free.dev/payment/vnpay-return
+  return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-return}
 
 logging:
   level:
