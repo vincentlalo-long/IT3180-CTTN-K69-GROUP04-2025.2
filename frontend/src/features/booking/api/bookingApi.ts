@@ -4,6 +4,8 @@ import { logApiError } from "@/shared/utils/apiError";
 import type {
   CreateBookingRequest,
   PlayerBookingResponse,
+  RecurringBookingRequest,
+  RecurringBookingResponse,
 } from "@/features/booking/types/booking.types";
 
 export interface AdminBookingSummaryResponse {
@@ -61,6 +63,16 @@ export const createBooking = async (
 ): Promise<PlayerBookingResponse> => {
   const response = await apiClient.post<PlayerBookingResponse>(
     "/player/bookings",
+    payload,
+  );
+  return response.data;
+};
+
+export const createRecurringBooking = async (
+  payload: RecurringBookingRequest,
+): Promise<RecurringBookingResponse> => {
+  const response = await apiClient.post<RecurringBookingResponse>(
+    "/player/bookings/recurring",
     payload,
   );
   return response.data;

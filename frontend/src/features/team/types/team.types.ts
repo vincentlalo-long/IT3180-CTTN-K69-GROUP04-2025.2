@@ -1,4 +1,10 @@
 export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED" | "BANNED";
+export type TeamMemberStatus = "INVITED" | "ACTIVE";
+
+export interface TeamMember {
+  email: string;
+  status: TeamMemberStatus;
+}
 
 export interface Team {
   id: number;
@@ -11,4 +17,5 @@ export interface Team {
   bannedUntil?: string;
   createdAt: string;
   memberEmails: string[];
+  members?: TeamMember[];
 }

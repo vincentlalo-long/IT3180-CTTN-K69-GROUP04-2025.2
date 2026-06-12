@@ -23,4 +23,32 @@ public class TeamResponse {
     private LocalDateTime bannedUntil;
     private LocalDateTime createdAt;
     private List<String> memberEmails;
+    private List<TeamMemberResponse> members;
+
+    public TeamResponse(
+            Long id,
+            String name,
+            Integer captainId,
+            String captainName,
+            String description,
+            Integer reputationScore,
+            TeamStatus status,
+            LocalDateTime bannedUntil,
+            LocalDateTime createdAt,
+            List<String> memberEmails
+    ) {
+        this(
+                id,
+                name,
+                captainId,
+                captainName,
+                description,
+                reputationScore,
+                status,
+                bannedUntil,
+                createdAt,
+                memberEmails,
+                null
+        );
+    }
 }

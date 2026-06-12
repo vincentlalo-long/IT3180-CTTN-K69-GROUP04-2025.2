@@ -9,14 +9,14 @@ import java.util.List;
 
 public class CreateBookingRequest {
 
-        @NotNull(message = "pitchId khong duoc de trong")
+        @NotNull(message = "pitchId không được để trống")
         private Integer pitchId;
 
-        @NotNull(message = "bookingDate khong duoc de trong")
-        @FutureOrPresent(message = "bookingDate phai tu hom nay tro di")
+        @NotNull(message = "bookingDate không được để trống")
+        @FutureOrPresent(message = "bookingDate phải từ hôm nay trở đi")
         private LocalDate bookingDate;
 
-        @NotNull(message = "timeSlotId khong duoc de trong")
+        @NotNull(message = "timeSlotId không được để trống")
         private Integer timeSlotId;
 
         @Valid
@@ -55,11 +55,11 @@ public class CreateBookingRequest {
         }
 
         public static class ServiceRequest {
-                @NotNull(message = "serviceId khong duoc de trong")
+                @NotNull(message = "serviceId không được để trống")
                 private Integer serviceId;
 
-                @NotNull(message = "quantity khong duoc de trong")
-                @Min(value = 1, message = "quantity phai lon hon 0")
+                @NotNull(message = "quantity không được để trống")
+                @Min(value = 1, message = "quantity phải lớn hơn 0")
                 private Integer quantity;
 
                 public Integer getServiceId() {

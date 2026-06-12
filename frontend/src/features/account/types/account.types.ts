@@ -8,6 +8,7 @@ export interface PlayerBookingHistoryItem {
   totalPrice: number;
   depositAmount: number;
   status: string;
+  reviewed?: boolean;
 }
 
 export interface PlayerProfileInfo {
@@ -18,5 +19,6 @@ export interface PlayerProfileInfo {
   phoneNumber: string | null;
   avatarUrl: string | null;
   teamId: number | null;
+  membershipPoints: number;
   createdAt: string;
 }

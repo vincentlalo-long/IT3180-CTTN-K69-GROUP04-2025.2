@@ -17,6 +17,7 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
   const fetchMatches = useMatchStore((state) => state.fetchMatches);
   const [isJoining, setIsJoining] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<MatchRequestResponse[]>([]);
+  const [myRequest, setMyRequest] = useState<MatchRequestResponse | null>(null);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [approvingId, setApprovingId] = useState<number | null>(null);
 
@@ -54,21 +55,28 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
   const isHost = userTeamId === match.hostTeamId;
   const isMatched = match.status === "MATCHED" || match.status === "SCHEDULED" || match.guestTeamId !== null;
 
-  // Fetch pending requests for the host captain
+  // Fetch pending requests for the host captain, or check if guest already sent a request
   useEffect(() => {
-    if (isHost && match.status === "OPEN") {
+    if (userTeamId && match.status === "OPEN") {
       setLoadingRequests(true);
       getMatchRequests(match.id)
         .then((data) => {
-          const pending = data.filter(
-            (r) => r.status === "PENDING_HOST_CAPTAIN" || r.status === "PENDING_GUEST_CAPTAIN"
-          );
-          setPendingRequests(pending);
+          if (isHost) {
+            const pending = data.filter(
+              (r) => r.status === "PENDING_HOST_CAPTAIN" || r.status === "PENDING_GUEST_CAPTAIN"
+            );
+            setPendingRequests(pending);
+          } else {
+            const mine = data.find(
+              (r) => r.guestTeamId === userTeamId && (r.status === "PENDING_HOST_CAPTAIN" || r.status === "PENDING_GUEST_CAPTAIN")
+            );
+            setMyRequest(mine || null);
+          }
         })
         .catch((err) => console.error("Lỗi khi tải yêu cầu cáp kèo:", err))
         .finally(() => setLoadingRequests(false));
     }
-  }, [isHost, match.id, match.status]);
+  }, [isHost, match.id, match.status, userTeamId]);
 
   const handleJoin = async () => {
     if (userTeamId === match.hostTeamId) {
@@ -142,7 +150,12 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
             {match.venueName}
           </h3>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {match.recommended && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-600 animate-pulse">
+              ★ Phù hợp với bạn
+            </span>
+          )}
           {match.pitchType && (
             <span className="inline-flex rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
               {getPitchTypeLabel(match.pitchType)}
@@ -229,7 +242,7 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
                   ) : (
                     <CheckCircle size={12} />
                   )}
-                  Chấp nhận
+                  Chấp nhận kèo
                 </button>
               )}
             </div>
@@ -259,6 +272,10 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
           <div className="w-full rounded-full bg-emerald-50 py-2.5 text-center text-sm font-bold text-emerald-700 border border-emerald-200">
             Kèo do bạn tạo — đang chờ đối thủ
           </div>
+        ) : myRequest ? (
+          <div className="w-full rounded-full bg-amber-50 py-2.5 text-center text-sm font-bold text-[#b45309] border border-amber-200">
+            Đã xin nhận kèo — Đang chờ duyệt
+          </div>
         ) : (
           <button
             type="button"
@@ -266,7 +283,7 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
             disabled={isJoining}
             className="w-full rounded-full bg-[#005E2E] hover:bg-[#004d26] py-2.5 text-center text-sm font-extrabold uppercase text-white shadow-[0_4px_12px_rgba(0,94,46,0.25)] transition duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isJoining ? "Đang nhận kèo..." : "Nhận kèo ngay (1/2)"}
+            {isJoining ? "Đang gửi yêu cầu..." : "Xin nhận kèo"}
           </button>
         )}
       </div>

@@ -1,5 +1,6 @@
 package com.kstn.group4.backend.match.controller;
 
+import com.kstn.group4.backend.match.dto.MatchResultSubmitRequest;
 import com.kstn.group4.backend.match.dto.MatchResponse;
 import com.kstn.group4.backend.match.service.MatchService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,11 @@ public class AdminMatchController {
     @GetMapping
     public ResponseEntity<List<MatchResponse>> getAllMatches(@RequestParam(required = false) Integer venueId) {
         return ResponseEntity.ok(matchService.getAllMatchesForAdmin(venueId));
+    }
+
+    @PutMapping("/{id}/result")
+    public ResponseEntity<MatchResponse> submitResult(@PathVariable Integer id, @RequestBody MatchResultSubmitRequest request) {
+        return ResponseEntity.ok(matchService.submitMatchResult(id, request));
     }
 
     @DeleteMapping("/{id}")

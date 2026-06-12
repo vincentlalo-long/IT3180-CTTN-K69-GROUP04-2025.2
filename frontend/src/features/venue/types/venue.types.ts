@@ -10,6 +10,8 @@ export interface VenueResponseDTO {
   minPrice: BigDecimal | number;
   latitude?: number;
   longitude?: number;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface VenueSummaryResponse {
@@ -119,4 +121,26 @@ export interface VenueItem {
   minPrice?: number;
   latitude?: number;
   longitude?: number;
+  averageRating?: number;
+  reviewCount?: number;
+}
+
+export interface CreatePitchReviewRequest {
+  bookingId: number;
+  rating: number;
+  content: string;
+}
+
+export interface PitchReviewResponse {
+  id: number;
+  bookingId: number;
+  pitchId: number;
+  pitchName: string;
+  playerId: number;
+  playerName: string;
+  rating: number;
+  content: string;
+  rewardPoints: number;
+  memberPoints: number;
+  createdAt: string;
 }

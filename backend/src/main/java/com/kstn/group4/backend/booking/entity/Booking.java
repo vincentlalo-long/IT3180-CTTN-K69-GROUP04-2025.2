@@ -69,6 +69,15 @@ public class Booking {
     @Column(name = "total_price")
     private BigDecimal totalPrice;
 
+    @Column(name = "points_used", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer pointsUsed = 0;
+
+    @Column(name = "points_discount_amount", nullable = false, columnDefinition = "DECIMAL(38,2) DEFAULT 0")
+    private BigDecimal pointsDiscountAmount = BigDecimal.ZERO;
+
+    @Column(name = "points_redeemed_at")
+    private LocalDateTime pointsRedeemedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "pricing_mode")
     private PricingMode pricingMode = PricingMode.AUTO;

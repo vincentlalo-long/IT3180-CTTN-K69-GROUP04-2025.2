@@ -5,9 +5,16 @@ import type { MatchResponse } from '../../matchmaking/types/matchmaking.types';
 interface WeeklyScheduleProps {
   matches: MatchResponse[];
   teams: TournamentTeam[];
+  isAdmin?: boolean;
+  onUpdateResult?: (matchId: number) => void;
 }
 
-export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ matches, teams }) => {
+export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ 
+  matches, 
+  teams,
+  isAdmin = false,
+  onUpdateResult,
+}) => {
   const [selectedRound, setSelectedRound] = useState<number>(1);
 
   const teamMap = useMemo(() => {
@@ -69,7 +76,6 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ matches, teams }
                      Đã kết thúc
                    </span>
                 )}
-                {/* We map 'SCHEDULED' or other statuses to 'upcoming/in progress' as appropriate based on time. For now, checking if matchTime is valid could indicate it's upcoming */}
                 
                 <div className="text-sm text-gray-500 mb-2">Trận {match.id}</div>
                 
@@ -88,6 +94,15 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ matches, teams }
                     {getTeamName(match.guestTeamId)}
                   </div>
                 </div>
+
+                {isAdmin && match.hostTeamId !== null && (
+                  <button
+                    onClick={() => onUpdateResult?.(match.id)}
+                    className="mt-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-1.5 transition shadow"
+                  >
+                    Nhập kết quả
+                  </button>
+                )}
               </div>
             ))}
           </div>

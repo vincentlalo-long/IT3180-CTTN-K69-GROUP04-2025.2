@@ -9,6 +9,8 @@ public record VenueResponseDTO(
         String imageUrl,
         BigDecimal minPrice,
         Double latitude,
-        Double longitude
+        Double longitude,
+        Double averageRating,
+        Long reviewCount
 ) {
 }

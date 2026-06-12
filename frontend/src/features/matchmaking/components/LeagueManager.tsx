@@ -10,7 +10,11 @@ import {
 import type { League, LeagueRequest, LeagueFormat, LeagueStatus } from "../../matchmaking/types/league.types";
 import { LeagueRegistrationComponent } from "./LeagueRegistration";
 
-export function LeagueManager() {
+interface LeagueManagerProps {
+  onSelectLeague?: (league: League) => void;
+}
+
+export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -218,6 +222,15 @@ export function LeagueManager() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right space-x-2">
+                        {onSelectLeague && (
+                          <button
+                            onClick={() => onSelectLeague(league)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600/90 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                          >
+                            <Trophy size={12} />
+                            Lịch & Bảng đấu
+                          </button>
+                        )}
                         <button
                           onClick={() => setExpandedLeagueId(expandedLeagueId === league.id ? null : league.id)}
                           className="inline-flex items-center gap-1 rounded-lg bg-emerald-600/90 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"

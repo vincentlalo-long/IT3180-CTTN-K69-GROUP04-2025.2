@@ -49,6 +49,7 @@ public class UserService {
                 user.getPhoneNumber(),
                 user.getAvatarUrl(),
                 user.getTeamId(),
+                user.getMembershipPoints(),
                 user.getCreatedAt()
         );
     }
@@ -89,6 +90,7 @@ public class UserService {
                 user.getPhoneNumber(),
                 user.getAvatarUrl(),
                 user.getTeamId(),
+                user.getMembershipPoints(),
                 user.getCreatedAt()
         );
     }
