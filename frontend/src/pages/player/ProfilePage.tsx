@@ -10,7 +10,11 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getPlayerBookings, updatePlayerProfile } from "../../features/account/api/account.api";
 import { createPitchReview } from "@/features/venue/api/venueApi";
-import { cancelUnpaidBooking } from "@/features/booking/api/bookingApi";
+import {
+  cancelPlayerBooking,
+  cancelUnpaidBooking,
+  reschedulePlayerBooking,
+} from "@/features/booking/api/bookingApi";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
 import { toast } from "../../shared/utils/toast";
 import { Loader2 } from "lucide-react";
@@ -112,7 +116,14 @@ export function ProfilePage() {
   });
 
   const cancelBookingMutation = useMutation({
-    mutationFn: cancelUnpaidBooking,
+    mutationFn: async (bookingId: number) => {
+      const target = history.find((item) => item.id === bookingId);
+      if (target && target.depositAmount > 0) {
+        await cancelPlayerBooking(bookingId);
+        return;
+      }
+      await cancelUnpaidBooking(bookingId);
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["playerBookings"] });
       void queryClient.invalidateQueries({ queryKey: ["playerProfile"] });
@@ -121,6 +132,27 @@ export function ProfilePage() {
     onError: (err) => {
       logApiError("ProfilePage.cancelBooking", err);
       toast.error(getApiErrorMessage(err, "Không thể hủy đặt sân."));
+    },
+  });
+
+  const rescheduleBookingMutation = useMutation({
+    mutationFn: ({
+      bookingId,
+      bookingDate,
+      timeSlotId,
+    }: {
+      bookingId: number;
+      bookingDate: string;
+      timeSlotId: number;
+    }) => reschedulePlayerBooking(bookingId, { bookingDate, timeSlotId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["playerBookings"] });
+      void queryClient.invalidateQueries({ queryKey: ["playerProfile"] });
+      toast.success("Đổi lịch đặt sân thành công!");
+    },
+    onError: (err) => {
+      logApiError("ProfilePage.rescheduleBooking", err);
+      toast.error(getApiErrorMessage(err, "Không thể đổi lịch đặt sân."));
     },
   });
 
@@ -200,6 +232,14 @@ export function ProfilePage() {
                   }}
                   cancellingBookingId={
                     cancelBookingMutation.isPending ? cancelBookingMutation.variables ?? null : null
+                  }
+                  onRescheduleBooking={async (bookingId, bookingDate, timeSlotId) => {
+                    await rescheduleBookingMutation.mutateAsync({ bookingId, bookingDate, timeSlotId });
+                  }}
+                  reschedulingBookingId={
+                    rescheduleBookingMutation.isPending
+                      ? rescheduleBookingMutation.variables?.bookingId ?? null
+                      : null
                   }
                   isTab={true}
                 />

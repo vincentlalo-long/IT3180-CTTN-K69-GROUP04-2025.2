@@ -7,6 +7,7 @@ import com.kstn.group4.backend.booking.dto.player.CreateBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.PlayerBookingResponse;
 import com.kstn.group4.backend.booking.dto.player.RecurringBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.RecurringBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RescheduleBookingRequest;
 import com.kstn.group4.backend.booking.entity.Booking;
 import com.kstn.group4.backend.booking.entity.BookingServiceItem;
 import com.kstn.group4.backend.booking.entity.BookingStatus;
@@ -668,6 +669,65 @@ public class BookingService {
         }
     }
 
+    @Transactional
+    public PlayerBookingResponse rescheduleBooking(Integer bookingId, Integer playerId, RescheduleBookingRequest request) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat san voi ID: " + bookingId, "Booking"));
+
+        if (booking.getPlayer() == null || !booking.getPlayer().getId().equals(playerId)) {
+            throw new ForbiddenException("Ban khong co quyen doi lich don dat san nay");
+        }
+
+        LocalDateTime currentStart = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+        if (Duration.between(LocalDateTime.now(), currentStart).toHours() < 24) {
+            throw new BusinessException("Chi duoc doi lich truoc 24 tieng", "RESCHEDULE_TOO_LATE");
+        }
+
+        if (booking.getStatus() != BookingStatus.RESERVED || booking.getPointsRedeemedAt() != null) {
+            throw new BusinessException("Chi co the doi lich don dang giu san va chua thanh toan coc", "INVALID_RESCHEDULE_STATE");
+        }
+
+        Pitch pitch = booking.getPitch();
+        if (pitch == null || pitch.getVenue() == null) {
+            throw new ResourceNotFoundException("San chua duoc gan vao cum san", "Venue");
+        }
+
+        TimeSlot timeSlot = timeSlotRepository.findById(request.timeSlotId())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ca dat san voi ID: " + request.timeSlotId(), "TimeSlot"));
+
+        if (timeSlot.getStartTime().isBefore(pitch.getVenue().getOpenTime())
+                || timeSlot.getEndTime().isAfter(pitch.getVenue().getCloseTime())) {
+            throw new BusinessException("Nam ngoai gio mo cua cua san", "OUT_OF_OPERATING_HOURS");
+        }
+
+        if (request.bookingDate().equals(LocalDate.now()) && timeSlot.getStartTime().isBefore(LocalTime.now())) {
+            throw new BusinessException("Ca da nay hom nay da troi qua, vui long chon ca khac", "PAST_TIME_SLOT");
+        }
+
+        boolean alreadyBooked = bookingRepository.existsByPitchIdAndTimeSlotIdAndBookingDateExcludingBooking(
+                booking.getId(),
+                pitch.getId(),
+                timeSlot.getId(),
+                request.bookingDate()
+        );
+        if (alreadyBooked) {
+            throw new ResourceConflictException("Ca dat san nay da duoc dat. Vui long chon ca khac");
+        }
+
+        BigDecimal fieldPrice = calculateFieldPrice(pitch, timeSlot, request.bookingDate());
+        BigDecimal servicesTotal = bookingServiceItemRepository.findByBookingId(booking.getId()).stream()
+                .map(item -> item.getPriceAtBooking().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        booking.setTimeSlot(timeSlot);
+        booking.setBookingDate(request.bookingDate());
+        booking.setStartTime(timeSlot.getStartTime());
+        booking.setEndTime(timeSlot.getEndTime());
+        booking.setTotalPrice(fieldPrice.add(servicesTotal));
+
+        return toPlayerBookingResponse(bookingRepository.save(booking));
+    }
+
     /**
      * Get all bookings for a specific player.
      * Uses READ-ONLY transaction since no modifications are made.
@@ -960,6 +1020,28 @@ public class BookingService {
         return service.getPitch() != null
                 && service.getPitch().getVenue() != null
                 && pitchVenueId.equals(service.getPitch().getVenue().getId());
+    }
+
+    private BigDecimal calculateFieldPrice(Pitch pitch, TimeSlot timeSlot, LocalDate bookingDate) {
+        boolean weekend = isWeekend(bookingDate);
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+
+        BigDecimal coefficient = priceRuleRepository
+                .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), weekend)
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (weekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+
+        if (pitch.getBasePrice() == null) {
+            throw new BusinessException("Chua co gia co ban cho san nay", "BASE_PRICE_NOT_SET");
+        }
+
+        return pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
     }
 
     private boolean isWeekend(LocalDate date) {

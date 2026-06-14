@@ -148,6 +148,19 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     );
 
     @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+            "WHERE b.id <> :bookingId " +
+            "AND b.pitch.id = :pitchId " +
+            "AND b.timeSlot.id = :timeSlotId " +
+            "AND b.bookingDate = :bookingDate " +
+            "AND b.status <> com.kstn.group4.backend.booking.entity.BookingStatus.CANCELLED")
+    boolean existsByPitchIdAndTimeSlotIdAndBookingDateExcludingBooking(
+            @Param("bookingId") Integer bookingId,
+            @Param("pitchId") Integer pitchId,
+            @Param("timeSlotId") Integer timeSlotId,
+            @Param("bookingDate") LocalDate bookingDate
+    );
+
+    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
             "WHERE b.pitch.id = :pitchId " +
             "AND b.bookingDate = :bookingDate " +
             "AND b.status <> com.kstn.group4.backend.booking.entity.BookingStatus.CANCELLED " +

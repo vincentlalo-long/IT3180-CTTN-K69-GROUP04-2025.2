@@ -55,6 +55,18 @@ export const getLeagueMatches = async (id: number, isAdmin = false): Promise<Mat
   return response.data;
 };
 
+export const getHeadToHeadMatches = async (
+  leagueId: number,
+  team1Id: number,
+  team2Id: number,
+): Promise<MatchResponse[]> => {
+  const response = await apiClient.get<MatchResponse[]>(
+    `/leagues/${leagueId}/statistics/head-to-head`,
+    { params: { team1Id, team2Id } },
+  );
+  return response.data;
+};
+
 export interface PlayerMatchStat {
   playerId: number;
   teamId: number;

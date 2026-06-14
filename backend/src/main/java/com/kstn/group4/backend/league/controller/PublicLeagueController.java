@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -53,5 +54,13 @@ public class PublicLeagueController {
     @GetMapping("/{id}/matches")
     public ResponseEntity<List<MatchResponse>> getLeagueMatches(@PathVariable Integer id) {
         return ResponseEntity.ok(leagueService.getLeagueMatches(id));
+    }
+
+    @GetMapping("/{id}/statistics/head-to-head")
+    public ResponseEntity<List<MatchResponse>> getHeadToHeadMatches(
+            @PathVariable Integer id,
+            @RequestParam Long team1Id,
+            @RequestParam Long team2Id) {
+        return ResponseEntity.ok(leagueService.getHeadToHeadMatches(id, team1Id, team2Id));
     }
 }

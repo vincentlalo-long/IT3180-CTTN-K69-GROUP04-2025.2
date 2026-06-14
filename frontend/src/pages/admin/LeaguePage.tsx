@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { LeagueManager } from "../../features/matchmaking/components/LeagueManager";
 import { LeagueStanding, WeeklySchedule, TournamentBracket, calculateStandings } from "../../features/statistics";
 import { LeagueAnnouncementTab } from "../../features/matchmaking/components/LeagueAnnouncementTab";
-import { getAdminLeagues } from "../../features/matchmaking/api/league.api";
+import { getAdminLeagues, getLeagueMatches } from "../../features/matchmaking/api/league.api";
 import { leagueRegistrationApi } from "../../features/matchmaking/api/leagueRegistrationApi";
 import type { League } from "../../features/matchmaking/types/league.types";
+import type { MatchResponse } from "../../features/matchmaking/types/matchmaking.types";
 import type { TournamentTeam } from "../../features/statistics/types/statistics.types";
 
 export function LeaguePage() {
@@ -14,9 +15,9 @@ export function LeaguePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [teams, setTeams] = useState<TournamentTeam[]>([]);
+  const [matches, setMatches] = useState<MatchResponse[]>([]);
 
-  // Calculate standings with real teams but empty matches (since backend has no match API for leagues yet)
-  const roundRobinStandings = calculateStandings([], teams);
+  const roundRobinStandings = calculateStandings(matches, teams);
 
   useEffect(() => {
     const fetchLeagues = async () => {
@@ -38,12 +39,15 @@ export function LeaguePage() {
   useEffect(() => {
     if (!selectedLeagueId) {
       setTeams([]);
+      setMatches([]);
       return;
     }
-    const fetchTeams = async () => {
+    const fetchLeagueDetails = async () => {
       try {
-        const registrations = await leagueRegistrationApi.getRegistrationsByLeague(selectedLeagueId);
-        // Only get approved teams
+        const [registrations, leagueMatches] = await Promise.all([
+          leagueRegistrationApi.getRegistrationsByLeague(selectedLeagueId),
+          getLeagueMatches(selectedLeagueId, true),
+        ]);
         const approvedTeams = registrations
           .filter(r => r.status === "APPROVED")
           .map(r => ({
@@ -52,11 +56,14 @@ export function LeaguePage() {
             logoUrl: undefined
           }));
         setTeams(approvedTeams);
+        setMatches(leagueMatches);
       } catch (err) {
-        console.error("Lỗi khi tải danh sách đội", err);
+        console.error("Lỗi khi tải dữ liệu giải đấu", err);
+        setTeams([]);
+        setMatches([]);
       }
     };
-    fetchTeams();
+    fetchLeagueDetails();
   }, [selectedLeagueId]);
 
   return (
@@ -129,13 +136,13 @@ export function LeaguePage() {
               {viewMode === "STATS_RR" && (
                 <div className="space-y-6">
                   <LeagueStanding standings={roundRobinStandings} />
-                  <WeeklySchedule matches={[]} teams={teams} />
+                  <WeeklySchedule matches={matches} teams={teams} />
                 </div>
               )}
 
               {viewMode === "STATS_KO" && (
                 <div className="space-y-6">
-                  <TournamentBracket matches={[]} teams={teams} />
+                  <TournamentBracket matches={matches} teams={teams} />
                 </div>
               )}
             </>

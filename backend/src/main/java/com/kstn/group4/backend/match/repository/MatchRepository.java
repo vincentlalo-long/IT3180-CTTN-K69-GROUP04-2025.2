@@ -47,6 +47,21 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
     @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam", "timeSlot"})
     List<Match> findByLeagueId(Integer leagueId);
 
+    @Query("SELECT m FROM Match m " +
+           "LEFT JOIN FETCH m.venue " +
+           "LEFT JOIN FETCH m.hostTeam " +
+           "LEFT JOIN FETCH m.guestTeam " +
+           "LEFT JOIN FETCH m.timeSlot " +
+           "WHERE m.league.id = :leagueId " +
+           "AND ((m.hostTeam.id = :team1Id AND m.guestTeam.id = :team2Id) " +
+           "OR (m.hostTeam.id = :team2Id AND m.guestTeam.id = :team1Id)) " +
+           "ORDER BY m.matchTime DESC")
+    List<Match> findHeadToHeadMatches(
+            @Param("leagueId") Integer leagueId,
+            @Param("team1Id") Long team1Id,
+            @Param("team2Id") Long team2Id
+    );
+
     @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})
     List<Match> findByVenueId(Integer venueId);
 

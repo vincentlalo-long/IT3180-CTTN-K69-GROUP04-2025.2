@@ -26,6 +26,8 @@ import com.kstn.group4.backend.notification.service.NotificationService;
 @RequiredArgsConstructor
 public class LeagueRegistrationServiceImpl implements LeagueRegistrationService {
 
+    private static final int LEAGUE_PARTICIPATION_POINTS = 50;
+
     private final LeagueRegistrationRepository registrationRepository;
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
@@ -92,8 +94,15 @@ public class LeagueRegistrationServiceImpl implements LeagueRegistrationService 
             throw new BusinessException("Only league manager can update registration status");
         }
 
+        RegistrationStatus oldStatus = registration.getStatus();
         registration.setStatus(status);
         LeagueRegistration updated = registrationRepository.save(registration);
+
+        if (oldStatus != RegistrationStatus.APPROVED && status == RegistrationStatus.APPROVED
+                && registration.getCaptain() != null) {
+            userRepository.incrementMembershipPoints(registration.getCaptain().getId(), LEAGUE_PARTICIPATION_POINTS);
+        }
+
         return mapToResponse(updated);
     }
 

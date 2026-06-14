@@ -78,20 +78,28 @@ export const createRecurringBooking = async (
   return response.data;
 };
 
-// TODO: Player cancel booking
-// When the backend exposes an endpoint for players to cancel their own bookings,
-// implement this function and wire it into BookingField / BookingPage.
-//
-// Expected endpoint options:
-//   DELETE /player/bookings/{bookingId}
-//   PATCH  /player/bookings/{bookingId}/cancel
-//
-// export const cancelPlayerBooking = async (bookingId: number): Promise<void> => {
-//   await apiClient.delete(`/player/bookings/${bookingId}`);
-// };
+export const cancelPlayerBooking = async (bookingId: number): Promise<void> => {
+  await apiClient.patch(`/player/bookings/${bookingId}/cancel`);
+};
 
 export const cancelUnpaidBooking = async (bookingId: number): Promise<void> => {
   await apiClient.post(`/player/bookings/${bookingId}/cancel-unpaid`);
+};
+
+export interface RescheduleBookingPayload {
+  bookingDate: string;
+  timeSlotId: number;
+}
+
+export const reschedulePlayerBooking = async (
+  bookingId: number,
+  payload: RescheduleBookingPayload,
+): Promise<PlayerBookingResponse> => {
+  const response = await apiClient.patch<PlayerBookingResponse>(
+    `/player/bookings/${bookingId}/reschedule`,
+    payload,
+  );
+  return response.data;
 };
 
 // ==================== ADMIN SETTLEMENT APIs ====================

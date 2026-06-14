@@ -3,9 +3,12 @@ package com.kstn.group4.backend.league.entity;
 import com.kstn.group4.backend.league.enums.LeagueFormat;
 import com.kstn.group4.backend.league.enums.LeagueStatus;
 import com.kstn.group4.backend.user.entity.User;
+import com.kstn.group4.backend.venue.entity.TimeSlot;
+import com.kstn.group4.backend.venue.entity.Venue;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -20,6 +23,9 @@ public class League {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -38,6 +44,20 @@ public class League {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id", nullable = false)
     private User manager;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private Venue venue;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_slot_id")
+    private TimeSlot timeSlot;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

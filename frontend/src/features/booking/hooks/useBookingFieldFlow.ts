@@ -88,12 +88,16 @@ export interface SelectedSlot {
   price: number;
 }
 
-export function useBookingFieldFlow(venueId: number) {
+const getSafeInitialDate = (initialDate?: Date) =>
+  initialDate && !Number.isNaN(initialDate.getTime()) ? initialDate : new Date();
+
+export function useBookingFieldFlow(venueId: number, initialDate?: Date) {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const initialSelectedDate = getSafeInitialDate(initialDate);
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const [recurringEnabled, setRecurringEnabled] = useState(false);
   const [recurringWeeks, setRecurringWeeks] = useState(4);
-  const [recurringDays, setRecurringDays] = useState<number[]>([new Date().getDay()]);
+  const [recurringDays, setRecurringDays] = useState<number[]>([initialSelectedDate.getDay()]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

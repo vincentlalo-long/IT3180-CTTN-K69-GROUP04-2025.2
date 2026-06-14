@@ -4,6 +4,7 @@ import com.kstn.group4.backend.booking.dto.player.CreateBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.PlayerBookingResponse;
 import com.kstn.group4.backend.booking.dto.player.RecurringBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.RecurringBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RescheduleBookingRequest;
 import com.kstn.group4.backend.booking.service.BookingService;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import jakarta.validation.Valid;
@@ -65,6 +66,15 @@ public class PlayerBookingController {
 	) {
 		bookingService.cancelUnpaidBooking(bookingId, principal.getId());
 		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("/{bookingId}/reschedule")
+	public ResponseEntity<PlayerBookingResponse> rescheduleBooking(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@PathVariable Integer bookingId,
+			@Valid @RequestBody RescheduleBookingRequest request
+	) {
+		return ResponseEntity.ok(bookingService.rescheduleBooking(bookingId, principal.getId(), request));
 	}
 
 	@GetMapping

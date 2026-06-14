@@ -38,6 +38,7 @@ import org.springframework.context.ApplicationEventPublisher;
 public class VNPayService {
 
     private static final BigDecimal POINT_VALUE = BigDecimal.valueOf(100);
+    private static final int BOOKING_REWARD_POINTS = 20;
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
@@ -252,6 +253,11 @@ public class VNPayService {
                 log.warn("Cannot deduct {} membership points for booking {}", pointsUsed, firstBooking.getId());
                 return false;
             }
+        }
+
+        Integer rewardPlayerId = firstBooking.getPlayer() != null ? firstBooking.getPlayer().getId() : null;
+        if (rewardPlayerId != null) {
+            userRepository.incrementMembershipPoints(rewardPlayerId, bookings.size() * BOOKING_REWARD_POINTS);
         }
 
         LocalDateTime now = LocalDateTime.now();

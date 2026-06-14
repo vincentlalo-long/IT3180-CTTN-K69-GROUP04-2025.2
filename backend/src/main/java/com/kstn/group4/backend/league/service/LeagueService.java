@@ -19,6 +19,7 @@ public interface LeagueService {
     List<LeagueStandingResponse> getLeagueStandings(Integer leagueId);
     List<TopPlayerStatDto> getTopScorers(Integer leagueId);
     List<TopPlayerStatDto> getTopAssists(Integer leagueId);
+    List<MatchResponse> getHeadToHeadMatches(Integer leagueId, Long team1Id, Long team2Id);
     List<MatchResponse> generateSchedule(Integer leagueId, Integer managerId);
     List<MatchResponse> getLeagueMatches(Integer leagueId);
 }

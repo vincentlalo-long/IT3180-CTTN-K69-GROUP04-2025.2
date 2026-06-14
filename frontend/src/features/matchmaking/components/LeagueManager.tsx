@@ -9,13 +9,29 @@ import {
 } from "../../matchmaking/api/league.api";
 import type { League, LeagueRequest, LeagueFormat, LeagueStatus } from "../../matchmaking/types/league.types";
 import { LeagueRegistrationComponent } from "./LeagueRegistration";
+import { getFields, type FieldDto } from "@/features/venue/api/venueApi";
 
 interface LeagueManagerProps {
   onSelectLeague?: (league: League) => void;
 }
 
+const timeSlotOptions = [
+  { id: 1, label: "06:30 - 08:00" },
+  { id: 2, label: "08:00 - 09:30" },
+  { id: 3, label: "09:30 - 11:00" },
+  { id: 4, label: "11:00 - 12:30" },
+  { id: 5, label: "12:30 - 14:00" },
+  { id: 6, label: "14:00 - 15:30" },
+  { id: 7, label: "15:30 - 17:00" },
+  { id: 8, label: "17:00 - 18:30" },
+  { id: 9, label: "18:30 - 20:00" },
+  { id: 10, label: "20:00 - 21:30" },
+  { id: 11, label: "21:30 - 23:00" },
+];
+
 export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
   const [leagues, setLeagues] = useState<League[]>([]);
+  const [venues, setVenues] = useState<FieldDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLeague, setEditingLeague] = useState<League | null>(null);
@@ -23,9 +39,14 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
 
   const [formData, setFormData] = useState<LeagueRequest>({
     name: "",
+    description: "",
     format: "KNOCKOUT",
     numberOfTeams: 8,
     prize: "",
+    startDate: "",
+    endDate: "",
+    venueId: null,
+    timeSlotId: null,
     status: "OPENING",
   });
 
@@ -42,17 +63,33 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
     }
   }, []);
 
+  const fetchVenues = useCallback(async () => {
+    try {
+      const data = await getFields();
+      setVenues(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể tải danh sách khu sân");
+    }
+  }, []);
+
   useEffect(() => {
     fetchLeagues();
-  }, [fetchLeagues]);
+    fetchVenues();
+  }, [fetchLeagues, fetchVenues]);
 
   const handleOpenCreateModal = () => {
     setEditingLeague(null);
     setFormData({
       name: "",
+      description: "",
       format: "KNOCKOUT",
       numberOfTeams: 8,
       prize: "",
+      startDate: "",
+      endDate: "",
+      venueId: venues[0]?.id ? Number(venues[0].id) : null,
+      timeSlotId: 8,
       status: "OPENING",
     });
     setIsModalOpen(true);
@@ -62,9 +99,14 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
     setEditingLeague(league);
     setFormData({
       name: league.name,
+      description: league.description ?? "",
       format: league.format,
       numberOfTeams: league.numberOfTeams,
       prize: league.prize,
+      startDate: league.startDate ?? "",
+      endDate: league.endDate ?? "",
+      venueId: league.venueId ?? null,
+      timeSlotId: league.timeSlotId ?? null,
       status: league.status,
     });
     setIsModalOpen(true);
@@ -85,11 +127,21 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload: LeagueRequest = {
+        ...formData,
+        description: formData.description?.trim() || null,
+        prize: formData.prize?.trim() || "",
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
+        venueId: formData.venueId ?? null,
+        timeSlotId: formData.timeSlotId ?? null,
+      };
+
       if (editingLeague) {
-        await updateLeague(editingLeague.id, formData);
+        await updateLeague(editingLeague.id, payload);
         toast.success("Cập nhật giải đấu thành công");
       } else {
-        await createLeague(formData);
+        await createLeague(payload);
         toast.success("Tạo giải đấu thành công");
       }
       setIsModalOpen(false);
@@ -184,6 +236,8 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                   <th className="px-4 py-3">Thể thức</th>
                   <th className="px-4 py-3 text-center">Số đội</th>
                   <th className="px-4 py-3">Giải thưởng</th>
+                  <th className="px-4 py-3">Khu sân</th>
+                  <th className="px-4 py-3">Thời gian</th>
                   <th className="px-4 py-3 text-center">Trạng thái</th>
                   <th className="px-4 py-3 text-right">Hành động</th>
                 </tr>
@@ -211,6 +265,17 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                       </td>
                       <td className="px-4 py-3.5 text-white/80 max-w-[200px] truncate">
                         {league.prize || "-"}
+                      </td>
+                      <td className="px-4 py-3.5 text-white/80 max-w-[180px] truncate">
+                        {league.venueName || "-"}
+                      </td>
+                      <td className="px-4 py-3.5 text-white/80">
+                        <div className="flex flex-col">
+                          <span>{league.startDate || "-"}</span>
+                          <span className="text-xs text-white/50">
+                            {league.timeSlotLabel || "Chưa chọn ca"}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <span
@@ -256,7 +321,7 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                     </tr>
                     {expandedLeagueId === league.id && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-2 bg-black/10">
+                        <td colSpan={8} className="px-4 py-2 bg-black/10">
                           <LeagueRegistrationComponent 
                             leagueId={league.id} 
                             isManager={true} 
@@ -276,7 +341,7 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#005E2E] shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-[#005E2E] shadow-2xl">
             <div className="border-b border-white/10 px-6 py-4">
               <h3 className="text-lg font-semibold text-white">
                 {editingLeague ? "Cập nhật giải đấu" : "Tạo giải đấu mới"}
@@ -292,6 +357,16 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   placeholder="Nhập tên giải đấu..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/90 mb-1">Mô tả</label>
+                <textarea
+                  value={formData.description ?? ""}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  placeholder="Thông tin thể lệ, địa điểm hoặc ghi chú cho đội tham gia..."
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -328,6 +403,68 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                   className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   placeholder="VD: Cúp + 5.000.000 VNĐ"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-1">Ngày bắt đầu</label>
+                  <input
+                    type="date"
+                    value={formData.startDate ?? ""}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-1">Ngày kết thúc</label>
+                  <input
+                    type="date"
+                    value={formData.endDate ?? ""}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-1">Khu sân</label>
+                  <select
+                    value={formData.venueId ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        venueId: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="" className="text-black">Chưa chọn khu sân</option>
+                    {venues.map((venue) => (
+                      <option key={venue.id} value={venue.id} className="text-black">
+                        {venue.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-1">Ca thi đấu</label>
+                  <select
+                    value={formData.timeSlotId ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        timeSlotId: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                    className="w-full rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="" className="text-black">Chưa chọn ca</option>
+                    {timeSlotOptions.map((slot) => (
+                      <option key={slot.id} value={slot.id} className="text-black">
+                        {slot.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-1">Trạng thái <span className="text-rose-400">*</span></label>

@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { ArrowLeft, CalendarDays, Repeat } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useMemo } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
   DateSelector,
@@ -15,7 +16,20 @@ import { PlayerNavBar } from "@/layouts/player/PlayerNavBar";
 export function BookingField() {
   const navigate = useNavigate();
   const { fieldId } = useParams();
+  const [searchParams] = useSearchParams();
   const venueId = Number(fieldId) || 1;
+  const initialDate = useMemo(() => {
+    const rawDate = searchParams.get("date");
+    if (!rawDate) {
+      return undefined;
+    }
+    const [year, month, day] = rawDate.split("-").map(Number);
+    if (!year || !month || !day) {
+      return undefined;
+    }
+    const parsed = new Date(year, month - 1, day);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+  }, [searchParams]);
 
   const {
     selectedDate,
@@ -54,7 +68,7 @@ export function BookingField() {
     handleToggleRecurringDay,
     handleSubmit,
     handleConfirmBooking,
-  } = useBookingFieldFlow(venueId);
+  } = useBookingFieldFlow(venueId, initialDate);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">

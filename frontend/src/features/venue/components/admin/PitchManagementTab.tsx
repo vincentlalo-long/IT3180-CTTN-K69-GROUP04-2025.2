@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useVenueContext } from "../../hooks/useVenueContext";
 import { useVenueForm } from "../../hooks/useVenueForm";
 import { usePitchManagementForm } from "../../hooks/usePitchManagementForm";
+import { ServiceManagementPanel } from "./ServiceManagementPanel";
 import { getApiErrorMessage } from "../../../../shared/utils/apiError";
 import { Button } from "../../../../shared/components/Button";
 import {
@@ -455,6 +456,10 @@ export function PitchManagementTab() {
             </div>
           )}
         </section>
+      )}
+
+      {selectedVenueId && venueFormMode === null && pitchFormMode === null && (
+        <ServiceManagementPanel venueId={Number(selectedVenueId)} />
       )}
 
       {/* ═══════════ SECTION 3: FORM SÂN CON ═══════════ */}

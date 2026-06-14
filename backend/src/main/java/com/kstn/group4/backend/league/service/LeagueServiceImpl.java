@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -73,6 +74,7 @@ public class LeagueServiceImpl implements LeagueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LeagueStandingResponse> getLeagueStandings(Integer leagueId) {
         return leagueStandingRepository.findByLeagueIdOrderByPointsDescGoalDifferenceDescGoalsForDesc(leagueId)
                 .stream()
@@ -93,16 +95,19 @@ public class LeagueServiceImpl implements LeagueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TopPlayerStatDto> getTopScorers(Integer leagueId) {
         return playerMatchStatisticRepository.findTopScorersByLeagueId(leagueId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TopPlayerStatDto> getTopAssists(Integer leagueId) {
         return playerMatchStatisticRepository.findTopAssistsByLeagueId(leagueId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LeagueResponse> getAllLeagues() {
         return leagueRepository.findAll().stream()
                 .map(LeagueResponse::fromEntity)
@@ -110,6 +115,7 @@ public class LeagueServiceImpl implements LeagueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LeagueResponse> getLeaguesByManagerId(Integer managerId) {
         return leagueRepository.findByManagerId(managerId).stream()
                 .map(LeagueResponse::fromEntity)
@@ -117,6 +123,7 @@ public class LeagueServiceImpl implements LeagueService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LeagueResponse getLeagueById(Integer id) {
         League league = leagueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giải đấu"));
@@ -130,12 +137,8 @@ public class LeagueServiceImpl implements LeagueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         League league = new League();
-        league.setName(request.getName());
-        league.setFormat(request.getFormat());
-        league.setNumberOfTeams(request.getNumberOfTeams());
-        league.setPrize(request.getPrize());
-        league.setStatus(request.getStatus());
         league.setManager(manager);
+        applyLeagueRequest(league, request);
 
         League savedLeague = leagueRepository.save(league);
         return LeagueResponse.fromEntity(savedLeague);
@@ -151,11 +154,7 @@ public class LeagueServiceImpl implements LeagueService {
             throw new ForbiddenException("Bạn không có quyền cập nhật giải đấu này");
         }
 
-        league.setName(request.getName());
-        league.setFormat(request.getFormat());
-        league.setNumberOfTeams(request.getNumberOfTeams());
-        league.setPrize(request.getPrize());
-        league.setStatus(request.getStatus());
+        applyLeagueRequest(league, request);
 
         League updatedLeague = leagueRepository.save(league);
         return LeagueResponse.fromEntity(updatedLeague);
@@ -215,14 +214,23 @@ public class LeagueServiceImpl implements LeagueService {
             throw new BusinessException("Hệ thống chưa hỗ trợ thể thức thi đấu " + league.getFormat());
         }
 
-        // 3. Load default Venue and TimeSlot
-        Venue defaultVenue = venueRepository.findAll().stream().findFirst()
+        // 3. Load configured Venue and TimeSlot, falling back for older leagues.
+        Venue scheduleVenue = league.getVenue() != null ? league.getVenue() : venueRepository.findAll().stream().findFirst()
                 .orElseThrow(() -> new BusinessException("Vui lòng tạo ít nhất một sân đấu (Venue) trước khi xếp lịch thi đấu"));
-        TimeSlot defaultTimeSlot = timeSlotRepository.findAll().stream().findFirst().orElse(null);
+        TimeSlot scheduleTimeSlot = league.getTimeSlot() != null ? league.getTimeSlot()
+                : timeSlotRepository.findAll().stream().findFirst().orElse(null);
 
         // Map pairings to Match entities
         List<Match> matches = new ArrayList<>();
-        LocalDateTime baseTime = LocalDateTime.now().plusDays(1).withHour(18).withMinute(0).withSecond(0).withNano(0);
+        LocalTime kickoffTime = scheduleTimeSlot != null && scheduleTimeSlot.getStartTime() != null
+                ? scheduleTimeSlot.getStartTime()
+                : LocalTime.of(18, 0);
+        LocalDateTime baseTime = (league.getStartDate() != null
+                ? league.getStartDate()
+                : java.time.LocalDate.now().plusDays(1))
+                .atTime(kickoffTime)
+                .withSecond(0)
+                .withNano(0);
 
         // First, create the Match entities and set their fields (except nextMatchId references)
         // We will store them in a map by their pairing matchId to resolve nextMatchId later
@@ -231,8 +239,8 @@ public class LeagueServiceImpl implements LeagueService {
         for (MatchPairingDto pairing : pairings) {
             Match match = new Match();
             match.setLeague(league);
-            match.setVenue(defaultVenue);
-            match.setTimeSlot(defaultTimeSlot);
+            match.setVenue(scheduleVenue);
+            match.setTimeSlot(scheduleTimeSlot);
             match.setSkillLevel(MatchSkillLevel.AVERAGE);
             match.setStatus(MatchStatus.SCHEDULED);
             match.setRoundNumber(pairing.getRoundNumber());
@@ -300,6 +308,46 @@ public class LeagueServiceImpl implements LeagueService {
         return matchRepository.findByLeagueId(leagueId).stream()
                 .map(this::mapToMatchResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getHeadToHeadMatches(Integer leagueId, Long team1Id, Long team2Id) {
+        if (team1Id == null || team2Id == null || team1Id.equals(team2Id)) {
+            throw new BusinessException("Hai doi bong phai khac nhau");
+        }
+
+        return matchRepository.findHeadToHeadMatches(leagueId, team1Id, team2Id).stream()
+                .map(this::mapToMatchResponse)
+                .collect(Collectors.toList());
+    }
+
+    private void applyLeagueRequest(League league, LeagueRequest request) {
+        league.setName(request.getName());
+        league.setDescription(request.getDescription());
+        league.setFormat(request.getFormat());
+        league.setNumberOfTeams(request.getNumberOfTeams());
+        league.setPrize(request.getPrize());
+        league.setStartDate(request.getStartDate());
+        league.setEndDate(request.getEndDate());
+        league.setStatus(request.getStatus());
+
+        if (request.getStartDate() != null && request.getEndDate() != null
+                && request.getEndDate().isBefore(request.getStartDate())) {
+            throw new BusinessException("Ngay ket thuc phai sau ngay bat dau");
+        }
+
+        Venue venue = request.getVenueId() != null
+                ? venueRepository.findById(request.getVenueId())
+                .orElseThrow(() -> new ResourceNotFoundException("Venue not found"))
+                : null;
+        TimeSlot timeSlot = request.getTimeSlotId() != null
+                ? timeSlotRepository.findById(request.getTimeSlotId())
+                .orElseThrow(() -> new ResourceNotFoundException("Time slot not found"))
+                : null;
+
+        league.setVenue(venue);
+        league.setTimeSlot(timeSlot);
     }
 
     private MatchResponse mapToMatchResponse(Match match) {

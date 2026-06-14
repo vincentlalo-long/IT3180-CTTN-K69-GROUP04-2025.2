@@ -66,11 +66,16 @@ CREATE TABLE IF NOT EXISTS `notifications` (
 CREATE TABLE IF NOT EXISTS `leagues` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(255) NOT NULL,
+    `description` TEXT,
     `format` VARCHAR(50) NOT NULL,
     `number_of_teams` INT NOT NULL,
     `prize` TEXT,
     `status` VARCHAR(50) NOT NULL,
     `manager_id` INT NOT NULL,
+    `start_date` DATE,
+    `end_date` DATE,
+    `venue_id` INT,
+    `time_slot_id` INT,
     `created_at` DATETIME NOT NULL,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_leagues_manager_id`

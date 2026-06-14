@@ -1,6 +1,6 @@
-import { Calendar, CheckCircle, Filter, Loader2, Star } from "lucide-react";
+import { Calendar, CheckCircle, Clock, Filter, Loader2, Star } from "lucide-react";
 import type { PlayerBookingHistoryItem } from "../../types/account.types";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { PitchReviewModal } from "@/features/venue/components/player/PitchReviewModal";
 
 interface PlayerBookingHistoryProps {
@@ -14,7 +14,25 @@ interface PlayerBookingHistoryProps {
   isTab?: boolean;
   onCancelBooking?: (bookingId: number) => Promise<void> | void;
   cancellingBookingId?: number | null;
+  onRescheduleBooking?: (bookingId: number, bookingDate: string, timeSlotId: number) => Promise<void> | void;
+  reschedulingBookingId?: number | null;
 }
+
+const timeSlotOptions = [
+  { id: 1, label: "06:30 - 08:00", startTime: "06:30" },
+  { id: 2, label: "08:00 - 09:30", startTime: "08:00" },
+  { id: 3, label: "09:30 - 11:00", startTime: "09:30" },
+  { id: 4, label: "11:00 - 12:30", startTime: "11:00" },
+  { id: 5, label: "12:30 - 14:00", startTime: "12:30" },
+  { id: 6, label: "14:00 - 15:30", startTime: "14:00" },
+  { id: 7, label: "15:30 - 17:00", startTime: "15:30" },
+  { id: 8, label: "17:00 - 18:30", startTime: "17:00" },
+  { id: 9, label: "18:30 - 20:00", startTime: "18:30" },
+  { id: 10, label: "20:00 - 21:30", startTime: "20:00" },
+  { id: 11, label: "21:30 - 23:00", startTime: "21:30" },
+];
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function PlayerBookingHistory({
   showHistory,
@@ -27,9 +45,14 @@ export function PlayerBookingHistory({
   isTab = false,
   onCancelBooking,
   cancellingBookingId = null,
+  onRescheduleBooking,
+  reschedulingBookingId = null,
 }: PlayerBookingHistoryProps) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [reviewTarget, setReviewTarget] = useState<PlayerBookingHistoryItem | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<PlayerBookingHistoryItem | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState(todayIso());
+  const [rescheduleTimeSlotId, setRescheduleTimeSlotId] = useState(8);
 
   const filteredHistory = history.filter((item) => {
     if (statusFilter === "ALL") return true;
@@ -48,6 +71,25 @@ export function PlayerBookingHistory({
     }
     await onSubmitReview(bookingId, rating, content);
     setReviewTarget(null);
+  };
+
+  const openRescheduleModal = (booking: PlayerBookingHistoryItem) => {
+    const matchedSlot = timeSlotOptions.find((slot) =>
+      booking.startTime?.slice(0, 5) === slot.startTime,
+    );
+    setRescheduleTarget(booking);
+    setRescheduleDate(booking.bookingDate >= todayIso() ? booking.bookingDate : todayIso());
+    setRescheduleTimeSlotId(matchedSlot?.id ?? 8);
+  };
+
+  const handleSubmitReschedule = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!rescheduleTarget || !onRescheduleBooking) {
+      return;
+    }
+
+    await onRescheduleBooking(rescheduleTarget.id, rescheduleDate, rescheduleTimeSlotId);
+    setRescheduleTarget(null);
   };
 
   return (
@@ -152,6 +194,21 @@ export function PlayerBookingHistory({
                       {item.status === "PLAYING" && "Đang đá"}
                       {item.status === "CANCELLED" && "Đã hủy"}
                     </span>
+                    {(item.status === "PENDING_PAYMENT" || item.status === "RESERVED") && onRescheduleBooking && (
+                      <button
+                        type="button"
+                        onClick={() => openRescheduleModal(item)}
+                        disabled={reschedulingBookingId === item.id}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {reschedulingBookingId === item.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Clock size={14} />
+                        )}
+                        Đổi lịch
+                      </button>
+                    )}
                     {(item.status === "PENDING_PAYMENT" || item.status === "RESERVED") && onCancelBooking && (
                       <button
                         type="button"
@@ -192,6 +249,70 @@ export function PlayerBookingHistory({
               ))}
             </ul>
           )}
+        </div>
+      )}
+      {rescheduleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <form
+            onSubmit={handleSubmitReschedule}
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <div className="mb-5">
+              <h3 className="text-lg font-bold text-slate-900">Đổi lịch đặt sân</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                {rescheduleTarget.pitchName} • {rescheduleTarget.startTime} - {rescheduleTarget.endTime}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-slate-700">Ngày mới</span>
+                <input
+                  type="date"
+                  min={todayIso()}
+                  value={rescheduleDate}
+                  onChange={(event) => setRescheduleDate(event.target.value)}
+                  className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-500"
+                  required
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold text-slate-700">Ca mới</span>
+                <select
+                  value={rescheduleTimeSlotId}
+                  onChange={(event) => setRescheduleTimeSlotId(Number(event.target.value))}
+                  className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-500"
+                >
+                  {timeSlotOptions.map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {slot.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setRescheduleTarget(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={reschedulingBookingId === rescheduleTarget.id}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {reschedulingBookingId === rescheduleTarget.id && (
+                  <Loader2 size={16} className="animate-spin" />
+                )}
+                Lưu lịch mới
+              </button>
+            </div>
+          </form>
         </div>
       )}
       <PitchReviewModal
