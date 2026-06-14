@@ -13,10 +13,13 @@ import java.util.List;
 
 public interface StatisticsRepository extends Repository<Booking, Integer> {
 
-    @Query("SELECT COALESCE(SUM(b.totalPrice), 0) FROM Booking b " +
-           "WHERE b.status IN (com.kstn.group4.backend.booking.entity.BookingStatus.CONFIRMED, " +
-           "                   com.kstn.group4.backend.booking.entity.BookingStatus.PLAYING) " +
-           "AND (:venueId IS NULL OR b.pitch.venue.id = :venueId) " +
+    @Query("SELECT COALESCE(SUM(CASE " +
+           "  WHEN b.status = com.kstn.group4.backend.booking.entity.BookingStatus.COMPLETED THEN b.totalPrice " +
+           "  WHEN b.status IN (com.kstn.group4.backend.booking.entity.BookingStatus.BOOKED, " +
+           "                    com.kstn.group4.backend.booking.entity.BookingStatus.CONFIRMED, " +
+           "                    com.kstn.group4.backend.booking.entity.BookingStatus.PLAYING) THEN b.totalPrice * 0.5 " +
+           "  ELSE 0 END), 0) FROM Booking b " +
+           "WHERE (:venueId IS NULL OR b.pitch.venue.id = :venueId) " +
            "AND b.bookingDate >= :startDate AND b.bookingDate <= :endDate")
     BigDecimal calculateTotalRevenue(
             @Param("venueId") Integer venueId,
@@ -67,8 +70,12 @@ public interface StatisticsRepository extends Repository<Booking, Integer> {
 
     @Query("SELECT new com.kstn.group4.backend.statistics.dto.PitchPerformanceDto(p.id, p.name, " +
            "COUNT(b.id), " +
-           "COALESCE(SUM(CASE WHEN b.status IN (com.kstn.group4.backend.booking.entity.BookingStatus.CONFIRMED, " +
-           "                                    com.kstn.group4.backend.booking.entity.BookingStatus.PLAYING) THEN b.totalPrice ELSE 0 END), 0)) " +
+           "CAST(COALESCE(SUM(CASE " +
+           "  WHEN b.status = com.kstn.group4.backend.booking.entity.BookingStatus.COMPLETED THEN b.totalPrice " +
+           "  WHEN b.status IN (com.kstn.group4.backend.booking.entity.BookingStatus.BOOKED, " +
+           "                    com.kstn.group4.backend.booking.entity.BookingStatus.CONFIRMED, " +
+           "                    com.kstn.group4.backend.booking.entity.BookingStatus.PLAYING) THEN b.totalPrice * 0.5 " +
+           "  ELSE 0 END), 0) AS BigDecimal)) " +
            "FROM Pitch p " +
            "LEFT JOIN Booking b ON b.pitch.id = p.id AND b.bookingDate >= :startDate AND b.bookingDate <= :endDate " +
            "WHERE (:venueId IS NULL OR p.venue.id = :venueId) " +
