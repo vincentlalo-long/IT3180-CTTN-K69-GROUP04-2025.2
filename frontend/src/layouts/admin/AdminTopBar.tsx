@@ -7,6 +7,7 @@ import { logoutUser } from "../../features/auth/api/authApi";
 import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { useVenueContext as useFacilityContext } from "../../features/venue/hooks/useVenueContext";
 import { NotificationDropdown } from "../../shared/components/NotificationDropdown";
+import { LogoutConfirmModal } from "../../shared/components/LogoutConfirmModal";
 
 interface AdminTopBarProps {
   onMenuToggle?: () => void;
@@ -64,6 +65,8 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuthContext();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -222,15 +225,9 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
                 <div className="my-1.5 border-t border-white/10" />
                 <button
                   type="button"
-                  onClick={async () => {
+                  onClick={() => {
                     setIsDropdownOpen(false);
-                    try {
-                      await logoutUser();
-                    } catch (err) {
-                      console.error("Admin logout failed:", err);
-                    }
-                    logout();
-                    navigate("/");
+                    setIsLogoutModalOpen(true);
                   }}
                   className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-left text-sm font-semibold text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition"
                 >
@@ -242,6 +239,25 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
           </div>
         </div>
       </div>
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          try {
+            await logoutUser();
+          } catch (err) {
+            console.error("Admin logout failed:", err);
+          } finally {
+            setIsLoggingOut(false);
+            setIsLogoutModalOpen(false);
+            logout();
+            navigate("/");
+          }
+        }}
+        isLoading={isLoggingOut}
+      />
     </header>
   );
 }

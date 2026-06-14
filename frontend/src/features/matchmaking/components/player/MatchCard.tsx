@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import type { MatchResponse, MatchRequestResponse } from "../../types/matchmaking.types";
 import { useMatchStore } from "../../model/matchStore";
 import { getMatchRequests, approveMatchRequest } from "../../api/matchmakingApi";
+import { TeamDetailModal, getTeamById, type Team } from "../../../team";
 
 interface MatchCardProps {
   match: MatchResponse;
@@ -22,6 +23,19 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
   const [myRequest, setMyRequest] = useState<MatchRequestResponse | null>(null);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+
+  const handleShowTeamDetails = async (teamId: number) => {
+    try {
+      const team = await getTeamById(teamId);
+      setSelectedTeam(team);
+      setIsTeamModalOpen(true);
+    } catch (error) {
+      console.error("Lỗi khi tải thông tin chi tiết đội bóng:", error);
+      alert("Không thể tải thông tin đội bóng lúc này. Vui lòng thử lại!");
+    }
+  };
 
   const getSkillLevelLabel = (level: string) => {
     switch (level) {
@@ -191,7 +205,11 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
         <div className="flex items-center justify-between rounded-xl bg-[#005E2E]/10 p-3">
           <div className="flex flex-col items-center flex-1 text-center min-w-0">
             <span className="text-xs text-gray-500 font-semibold mb-1">Đội nhà</span>
-            <span className="text-sm font-extrabold text-[#0B582A] truncate w-full" title={match.hostTeamName}>
+            <span
+              onClick={() => handleShowTeamDetails(match.hostTeamId)}
+              className="text-sm font-extrabold text-[#0B582A] truncate w-full cursor-pointer hover:underline hover:text-emerald-600"
+              title={match.hostTeamName}
+            >
               {match.hostTeamName}
             </span>
           </div>
@@ -205,10 +223,13 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
           <div className="flex flex-col items-center flex-1 text-center min-w-0">
             <span className="text-xs text-gray-500 font-semibold mb-1">Đối thủ</span>
             <span
+              onClick={() => isMatched && match.guestTeamId && handleShowTeamDetails(match.guestTeamId)}
               className={`text-sm font-extrabold truncate w-full ${
-                isMatched ? "text-[#0B582A]" : "text-amber-600 italic"
+                isMatched
+                  ? "text-[#0B582A] cursor-pointer hover:underline hover:text-emerald-600"
+                  : "text-amber-600 italic"
               }`}
-              title={match.guestTeamName || "Đang chờ..."}
+              title={isMatched ? (match.guestTeamName || undefined) : "Đang chờ..."}
             >
               {isMatched ? match.guestTeamName : "Chờ đối thủ"}
             </span>
@@ -301,6 +322,12 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
           </button>
         )}
       </div>
+
+      <TeamDetailModal
+        team={selectedTeam}
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
+      />
     </div>
   );
 }

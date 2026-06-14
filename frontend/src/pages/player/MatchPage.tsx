@@ -20,6 +20,7 @@ export function MatchPage() {
 
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [showCreateMatch, setShowCreateMatch] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "recommended">("all");
   const isCaptain = !!(myTeam && userInfo && myTeam.captainId === userInfo.id);
 
   // Sync state during rendering to reset myTeam when user changes, avoiding cascading renders in useEffect
@@ -68,6 +69,13 @@ export function MatchPage() {
     );
   });
 
+  const displayedMatches = filteredMatches.filter((m) => {
+    if (activeTab === "recommended") {
+      return !!m.recommended && m.hostTeamId !== userInfo?.teamId;
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#005E2E] to-[#29721D]">
       <PlayerNavBar />
@@ -96,11 +104,15 @@ export function MatchPage() {
                   {userInfo.teamId ? (
                     <button
                       onClick={() => {
-                        if (isCaptain) {
-                          setShowCreateMatch(true);
-                        } else {
+                        if (!isCaptain) {
                           alert("Chỉ đội trưởng mới được phép tạo kèo.");
+                          return;
                         }
+                        if (myTeam?.status !== "APPROVED") {
+                          alert("Đội bóng của bạn chưa được phê duyệt hoạt động. Không thể tạo kèo lúc này!");
+                          return;
+                        }
+                        setShowCreateMatch(true);
                       }}
                       className="inline-flex items-center gap-2 rounded-full bg-[#F8B416] hover:bg-[#e09e10] px-6 py-3.5 text-sm font-extrabold uppercase text-white shadow-[0_4px_12px_rgba(248,180,22,0.35)] transition duration-200 hover:scale-[1.03] active:scale-[0.98]"
                     >
@@ -167,6 +179,37 @@ export function MatchPage() {
         </div>
       </div>
 
+      {/* Tabs Selector */}
+      <div className="mx-auto max-w-[1280px] px-6 mt-8 flex gap-6 border-b border-white/10 pb-0">
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`pb-3 text-sm font-extrabold uppercase tracking-wider transition-all relative ${
+            activeTab === "all"
+              ? "text-emerald-400"
+              : "text-white/60 hover:text-white"
+          }`}
+        >
+          Tất cả kèo đấu
+          {activeTab === "all" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("recommended")}
+          className={`pb-3 text-sm font-extrabold uppercase tracking-wider transition-all relative flex items-center gap-1.5 ${
+            activeTab === "recommended"
+              ? "text-emerald-400"
+              : "text-white/60 hover:text-white"
+          }`}
+        >
+          <Trophy size={14} className="text-amber-400 animate-pulse" />
+          Kèo gợi ý (Đối thủ phù hợp)
+          {activeTab === "recommended" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" />
+          )}
+        </button>
+      </div>
+
       {/* Match Grid Section */}
       <main className="mx-auto max-w-[1280px] px-6 py-8">
         {loading ? (
@@ -174,17 +217,19 @@ export function MatchPage() {
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
             <p className="mt-4 text-sm text-white/60">Đang tải danh sách kèo đấu...</p>
           </div>
-        ) : filteredMatches.length === 0 ? (
+        ) : displayedMatches.length === 0 ? (
           <div className="rounded-2xl border border-white/5 bg-white/5 px-6 py-16 text-center shadow-lg">
             <ShieldAlert size={48} className="mx-auto text-amber-400/80 mb-3" />
             <h3 className="text-lg font-bold text-white">Chưa tìm thấy kèo phù hợp</h3>
             <p className="mt-1 text-sm text-white/60">
-              Hãy thử thay đổi điều kiện bộ lọc hoặc tự mình tạo một kèo đấu mới ngay bây giờ!
+              {activeTab === "recommended"
+                ? "Hệ thống chưa tìm thấy đối thủ phù hợp gợi ý cho đội của bạn lúc này. Hãy quay lại sau nhé!"
+                : "Hãy thử thay đổi điều kiện bộ lọc hoặc tự mình tạo một kèo đấu mới ngay bây giờ!"}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredMatches.map((match) => (
+            {displayedMatches.map((match) => (
               <MatchCard
                 key={match.id}
                 match={match}

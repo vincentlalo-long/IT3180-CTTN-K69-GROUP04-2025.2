@@ -186,6 +186,18 @@ public class TeamService {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đội bóng với ID: " + teamId, "Team"));
 
+        // Gửi thông báo đến Đội trưởng trước khi xóa đội bóng
+        if (team.getCaptain() != null) {
+            notificationService.createNotification(
+                    team.getCaptain().getId(),
+                    NotificationType.TEAM_STATUS,
+                    "Giải tán đội bóng",
+                    "Đội bóng '" + team.getName() + "' của bạn đã bị giải tán bởi quản trị viên.",
+                    "TEAM",
+                    teamId.toString()
+            );
+        }
+
         // 1. Delete or clear matches associated with this team
         List<Match> matches = matchRepository.findByHostOrGuestTeamId(teamId);
         if (!matches.isEmpty()) {
@@ -215,6 +227,19 @@ public class TeamService {
         team.setReputationScore(team.getReputationScore() + amount);
         teamRepository.save(team);
         logAdminActivity("ADD_TEAM_REPUTATION", teamId.toString(), "Cộng " + amount + " điểm uy tín cho đội " + team.getName());
+
+        // Gửi thông báo đến Đội trưởng
+        if (team.getCaptain() != null) {
+            notificationService.createNotification(
+                    team.getCaptain().getId(),
+                    NotificationType.TEAM_STATUS,
+                    "Cộng điểm uy tín",
+                    "Đội bóng '" + team.getName() + "' của bạn đã được cộng " + amount + " điểm uy tín bởi quản trị viên.",
+                    "TEAM",
+                    teamId.toString()
+            );
+        }
+
         return mapToResponse(team);
     }
 
@@ -225,6 +250,19 @@ public class TeamService {
         team.setReputationScore(Math.max(0, team.getReputationScore() - amount));
         teamRepository.save(team);
         logAdminActivity("DEDUCT_TEAM_REPUTATION", teamId.toString(), "Trừ " + amount + " điểm uy tín của đội " + team.getName());
+
+        // Gửi thông báo đến Đội trưởng
+        if (team.getCaptain() != null) {
+            notificationService.createNotification(
+                    team.getCaptain().getId(),
+                    NotificationType.TEAM_STATUS,
+                    "Trừ điểm uy tín",
+                    "Đội bóng '" + team.getName() + "' của bạn đã bị trừ " + amount + " điểm uy tín bởi quản trị viên.",
+                    "TEAM",
+                    teamId.toString()
+            );
+        }
+
         return mapToResponse(team);
     }
 
@@ -236,6 +274,19 @@ public class TeamService {
         team.setBannedUntil(LocalDateTime.now().plusDays(days));
         teamRepository.save(team);
         logAdminActivity("BAN_TEAM", teamId.toString(), "Cấm đội bóng: " + team.getName() + " trong " + days + " ngày");
+
+        // Gửi thông báo đến Đội trưởng
+        if (team.getCaptain() != null) {
+            notificationService.createNotification(
+                    team.getCaptain().getId(),
+                    NotificationType.TEAM_STATUS,
+                    "Đội bóng bị khóa",
+                    "Đội bóng '" + team.getName() + "' của bạn đã bị khóa " + days + " ngày bởi quản trị viên.",
+                    "TEAM",
+                    teamId.toString()
+            );
+        }
+
         return mapToResponse(team);
     }
 
@@ -427,6 +478,16 @@ public class TeamService {
 
             // 6. Dọn dẹp tất cả các lời mời hoặc yêu cầu gia nhập khác
             teamMemberRepository.deletePendingMembershipsByEmail(email.trim());
+
+            // 7. Gửi thông báo đến thành viên được duyệt
+            notificationService.createNotification(
+                    user.getId(),
+                    NotificationType.TEAM_STATUS,
+                    "Yêu cầu gia nhập được chấp nhận",
+                    "Yêu cầu gia nhập đội bóng '" + team.getName() + "' của bạn đã được chấp nhận.",
+                    "TEAM",
+                    teamId.toString()
+            );
         }
     }
 
@@ -456,6 +517,8 @@ public class TeamService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên này không tồn tại trong đội bóng này", "TeamMember"));
 
+        TeamMemberStatus oldStatus = targetMember.getStatus();
+
         // 4. Xóa bản ghi trong bảng team_member
         teamMemberRepository.delete(targetMember);
 
@@ -465,6 +528,28 @@ public class TeamService {
             User regularUser = userOpt.get();
             regularUser.setTeamId(null);
             userRepository.save(regularUser);
+
+            if (oldStatus == TeamMemberStatus.REQUESTED) {
+                // Từ chối gia nhập
+                notificationService.createNotification(
+                        regularUser.getId(),
+                        NotificationType.TEAM_STATUS,
+                        "Yêu cầu gia nhập bị từ chối",
+                        "Yêu cầu gia nhập đội bóng '" + team.getName() + "' của bạn đã bị từ chối.",
+                        "TEAM",
+                        teamId.toString()
+                );
+            } else if (oldStatus == TeamMemberStatus.ACTIVE) {
+                // Bị kích khỏi đội
+                notificationService.createNotification(
+                        regularUser.getId(),
+                        NotificationType.TEAM_STATUS,
+                        "Bị loại khỏi đội bóng",
+                        "Bạn đã bị loại khỏi đội bóng '" + team.getName() + "'.",
+                        "TEAM",
+                        teamId.toString()
+                );
+            }
         }
     }
 
@@ -491,6 +576,18 @@ public class TeamService {
         if (user.getTeamId() != null && user.getTeamId().equals(teamId)) {
             user.setTeamId(null);
             userRepository.save(user);
+        }
+
+        // Gửi thông báo đến Đội trưởng khi thành viên rời đội
+        if (team.getCaptain() != null) {
+            notificationService.createNotification(
+                    team.getCaptain().getId(),
+                    NotificationType.TEAM_STATUS,
+                    "Thành viên rời đội",
+                    user.getUsername() + " đã rời khỏi đội bóng '" + team.getName() + "' của bạn.",
+                    "TEAM",
+                    teamId.toString()
+            );
         }
     }
 
