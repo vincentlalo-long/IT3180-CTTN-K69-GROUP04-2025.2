@@ -942,7 +942,7 @@ public class BookingService {
         booking.setBookingDate(bookingDate);
         booking.setStartTime(timeSlot.getStartTime());
         booking.setEndTime(timeSlot.getEndTime());
-        booking.setStatus(BookingStatus.CONFIRMED); // Ép trạng thái CONFIRMED (luồng mock)
+        booking.setStatus(BookingStatus.RESERVED);
         booking.setBookingType("MATCH_AUTO");
         booking.setTotalPrice(totalPrice); // Lưu đúng tổng tiền tính được từ CSDL!
 

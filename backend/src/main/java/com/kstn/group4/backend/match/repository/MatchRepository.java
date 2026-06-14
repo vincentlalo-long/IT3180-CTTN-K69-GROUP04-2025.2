@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public interface MatchRepository extends JpaRepository<Match, Integer> {
@@ -48,6 +49,32 @@ public interface MatchRepository extends JpaRepository<Match, Integer> {
 
     @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})
     List<Match> findByVenueId(Integer venueId);
+
+    @Query("SELECT m FROM Match m WHERE m.status = com.kstn.group4.backend.match.enums.MatchStatus.OPEN " +
+           "AND m.venue.id = :venueId " +
+           "AND m.timeSlot.id = :timeSlotId " +
+           "AND m.pitchType = :pitchType " +
+           "AND m.matchTime BETWEEN :startDateTime AND :endDateTime")
+    List<Match> findOpenMatchesToAutoCancel(
+            @Param("venueId") Integer venueId,
+            @Param("timeSlotId") Integer timeSlotId,
+            @Param("pitchType") Integer pitchType,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
+    );
+
+    @Query("SELECT m FROM Match m WHERE m.status = com.kstn.group4.backend.match.enums.MatchStatus.SCHEDULED " +
+           "AND m.venue.id = :venueId " +
+           "AND m.timeSlot.id = :timeSlotId " +
+           "AND m.hostTeam.captain.id = :captainId " +
+           "AND m.matchTime BETWEEN :startDateTime AND :endDateTime")
+    List<Match> findScheduledMatchesForBooking(
+            @Param("venueId") Integer venueId,
+            @Param("timeSlotId") Integer timeSlotId,
+            @Param("captainId") Integer captainId,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
+    );
 
     @Override
     @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})

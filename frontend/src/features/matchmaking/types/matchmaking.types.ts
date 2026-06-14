@@ -20,6 +20,8 @@ export interface MatchResponse {
   roundNumber?: number;
   nextMatchId?: number;
   recommended?: boolean;
+  bookingId?: number;
+  price?: number;
 }
 
 export interface MatchRequestResponse {

@@ -454,6 +454,8 @@ public class MatchService {
         User user = userRepository.findById(userPrincipal.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng", "User"));
 
+        Booking booking = null;
+
         if (matchRequest.getStatus() == MatchRequestStatus.PENDING_GUEST_CAPTAIN) {
             // Must be Guest Team Captain
             if (!matchRequest.getGuestTeam().getCaptain().getId().equals(user.getId())) {
@@ -496,7 +498,7 @@ public class MatchService {
             Pitch selectedPitch = availablePitches.get(0);
 
             // Create auto-booking with CONFIRMED status and calculated price
-            Booking booking = bookingService.createMatchAutoBooking(
+            booking = bookingService.createMatchAutoBooking(
                     match.getHostTeam().getCaptain().getId(),
                     selectedPitch.getId(),
                     match.getTimeSlot().getId(),
@@ -526,7 +528,12 @@ public class MatchService {
             throw new BusinessException("Yêu cầu này đã được xử lý (APPROVED hoặc REJECTED)");
         }
 
-        return mapToResponse(matchRequest.getMatch());
+        MatchResponse response = mapToResponse(matchRequest.getMatch());
+        if (booking != null) {
+            response.setBookingId(booking.getId());
+            response.setPrice(booking.getTotalPrice());
+        }
+        return response;
     }
 
     @Transactional(readOnly = true)

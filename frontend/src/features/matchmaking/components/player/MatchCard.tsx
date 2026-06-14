@@ -2,6 +2,7 @@ import { Calendar, MapPin, Users, CheckCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 import type { MatchResponse, MatchRequestResponse } from "../../types/matchmaking.types";
 import { useMatchStore } from "../../model/matchStore";
@@ -13,6 +14,7 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, userTeamId }: MatchCardProps) {
+  const navigate = useNavigate();
   const joinMatchAction = useMatchStore((state) => state.joinMatchAction);
   const fetchMatches = useMatchStore((state) => state.fetchMatches);
   const [isJoining, setIsJoining] = useState(false);
@@ -102,9 +104,21 @@ export function MatchCard({ match, userTeamId }: MatchCardProps) {
 
     setApprovingId(requestId);
     try {
-      await approveMatchRequest(requestId);
-      alert("Đã chấp nhận kèo thành công! Sân đã được đặt tự động.");
-      await fetchMatches();
+      const response = await approveMatchRequest(requestId);
+      alert("Đã chấp nhận kèo thành công! Sân đã được đặt tự động. Vui lòng thanh toán cọc để hoàn tất.");
+      
+      if (response.bookingId && response.price) {
+        navigate("/checkout", {
+          state: {
+            bookingData: {
+              bookingId: response.bookingId,
+              totalPrice: response.price,
+            }
+          }
+        });
+      } else {
+        await fetchMatches();
+      }
     } catch (error) {
       console.error(error);
       const axiosError = error as { response?: { data?: { message?: string } } };
