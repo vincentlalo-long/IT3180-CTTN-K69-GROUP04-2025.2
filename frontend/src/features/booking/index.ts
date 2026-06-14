@@ -1,5 +1,6 @@
 export { FieldScheduleTable } from "./components/admin/FieldScheduleTable";
 export { OrderManagementTable } from "./components/admin/OrderManagementTable";
+export { SettleInvoiceModal } from "./components/admin/SettleInvoiceModal";
 export { BookingSlotsDemo } from "./components/player/BookingSlotsDemo";
 export { DateSelector } from "./components/player/DateSelector";
 export { SelectedSlotsBar } from "./components/player/SelectedSlotsBar";

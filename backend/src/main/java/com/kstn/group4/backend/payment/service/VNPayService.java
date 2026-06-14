@@ -27,7 +27,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import com.kstn.group4.backend.booking.entity.BookingStatus;
+import com.kstn.group4.backend.notification.entity.NotificationType;
 import com.kstn.group4.backend.notification.event.BookingStatusChangedEvent;
+import com.kstn.group4.backend.notification.service.NotificationService;
 import org.springframework.context.ApplicationEventPublisher;
 
 @Slf4j
@@ -40,6 +42,7 @@ public class VNPayService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
 
     @Value("${vnpay.tmn-code}")
     private String tmnCode;
@@ -273,6 +276,24 @@ public class VNPayService {
                 ));
             }
         }
+
+        // Gửi thông báo cho Admin: có đơn đặt sân mới thanh toán cọc thành công
+        Booking notifBooking = bookings.get(0);
+        String pitchNameNotif = notifBooking.getPitch() != null && notifBooking.getPitch().getName() != null
+                ? notifBooking.getPitch().getName() : "N/A";
+        String dateNotif = notifBooking.getBookingDate() != null ? notifBooking.getBookingDate().toString() : "N/A";
+        String timeNotif = notifBooking.getStartTime() != null
+                ? notifBooking.getStartTime().toString().substring(0, 5) : "N/A";
+        notificationService.createNotificationForAdmins(
+                NotificationType.ADMIN_ALERT,
+                "Đơn đặt sân mới thành công",
+                "Đơn #" + notifBooking.getId() + " đặt sân " + pitchNameNotif
+                        + " ca " + timeNotif + " ngày " + dateNotif
+                        + " đã thanh toán cọc thành công.",
+                "BOOKING",
+                String.valueOf(notifBooking.getId())
+        );
+
         return true;
     }
 

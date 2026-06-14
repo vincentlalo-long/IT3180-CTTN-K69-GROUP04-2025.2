@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.kstn.group4.backend.notification.entity.NotificationType;
+import com.kstn.group4.backend.notification.service.NotificationService;
+
 @Service
 @RequiredArgsConstructor
 public class LeagueRegistrationServiceImpl implements LeagueRegistrationService {
@@ -27,6 +30,7 @@ public class LeagueRegistrationServiceImpl implements LeagueRegistrationService 
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -57,6 +61,16 @@ public class LeagueRegistrationServiceImpl implements LeagueRegistrationService 
         registration.setStatus(RegistrationStatus.PENDING);
 
         LeagueRegistration saved = registrationRepository.save(registration);
+
+        // Gửi thông báo cho Admin: có đội đăng ký giải đấu mới
+        notificationService.createNotificationForAdmins(
+                NotificationType.ADMIN_ALERT,
+                "Yêu cầu tham gia giải đấu",
+                "Đội bóng '" + team.getName() + "' đã đăng ký tham gia giải đấu '" + league.getName() + "'.",
+                "LEAGUE",
+                String.valueOf(leagueId)
+        );
+
         return mapToResponse(saved);
     }
 

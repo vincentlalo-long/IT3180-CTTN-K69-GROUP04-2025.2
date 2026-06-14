@@ -187,6 +187,70 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
+    /**
+     * Chốt hóa đơn: thêm dịch vụ phát sinh, cập nhật tổng tiền, chuyển trạng thái COMPLETED.
+     */
+    @Transactional
+    public AdminBookingDetailResponse settleBooking(Integer bookingId, com.kstn.group4.backend.booking.dto.admin.SettleBookingRequest request) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt sân với ID: " + bookingId, "Booking"));
+
+        if (booking.getStatus() != BookingStatus.BOOKED && booking.getStatus() != BookingStatus.PLAYING) {
+            throw new BusinessException(
+                    "Chỉ có thể chốt hóa đơn cho đơn ở trạng thái 'Đã đặt' hoặc 'Đang đá'",
+                    "INVALID_SETTLE_STATUS"
+            );
+        }
+
+        // Thêm dịch vụ phát sinh mới
+        BigDecimal newServicesTotal = BigDecimal.ZERO;
+        if (request.services() != null && !request.services().isEmpty()) {
+            for (var svcReq : request.services()) {
+                if (svcReq.quantity() == null || svcReq.quantity() <= 0) continue;
+
+                AddonService service = addonServiceRepository.findById(svcReq.serviceId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy dịch vụ", "Service"));
+
+                BookingServiceItem item = new BookingServiceItem();
+                item.setBooking(booking);
+                item.setService(service);
+                item.setQuantity(svcReq.quantity());
+                item.setPriceAtBooking(service.getPrice());
+                bookingServiceItemRepository.save(item);
+
+                newServicesTotal = newServicesTotal.add(
+                        service.getPrice().multiply(BigDecimal.valueOf(svcReq.quantity()))
+                );
+            }
+        }
+
+        // Cập nhật tổng tiền = tiền sân gốc + dịch vụ cũ + dịch vụ mới phát sinh
+        BigDecimal currentTotal = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal updatedTotal = currentTotal.add(newServicesTotal);
+        booking.setTotalPrice(updatedTotal);
+
+        // Chuyển trạng thái sang COMPLETED
+        BookingStatus oldStatus = booking.getStatus();
+        booking.setStatus(BookingStatus.COMPLETED);
+        bookingRepository.save(booking);
+
+        // Ghi activity log
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Integer adminId = null;
+        String adminName = "System";
+        if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+            adminId = principal.getId();
+            adminName = principal.getAppUsername();
+        }
+        activityLogService.log(adminId, adminName, "SETTLE_BOOKING", "BOOKING",
+                bookingId.toString(), "Chốt hóa đơn đơn đặt sân #" + bookingId + " — " + request.paymentMethod(), null, null);
+
+        publishBookingStatusChanged(booking, oldStatus, BookingStatus.COMPLETED);
+
+        return toAdminDetailResponse(booking);
+    }
+
     // ==================== MAPPER METHODS (Private) ====================
 
     /**
@@ -266,6 +330,11 @@ public class BookingService {
                 ? booking.getPitch().getVenue().getName()
                 : "N/A";
 
+        Integer venueId = booking.getPitch() != null
+                && booking.getPitch().getVenue() != null
+                ? booking.getPitch().getVenue().getId()
+                : null;
+
         String pitchName = booking.getPitch() != null && booking.getPitch().getName() != null
                 ? booking.getPitch().getName()
                 : "N/A";
@@ -305,6 +374,7 @@ public class BookingService {
 
         return AdminBookingDetailResponse.builder()
                 .id(booking.getId())
+                .venueId(venueId)
                 .venueName(venueName)
                 .pitchName(pitchName)
                 .bookingDate(booking.getBookingDate())
@@ -348,6 +418,11 @@ public class BookingService {
             throw new BusinessException("Ngày đặt sân không được để trống", "INVALID_BOOKING_DATE");
         }
 
+        // Chặn đặt sân ngày quá khứ
+        if (request.getBookingDate().isBefore(LocalDate.now())) {
+            throw new BusinessException("Không thể đặt sân cho ngày trong quá khứ", "PAST_BOOKING_DATE");
+        }
+
         // ==================== STEP 1: Lock Pitch with PESSIMISTIC_WRITE ====================
         Pitch pitch = pitchRepository.findByIdForUpdate(request.getPitchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + request.getPitchId(), "Pitch"));
@@ -364,6 +439,13 @@ public class BookingService {
         if (timeSlot.getStartTime().isBefore(pitch.getVenue().getOpenTime())
                 || timeSlot.getEndTime().isAfter(pitch.getVenue().getCloseTime())) {
             throw new BusinessException("Nằm ngoài giờ mở cửa của sân", "OUT_OF_OPERATING_HOURS");
+        }
+
+        // Chặn ca đã qua giờ đá trong ngày hôm nay
+        if (request.getBookingDate().equals(LocalDate.now())) {
+            if (timeSlot.getStartTime().isBefore(LocalTime.now())) {
+                throw new BusinessException("Ca đá này hôm nay đã trôi qua, vui lòng chọn ca khác", "PAST_TIME_SLOT");
+            }
         }
 
         // ==================== STEP 4: Check Slot Not Already Booked ====================

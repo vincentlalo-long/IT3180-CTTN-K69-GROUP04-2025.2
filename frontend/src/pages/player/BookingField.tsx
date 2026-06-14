@@ -113,6 +113,7 @@ export function BookingField() {
                         setSelectedDate(date);
                         setShowDatePicker(false);
                       }}
+                      minDate={new Date()}
                     />
                   </div>
                 </>

@@ -6,6 +6,8 @@ import com.kstn.group4.backend.booking.dto.admin.AdminUpdateBookingRequest;
 import com.kstn.group4.backend.booking.dto.admin.PitchScheduleDto;
 import com.kstn.group4.backend.booking.service.BookingAdminService;
 import com.kstn.group4.backend.booking.service.BookingService;
+import com.kstn.group4.backend.venue.dto.ServiceItemResponse;
+import com.kstn.group4.backend.venue.service.admin.AddonServiceManagementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ public class AdminBookingController {
 
     private final BookingService bookingService;
     private final BookingAdminService bookingAdminService;
+    private final AddonServiceManagementService addonServiceManagementService;
 
     @GetMapping("/schedules")
     public ResponseEntity<List<PitchScheduleDto>> getPitchSchedules(
@@ -79,5 +82,31 @@ public class AdminBookingController {
     ) {
         bookingService.overrideBookingPrice(bookingId, request.newPrice());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Chốt hóa đơn: thêm dịch vụ phát sinh, thanh toán nốt, hoàn thành ca đá
+     */
+    @PostMapping("/{id}/settle")
+    public ResponseEntity<com.kstn.group4.backend.booking.dto.admin.AdminBookingDetailResponse> settleBooking(
+            @PathVariable("id") Integer bookingId,
+            @Valid @RequestBody com.kstn.group4.backend.booking.dto.admin.SettleBookingRequest request
+    ) {
+        return ResponseEntity.ok(bookingService.settleBooking(bookingId, request));
+    }
+
+    /**
+     * Lấy danh sách dịch vụ ACTIVE của cụm sân mà booking này thuộc về.
+     * Dùng cho modal chốt hóa đơn — không cần check quyền sở hữu cụm sân.
+     */
+    @GetMapping("/{id}/available-services")
+    public ResponseEntity<List<ServiceItemResponse>> getAvailableServices(
+            @PathVariable("id") Integer bookingId
+    ) {
+        AdminBookingDetailResponse detail = bookingService.getBookingDetailForAdmin(bookingId);
+        if (detail.venueId() == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(addonServiceManagementService.getActiveServicesForVenue(detail.venueId()));
     }
 }

@@ -6,7 +6,7 @@ const STATUS_LABELS: Record<string, string> = {
   RESERVED: "Chờ xác nhận",
   PENDING: "Giữ chỗ",
   PENDING_PAYMENT: "Chờ thanh toán",
-  CONFIRMED: "Đã xác nhận cọc",
+  CONFIRMED: "Đã đặt",
   PLAYING: "Đang đá",
   CANCELLED: "Đã hủy",
 };
@@ -25,6 +25,7 @@ interface OrderManagementTableProps {
   orders: AdminBookingSummaryResponse[];
   onConfirmDeposit: (id: number) => void;
   onCancelOrder: (id: number) => void;
+  onSettleBooking: (order: AdminBookingSummaryResponse) => void;
 }
 
 function formatTime(time: string): string {
@@ -42,6 +43,7 @@ export function OrderManagementTable({
   orders,
   onConfirmDeposit,
   onCancelOrder,
+  onSettleBooking,
 }: OrderManagementTableProps) {
   return (
     <table className="min-w-[980px] w-full border-separate [border-spacing:0_8px] text-sm">
@@ -78,6 +80,9 @@ export function OrderManagementTable({
           const canConfirm =
             order.status === "RESERVED" ||
             order.status === "PENDING";
+          const canSettle =
+            order.status === "BOOKED" ||
+            order.status === "PLAYING";
           const isCancelled = order.status === "CANCELLED";
           const disableCancel = isCancelled || order.status === "PLAYING" || order.status === "COMPLETED";
 
@@ -136,6 +141,14 @@ export function OrderManagementTable({
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                     >
                       Xác nhận đơn
+                    </button>
+                  ) : canSettle ? (
+                    <button
+                      type="button"
+                      onClick={() => onSettleBooking(order)}
+                      className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                    >
+                      Chốt hoá đơn
                     </button>
                   ) : (
                     <span className="text-xs text-white/40">-</span>

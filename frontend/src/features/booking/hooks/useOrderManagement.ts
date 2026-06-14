@@ -17,6 +17,8 @@ export function useOrderManagement() {
   const [orders, setOrders] = useState<AdminBookingSummaryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [settleOrder, setSettleOrder] =
+    useState<AdminBookingSummaryResponse | null>(null);
 
   const loadOrders = useCallback(async () => {
     setIsLoading(true);
@@ -66,10 +68,27 @@ export function useOrderManagement() {
     }
   };
 
+  const handleOpenSettle = (order: AdminBookingSummaryResponse) => {
+    setSettleOrder(order);
+  };
+
+  const handleCloseSettle = () => {
+    setSettleOrder(null);
+  };
+
+  const handleSettled = () => {
+    setSettleOrder(null);
+    void loadOrders();
+  };
+
   return {
     visibleOrders: orders,
     handleConfirmDeposit,
     handleCancelOrder,
+    handleOpenSettle,
+    handleCloseSettle,
+    handleSettled,
+    settleOrder,
     selectedFacilityId,
     selectedFacility,
     isLoading,

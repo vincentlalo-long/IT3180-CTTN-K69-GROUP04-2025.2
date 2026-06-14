@@ -16,6 +16,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     List<User> findByIdIn(List<Integer> ids);
     List<User> findByTeamId(Long teamId);
 
+    List<User> findByRole(String role);
+
     @Modifying
     @Query("UPDATE User u SET u.membershipPoints = u.membershipPoints - :points WHERE u.id = :userId AND u.membershipPoints >= :points")
     int deductMembershipPoints(@Param("userId") Integer userId, @Param("points") Integer points);

@@ -101,4 +101,20 @@ public class NotificationService {
             createNotification(recipientId, type, title, message, targetType, targetId);
         }
     }
+
+    /**
+     * Gửi thông báo cho tất cả các Admin trong hệ thống.
+     */
+    public void createNotificationForAdmins(
+            NotificationType type,
+            String title,
+            String message,
+            String targetType,
+            String targetId
+    ) {
+        List<User> admins = userRepository.findByRole("ADMIN");
+        for (User admin : admins) {
+            createNotification(admin.getId(), type, title, message, targetType, targetId);
+        }
+    }
 }

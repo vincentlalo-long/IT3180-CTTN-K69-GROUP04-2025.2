@@ -28,6 +28,17 @@ public class AddonServiceManagementService {
                 .toList();
     }
 
+    /**
+     * Lấy danh sách dịch vụ ACTIVE của một cụm sân — không cần kiểm tra quyền sở hữu.
+     * Dùng cho luồng chốt hóa đơn (settle invoice), bất kỳ admin nào đăng nhập đều có thể thấy.
+     */
+    @Transactional(readOnly = true)
+    public List<ServiceItemResponse> getActiveServicesForVenue(Integer venueId) {
+        return addonServiceRepository.findActiveByVenueIdIncludingPitch(venueId, "ACTIVE").stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public ServiceItemResponse createService(Integer venueId, Integer managerId, ServiceItemRequest request) {
         Venue venue = ensureManagedVenue(venueId, managerId);
 
