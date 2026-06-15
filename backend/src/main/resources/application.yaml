@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: "optional:file:.env[.properties]"
   application:
     name: football-system
 
@@ -21,7 +23,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/football_booking?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: ${DB_PASSWORD:mixisql123@}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -60,18 +62,18 @@ application:
 
   security:
     jwt:
-      secret-key: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION:604800000}
     password-reset:
       expiration-minutes: 15
     google:
-      client-id: ${GOOGLE_CLIENT_ID:97945693765-5v8geqt8u5kduun9gcocajshjgeoofpl.apps.googleusercontent.com}
+      client-id: ${GOOGLE_CLIENT_ID}
 
 vnpay:
-  tmn-code: ${VNPAY_TMN_CODE:5Z9DS56R}
-  hash-secret: ${VNPAY_HASH_SECRET:3P1J6YGGFFHS7B7SGOSL5JRRSZLQMDAI}
+  tmn-code: ${VNPAY_TMN_CODE}
+  hash-secret: ${VNPAY_HASH_SECRET}
   payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-return}
 

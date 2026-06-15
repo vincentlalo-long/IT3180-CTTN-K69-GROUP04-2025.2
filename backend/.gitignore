@@ -29,7 +29,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
 .vscode/
 *.class
 bin/
+
+### Environment Secrets ###
+.env
+.env.local
