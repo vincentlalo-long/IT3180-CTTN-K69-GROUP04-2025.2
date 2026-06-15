@@ -6,3 +6,10 @@ build/
 *.class
 bin/
 /backend/uploads/
+
+# Temporary test artifacts
+/frontend/playwright-report/
+/frontend/test-results/
+/frontend/tests/
+/frontend/playwright.config.ts
+/scripts/k6-*.js
