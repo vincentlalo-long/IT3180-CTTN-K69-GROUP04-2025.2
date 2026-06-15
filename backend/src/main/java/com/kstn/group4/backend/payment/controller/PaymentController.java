@@ -3,7 +3,10 @@ package com.kstn.group4.backend.payment.controller;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import com.kstn.group4.backend.payment.dto.CreatePaymentRequest;
 import com.kstn.group4.backend.payment.dto.CreatePaymentResponse;
+import com.kstn.group4.backend.payment.dto.WalletPaymentRequest;
+import com.kstn.group4.backend.payment.dto.WalletPaymentResponse;
 import com.kstn.group4.backend.payment.service.VNPayService;
+import com.kstn.group4.backend.payment.service.WalletPaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,7 @@ import java.util.Map;
 public class PaymentController {
 
     private final VNPayService vnPayService;
+    private final WalletPaymentService walletPaymentService;
 
     /**
      * POST /payment/vnpay/create-url
@@ -36,6 +40,14 @@ public class PaymentController {
     ) {
         log.info("Creating VNPay URL for bookingId={}, pointsToUse={}", request.bookingId(), request.pointsToUse());
         return ResponseEntity.ok(vnPayService.buildPaymentUrl(request, httpRequest, principal.getId()));
+    }
+
+    @PostMapping("/wallet/pay-booking")
+    public ResponseEntity<WalletPaymentResponse> payBookingWithWallet(
+            @RequestBody WalletPaymentRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(walletPaymentService.payBookingDeposit(request, principal.getId()));
     }
 
     /**

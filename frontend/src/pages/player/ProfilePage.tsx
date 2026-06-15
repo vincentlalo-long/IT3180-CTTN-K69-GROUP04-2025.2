@@ -8,11 +8,12 @@ import {
 import { PlayerNavBar } from "../../layouts/player/PlayerNavBar";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { getPlayerBookings, updatePlayerProfile } from "../../features/account/api/account.api";
+import { getPlayerBookings, topUpWallet, updatePlayerProfile } from "../../features/account/api/account.api";
 import { createPitchReview } from "@/features/venue/api/venueApi";
 import {
   cancelPlayerBooking,
   cancelUnpaidBooking,
+  downloadPlayerBookingInvoice,
   reschedulePlayerBooking,
 } from "@/features/booking/api/bookingApi";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
@@ -22,6 +23,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
 import { saveTokenToStorage, getUserFromStorage } from "@/shared/utils/tokenStorage";
 
+const formatCurrency = (amount: number): string =>
+  `${Math.round(amount || 0).toLocaleString("vi-VN")}đ`;
+
 export function ProfilePage() {
   const queryClient = useQueryClient();
   const { user, checkAuth } = useAuthContext();
@@ -29,6 +33,7 @@ export function ProfilePage() {
   const location = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "history" | "terms">("profile");
+  const [topUpAmount, setTopUpAmount] = useState("100000");
 
   // Sync activeTab when navigating via router state (render phase)
   const [prevLocationState, setPrevLocationState] = useState<unknown>(null);
@@ -102,6 +107,18 @@ export function ProfilePage() {
     },
   });
 
+  const topUpWalletMutation = useMutation({
+    mutationFn: (amount: number) => topUpWallet(amount),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["playerProfile"] });
+      toast.success("Nạp tiền vào tài khoản thành công!");
+    },
+    onError: (err) => {
+      logApiError("ProfilePage.topUpWallet", err);
+      toast.error(getApiErrorMessage(err, "Không thể nạp tiền vào tài khoản."));
+    },
+  });
+
   const reviewMutation = useMutation({
     mutationFn: createPitchReview,
     onSuccess: (response) => {
@@ -156,6 +173,14 @@ export function ProfilePage() {
     },
   });
 
+  const downloadInvoiceMutation = useMutation({
+    mutationFn: (bookingId: number) => downloadPlayerBookingInvoice(bookingId),
+    onError: (err) => {
+      logApiError("ProfilePage.downloadInvoice", err);
+      toast.error(getApiErrorMessage(err, "Không thể tải hóa đơn."));
+    },
+  });
+
   const toggleEditing = async () => {
     if (isEditing) {
       updateProfileMutation.mutate();
@@ -166,6 +191,15 @@ export function ProfilePage() {
 
   const updateUserInfo = (field: keyof typeof editData, value: string) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleTopUpWallet = () => {
+    const amount = Number(topUpAmount);
+    if (!Number.isFinite(amount) || amount < 1000) {
+      toast.error("Số tiền nạp tối thiểu là 1.000đ.");
+      return;
+    }
+    topUpWalletMutation.mutate(amount);
   };
 
   return (
@@ -211,6 +245,40 @@ export function ProfilePage() {
                       Đang lưu thay đổi...
                     </div>
                   )}
+                  <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                          Ví tài khoản
+                        </p>
+                        <p className="mt-1 text-2xl font-extrabold text-slate-900">
+                          {formatCurrency(userInfo.walletBalance ?? 0)}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:w-[320px] sm:flex-row">
+                        <input
+                          type="number"
+                          min={1000}
+                          step={1000}
+                          value={topUpAmount}
+                          onChange={(event) => setTopUpAmount(event.target.value)}
+                          className="h-11 flex-1 rounded-lg border border-emerald-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleTopUpWallet}
+                          disabled={topUpWalletMutation.isPending}
+                          className="inline-flex h-11 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {topUpWalletMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Nạp tiền"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -240,6 +308,12 @@ export function ProfilePage() {
                     rescheduleBookingMutation.isPending
                       ? rescheduleBookingMutation.variables?.bookingId ?? null
                       : null
+                  }
+                  onDownloadInvoice={async (bookingId) => {
+                    await downloadInvoiceMutation.mutateAsync(bookingId);
+                  }}
+                  downloadingInvoiceId={
+                    downloadInvoiceMutation.isPending ? downloadInvoiceMutation.variables ?? null : null
                   }
                   isTab={true}
                 />

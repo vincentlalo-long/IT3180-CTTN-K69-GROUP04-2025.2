@@ -20,5 +20,6 @@ export interface PlayerProfileInfo {
   avatarUrl: string | null;
   teamId: number | null;
   membershipPoints: number;
+  walletBalance: number;
   createdAt: string;
 }

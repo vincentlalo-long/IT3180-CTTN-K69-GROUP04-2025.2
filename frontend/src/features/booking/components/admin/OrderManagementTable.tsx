@@ -1,5 +1,6 @@
 import type { AdminBookingSummaryResponse } from "../../api/bookingApi";
 import { formatCompactPrice } from "../../utils/booking.utils";
+import { Download } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   BOOKED: "Đã đặt",
@@ -26,6 +27,7 @@ interface OrderManagementTableProps {
   onConfirmDeposit: (id: number) => void;
   onCancelOrder: (id: number) => void;
   onSettleBooking: (order: AdminBookingSummaryResponse) => void;
+  onDownloadInvoice: (id: number) => void;
 }
 
 function formatTime(time: string): string {
@@ -44,6 +46,7 @@ export function OrderManagementTable({
   onConfirmDeposit,
   onCancelOrder,
   onSettleBooking,
+  onDownloadInvoice,
 }: OrderManagementTableProps) {
   return (
     <table className="min-w-[980px] w-full border-separate [border-spacing:0_8px] text-sm">
@@ -153,6 +156,15 @@ export function OrderManagementTable({
                   ) : (
                     <span className="text-xs text-white/40">-</span>
                   )}
+
+                  <button
+                    type="button"
+                    title="Tải hóa đơn PDF"
+                    onClick={() => onDownloadInvoice(order.id)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+                  >
+                    <Download size={14} />
+                  </button>
 
                   <button
                     type="button"

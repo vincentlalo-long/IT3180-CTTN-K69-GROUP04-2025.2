@@ -6,12 +6,15 @@ import com.kstn.group4.backend.booking.dto.player.RecurringBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.RecurringBookingResponse;
 import com.kstn.group4.backend.booking.dto.player.RescheduleBookingRequest;
 import com.kstn.group4.backend.booking.service.BookingService;
+import com.kstn.group4.backend.booking.service.InvoicePdfService;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlayerBookingController {
 
 	private final BookingService bookingService;
+	private final InvoicePdfService invoicePdfService;
 
 	@PostMapping
 	public ResponseEntity<PlayerBookingResponse> createBooking(
@@ -91,5 +95,17 @@ public class PlayerBookingController {
 			@PathVariable Integer bookingId
 	) {
 		return ResponseEntity.ok(bookingService.getMyBooking(bookingId, principal.getId()));
+	}
+
+	@GetMapping(value = "/{bookingId}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	public ResponseEntity<byte[]> exportMyInvoice(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@PathVariable Integer bookingId
+	) {
+		byte[] pdf = invoicePdfService.createPlayerInvoicePdf(bookingId, principal.getId());
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + bookingId + ".pdf")
+				.contentType(MediaType.APPLICATION_PDF)
+				.body(pdf);
 	}
 }

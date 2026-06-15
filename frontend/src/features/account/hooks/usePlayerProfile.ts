@@ -31,6 +31,7 @@ export function usePlayerProfile() {
         role: dto.role,
         teamId: dto.teamId,
         membershipPoints: dto.membershipPoints ?? 0,
+        walletBalance: dto.walletBalance ?? 0,
         createdAt: dto.createdAt,
       };
     },

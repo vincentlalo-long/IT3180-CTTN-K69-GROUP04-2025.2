@@ -6,6 +6,7 @@ import com.kstn.group4.backend.booking.dto.admin.AdminUpdateBookingRequest;
 import com.kstn.group4.backend.booking.dto.admin.PitchScheduleDto;
 import com.kstn.group4.backend.booking.service.BookingAdminService;
 import com.kstn.group4.backend.booking.service.BookingService;
+import com.kstn.group4.backend.booking.service.InvoicePdfService;
 import com.kstn.group4.backend.venue.dto.ServiceItemResponse;
 import com.kstn.group4.backend.venue.service.admin.AddonServiceManagementService;
 import jakarta.validation.Valid;
@@ -13,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +32,7 @@ public class AdminBookingController {
     private final BookingService bookingService;
     private final BookingAdminService bookingAdminService;
     private final AddonServiceManagementService addonServiceManagementService;
+    private final InvoicePdfService invoicePdfService;
 
     @GetMapping("/schedules")
     public ResponseEntity<List<PitchScheduleDto>> getPitchSchedules(
@@ -57,6 +61,15 @@ public class AdminBookingController {
     @GetMapping("/{id}")
     public ResponseEntity<AdminBookingDetailResponse> getBookingDetail(@PathVariable("id") Integer bookingId) {
         return ResponseEntity.ok(bookingService.getBookingDetailForAdmin(bookingId));
+    }
+
+    @GetMapping(value = "/{id}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportInvoice(@PathVariable("id") Integer bookingId) {
+        byte[] pdf = invoicePdfService.createAdminInvoicePdf(bookingId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + bookingId + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     /**

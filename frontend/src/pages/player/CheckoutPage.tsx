@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
-import { createVNPayUrl } from "@/features/payment/api/paymentApi";
+import { createVNPayUrl, payBookingWithWallet } from "@/features/payment/api/paymentApi";
 import { PointsRedemptionBox } from "@/features/payment/components/PointsRedemptionBox";
 import { usePlayerProfile } from "@/features/account/hooks/usePlayerProfile";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
@@ -37,11 +37,13 @@ export const CheckoutPage = () => {
   const totalPrice = toNumber(bookingData?.totalPrice);
   const depositAmount = totalPrice * 0.5; // Chỉ thanh toán 50% tiền cọc
   const availablePoints = userInfo?.membershipPoints ?? 0;
+  const walletBalance = userInfo?.walletBalance ?? 0;
   const maxPointsByAmount = Math.max(0, Math.ceil(depositAmount / POINT_VALUE) - 1);
   const maxRedeemablePoints = Math.min(availablePoints, maxPointsByAmount);
   const safePointsToUse = Math.min(pointsToUse, maxRedeemablePoints);
   const discountAmount = safePointsToUse * POINT_VALUE;
   const payableAmount = Math.max(0, depositAmount - discountAmount);
+  const canPayWithWallet = walletBalance >= payableAmount && payableAmount > 0;
 
   if (!bookingData) {
     return (
@@ -78,6 +80,19 @@ export const CheckoutPage = () => {
     } catch (error) {
       console.error("Lỗi khi tạo payment URL", error);
       toast.error("Không thể tạo kết nối thanh toán. Vui lòng thử lại!");
+      setIsLoading(false);
+    }
+  };
+
+  const handleWalletPayment = async () => {
+    setIsLoading(true);
+    try {
+      await payBookingWithWallet(bookingData.bookingId, safePointsToUse);
+      toast.success("Thanh toán bằng số dư tài khoản thành công!");
+      navigate("/profile", { state: { tab: "history" } });
+    } catch (error) {
+      console.error("Lỗi khi thanh toán bằng ví", error);
+      toast.error("Không thể thanh toán bằng số dư tài khoản. Vui lòng kiểm tra số dư!");
       setIsLoading(false);
     }
   };
@@ -165,12 +180,33 @@ export const CheckoutPage = () => {
                 {formatCurrency(payableAmount)}
               </span>
             </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Số dư tài khoản:</span>
+              <span className={`font-semibold ${canPayWithWallet ? "text-emerald-700" : "text-amber-700"}`}>
+                {formatCurrency(walletBalance)}
+              </span>
+            </div>
             <div className="flex justify-between border-t border-dashed border-gray-200 pt-2 text-xs text-gray-500">
               <span>Còn lại (thanh toán tại sân sau khi đá):</span>
               <span>{formatCurrency(totalPrice - depositAmount)}</span>
             </div>
           </div>
         </div>
+
+        <Button
+          onClick={handleWalletPayment}
+          disabled={isLoading || loadingUser || !canPayWithWallet}
+          className="mb-3 w-full flex justify-center items-center py-3 text-lg"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Đang xử lý...
+            </>
+          ) : (
+            "Thanh toán bằng ví"
+          )}
+        </Button>
 
         <Button
           onClick={handlePayment}

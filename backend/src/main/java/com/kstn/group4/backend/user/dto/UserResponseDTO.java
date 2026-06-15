@@ -1,5 +1,6 @@
 package com.kstn.group4.backend.user.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record UserResponseDTO(
@@ -11,6 +12,7 @@ public record UserResponseDTO(
         String avatarUrl,
         Long teamId,
         Integer membershipPoints,
+        BigDecimal walletBalance,
         LocalDateTime createdAt
 ) {
 }
