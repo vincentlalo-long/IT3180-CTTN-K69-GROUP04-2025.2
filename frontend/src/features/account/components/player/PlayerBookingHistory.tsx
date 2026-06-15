@@ -1,4 +1,4 @@
-import { Calendar, CheckCircle, Clock, Filter, Loader2, Star } from "lucide-react";
+import { Calendar, CheckCircle, Clock, Download, Filter, Loader2, Star } from "lucide-react";
 import type { PlayerBookingHistoryItem } from "../../types/account.types";
 import { type FormEvent, useState } from "react";
 import { PitchReviewModal } from "@/features/venue/components/player/PitchReviewModal";
@@ -16,6 +16,8 @@ interface PlayerBookingHistoryProps {
   cancellingBookingId?: number | null;
   onRescheduleBooking?: (bookingId: number, bookingDate: string, timeSlotId: number) => Promise<void> | void;
   reschedulingBookingId?: number | null;
+  onDownloadInvoice?: (bookingId: number) => Promise<void> | void;
+  downloadingInvoiceId?: number | null;
 }
 
 const timeSlotOptions = [
@@ -47,6 +49,8 @@ export function PlayerBookingHistory({
   cancellingBookingId = null,
   onRescheduleBooking,
   reschedulingBookingId = null,
+  onDownloadInvoice,
+  downloadingInvoiceId = null,
 }: PlayerBookingHistoryProps) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [reviewTarget, setReviewTarget] = useState<PlayerBookingHistoryItem | null>(null);
@@ -194,6 +198,21 @@ export function PlayerBookingHistory({
                       {item.status === "PLAYING" && "Đang đá"}
                       {item.status === "CANCELLED" && "Đã hủy"}
                     </span>
+                    {onDownloadInvoice && (item.depositAmount > 0 || item.status === "COMPLETED") && (
+                      <button
+                        type="button"
+                        onClick={() => onDownloadInvoice(item.id)}
+                        disabled={downloadingInvoiceId === item.id}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-slate-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {downloadingInvoiceId === item.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Download size={14} />
+                        )}
+                        Hóa đơn
+                      </button>
+                    )}
                     {(item.status === "PENDING_PAYMENT" || item.status === "RESERVED") && onRescheduleBooking && (
                       <button
                         type="button"

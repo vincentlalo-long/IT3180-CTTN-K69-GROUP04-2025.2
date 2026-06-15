@@ -2,6 +2,7 @@ package com.kstn.group4.backend.payment.service;
 
 import com.kstn.group4.backend.booking.entity.Booking;
 import com.kstn.group4.backend.booking.repository.BookingRepository;
+import com.kstn.group4.backend.booking.service.BookingPaymentService;
 import com.kstn.group4.backend.exception.BusinessException;
 import com.kstn.group4.backend.exception.ForbiddenException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
@@ -42,6 +43,7 @@ public class VNPayService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final BookingPaymentService bookingPaymentService;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationService notificationService;
 
@@ -266,6 +268,12 @@ public class VNPayService {
             booking.setStatus(BookingStatus.BOOKED);
             booking.setPointsRedeemedAt(now);
             bookingRepository.save(booking);
+            bookingPaymentService.recordPaidPayment(
+                    booking,
+                    firstBooking.getPlayer(),
+                    bookingPaymentService.calculateDepositAmount(booking),
+                    "VNPAY"
+            );
 
             if (oldStatus != BookingStatus.BOOKED) {
                 String pitchName = booking.getPitch() != null && booking.getPitch().getName() != null

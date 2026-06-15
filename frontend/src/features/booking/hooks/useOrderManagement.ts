@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useVenueContext as useFacilityContext } from "../../venue/hooks/useVenueContext";
 import {
+  downloadAdminBookingInvoice,
   fetchOrdersByVenue,
   updateOrderStatusApi,
   type AdminBookingSummaryResponse,
@@ -81,6 +82,18 @@ export function useOrderManagement() {
     void loadOrders();
   };
 
+  const handleDownloadInvoice = async (orderId: number) => {
+    setErrorMessage(null);
+    try {
+      await downloadAdminBookingInvoice(orderId);
+    } catch (error) {
+      logApiError("useOrderManagement.handleDownloadInvoice", error, {
+        orderId,
+      });
+      setErrorMessage(getApiErrorMessage(error, "Không thể tải hóa đơn."));
+    }
+  };
+
   return {
     visibleOrders: orders,
     handleConfirmDeposit,
@@ -88,6 +101,7 @@ export function useOrderManagement() {
     handleOpenSettle,
     handleCloseSettle,
     handleSettled,
+    handleDownloadInvoice,
     settleOrder,
     selectedFacilityId,
     selectedFacility,

@@ -50,6 +50,7 @@ public class UserService {
                 user.getAvatarUrl(),
                 user.getTeamId(),
                 user.getMembershipPoints(),
+                user.getWalletBalance(),
                 user.getCreatedAt()
         );
     }
@@ -91,6 +92,7 @@ public class UserService {
                 user.getAvatarUrl(),
                 user.getTeamId(),
                 user.getMembershipPoints(),
+                user.getWalletBalance(),
                 user.getCreatedAt()
         );
     }

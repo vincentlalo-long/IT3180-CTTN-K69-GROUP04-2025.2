@@ -20,6 +20,7 @@ import com.kstn.group4.backend.exception.ResourceNotFoundException;
 import com.kstn.group4.backend.notification.event.BookingStatusChangedEvent;
 import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
+import com.kstn.group4.backend.wallet.service.WalletService;
 import com.kstn.group4.backend.venue.entity.AddonService;
 import com.kstn.group4.backend.venue.entity.Pitch;
 import com.kstn.group4.backend.venue.entity.PriceRule;
@@ -68,6 +69,8 @@ public class BookingService {
     private final TimeSlotRepository timeSlotRepository;
     private final AddonServiceRepository addonServiceRepository;
     private final ActivityLogService activityLogService;
+    private final BookingPaymentService bookingPaymentService;
+    private final WalletService walletService;
     private final ApplicationEventPublisher eventPublisher;
 
     // ==================== ADMIN METHODS ====================
@@ -226,9 +229,27 @@ public class BookingService {
         }
 
         // Cập nhật tổng tiền = tiền sân gốc + dịch vụ cũ + dịch vụ mới phát sinh
+        BigDecimal paidBeforeSettle = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
         BigDecimal currentTotal = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
         BigDecimal updatedTotal = currentTotal.add(newServicesTotal);
         booking.setTotalPrice(updatedTotal);
+
+        BigDecimal remainingAmount = updatedTotal.subtract(paidBeforeSettle).setScale(2, RoundingMode.HALF_UP);
+        if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) {
+            remainingAmount = BigDecimal.ZERO;
+        }
+
+        String paymentMethod = request.paymentMethod() != null ? request.paymentMethod().trim().toUpperCase() : "";
+        User payer = booking.getPlayer();
+        if (remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
+            if (payer == null || payer.getId() == null) {
+                throw new BusinessException("Cannot settle booking without a player", "INVALID_SETTLE_PAYER");
+            }
+            if ("WALLET".equals(paymentMethod)) {
+                payer = walletService.debit(payer.getId(), remainingAmount);
+            }
+            bookingPaymentService.recordPaidPayment(booking, payer, remainingAmount, paymentMethod);
+        }
 
         // Chuyển trạng thái sang COMPLETED
         BookingStatus oldStatus = booking.getStatus();
@@ -283,7 +304,7 @@ public class BookingService {
                 : "N/A";
 
         BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
-        BigDecimal depositAmount = calculateDepositAmount(totalPrice);
+        BigDecimal depositAmount = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
 
         if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
                 && booking.getPointsRedeemedAt() == null) {
@@ -348,19 +369,12 @@ public class BookingService {
                 ? booking.getTotalPrice()
                 : BigDecimal.ZERO;
 
-        BigDecimal depositAmount = BigDecimal.ZERO;
-        String paymentStatus = "UNPAID";
+        BigDecimal depositAmount = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
+        String paymentStatus = resolvePaymentStatus(depositAmount, totalPrice);
 
         if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
                 && booking.getPointsRedeemedAt() == null) {
             status = "PENDING_PAYMENT";
-        } else if (booking.getPointsRedeemedAt() != null || 
-                   booking.getStatus() == BookingStatus.BOOKED || 
-                   booking.getStatus() == BookingStatus.CONFIRMED ||
-                   booking.getStatus() == BookingStatus.PLAYING || 
-                   booking.getStatus() == BookingStatus.COMPLETED) {
-            depositAmount = calculateDepositAmount(totalPrice);
-            paymentStatus = "PARTIAL";
         }
 
         String adminNote = null;
@@ -755,8 +769,7 @@ public class BookingService {
     }
 
     private PlayerBookingResponse toPlayerBookingResponse(Booking booking) {
-        BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
-        BigDecimal depositAmount = calculateDepositAmount(totalPrice);
+        BigDecimal depositAmount = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
         if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
                 && booking.getPointsRedeemedAt() == null) {
             depositAmount = BigDecimal.ZERO;
@@ -1051,6 +1064,18 @@ public class BookingService {
 
     private BigDecimal calculateDepositAmount(BigDecimal totalPrice) {
         return totalPrice.multiply(BigDecimal.valueOf(0.5)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String resolvePaymentStatus(BigDecimal paidAmount, BigDecimal totalPrice) {
+        BigDecimal paid = paidAmount != null ? paidAmount : BigDecimal.ZERO;
+        BigDecimal total = totalPrice != null ? totalPrice : BigDecimal.ZERO;
+        if (total.compareTo(BigDecimal.ZERO) > 0 && paid.compareTo(total) >= 0) {
+            return "PAID";
+        }
+        if (paid.compareTo(BigDecimal.ZERO) > 0) {
+            return "PARTIAL";
+        }
+        return "UNPAID";
     }
 
     public void publishBookingStatusChanged(Booking booking, BookingStatus oldStatus, BookingStatus newStatus) {

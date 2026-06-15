@@ -12,3 +12,11 @@ export const updatePlayerProfile = async (
 ): Promise<void> => {
   await apiClient.patch("/users/me", { username, phoneNumber });
 };
+
+export const topUpWallet = async (amount: number): Promise<number> => {
+  const response = await apiClient.post<{ walletBalance: number }>(
+    "/wallet/top-up",
+    { amount },
+  );
+  return response.data.walletBalance;
+};

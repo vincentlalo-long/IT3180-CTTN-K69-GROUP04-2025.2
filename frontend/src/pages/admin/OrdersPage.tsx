@@ -13,6 +13,7 @@ export function OrdersPage() {
     handleOpenSettle,
     handleCloseSettle,
     handleSettled,
+    handleDownloadInvoice,
     settleOrder,
     selectedFacilityId,
     selectedFacility,
@@ -59,6 +60,7 @@ export function OrdersPage() {
               onConfirmDeposit={handleConfirmDeposit}
               onCancelOrder={handleCancelOrder}
               onSettleBooking={handleOpenSettle}
+              onDownloadInvoice={handleDownloadInvoice}
             />
           </div>
         ) : null}

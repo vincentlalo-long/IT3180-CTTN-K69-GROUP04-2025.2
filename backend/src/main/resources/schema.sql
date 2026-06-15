@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `phone_number` VARCHAR(20),
     `avatar_url` VARCHAR(255),
     `membership_points` INT NOT NULL DEFAULT 0,
+    `wallet_balance` DECIMAL(38,2) NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`)
 );
 

@@ -185,3 +185,34 @@ export const settleBookingApi = async (
   );
   return response.data;
 };
+
+const downloadPdf = async (url: string, filename: string): Promise<void> => {
+  const response = await apiClient.get<Blob>(url, { responseType: "blob" });
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+};
+
+export const downloadAdminBookingInvoice = async (
+  bookingId: number,
+): Promise<void> => {
+  await downloadPdf(
+    `/admin/bookings/${bookingId}/invoice.pdf`,
+    `invoice-${bookingId}.pdf`,
+  );
+};
+
+export const downloadPlayerBookingInvoice = async (
+  bookingId: number,
+): Promise<void> => {
+  await downloadPdf(
+    `/player/bookings/${bookingId}/invoice.pdf`,
+    `invoice-${bookingId}.pdf`,
+  );
+};

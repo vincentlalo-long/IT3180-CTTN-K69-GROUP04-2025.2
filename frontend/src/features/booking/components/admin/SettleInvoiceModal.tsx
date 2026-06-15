@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   CreditCard,
   Banknote,
+  Wallet,
 } from "lucide-react";
 
 import {
@@ -377,11 +378,11 @@ export function SettleInvoiceModal({
               <p className="mb-3 text-xs font-bold uppercase tracking-wider text-white/50">
                 Phương thức thu nốt
               </p>
-              <div className="flex gap-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("CASH")}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
                     paymentMethod === "CASH"
                       ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
                       : "border-white/15 bg-white/5 text-white/60 hover:border-white/30"
@@ -393,7 +394,7 @@ export function SettleInvoiceModal({
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("TRANSFER")}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
                     paymentMethod === "TRANSFER"
                       ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
                       : "border-white/15 bg-white/5 text-white/60 hover:border-white/30"
@@ -401,6 +402,18 @@ export function SettleInvoiceModal({
                 >
                   <CreditCard size={18} />
                   Chuyển khoản
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("WALLET")}
+                  className={`flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
+                    paymentMethod === "WALLET"
+                      ? "border-emerald-400 bg-emerald-500/20 text-emerald-200"
+                      : "border-white/15 bg-white/5 text-white/60 hover:border-white/30"
+                  }`}
+                >
+                  <Wallet size={18} />
+                  Ví tài khoản
                 </button>
               </div>
             </div>
