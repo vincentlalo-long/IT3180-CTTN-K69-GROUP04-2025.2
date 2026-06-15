@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { LeagueStanding } from "./LeagueStanding";
 import { getLeagueStandings } from "../../matchmaking/api/league.api";
 import type { TeamStanding } from "../types/statistics.types";
@@ -14,7 +14,7 @@ export const LeagueStandingsTable: React.FC<LeagueStandingsTableProps> = ({ leag
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const fetchStandings = async (isRefreshing = false) => {
+  const fetchStandings = useCallback(async (isRefreshing = false) => {
     if (isRefreshing) setRefreshing(true);
     else setLoading(true);
 
@@ -28,7 +28,7 @@ export const LeagueStandingsTable: React.FC<LeagueStandingsTableProps> = ({ leag
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [leagueId]);
 
   useEffect(() => {
     fetchStandings();
@@ -39,7 +39,7 @@ export const LeagueStandingsTable: React.FC<LeagueStandingsTableProps> = ({ leag
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [leagueId]);
+  }, [fetchStandings]);
 
   if (loading) {
     return (

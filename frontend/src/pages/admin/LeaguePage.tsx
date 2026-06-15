@@ -78,25 +78,25 @@ export function LeaguePage() {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setViewMode("MANAGER")}
-            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'MANAGER' ? 'bg-white text-[#005E2E]' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
+            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'MANAGER' ? 'bg-white/20 text-white shadow-inner border-b-2 border-emerald-400' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
           >
             Quản lý chung
           </button>
           <button
             onClick={() => setViewMode("ANNOUNCEMENTS")}
-            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'ANNOUNCEMENTS' ? 'bg-white text-[#005E2E]' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
+            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'ANNOUNCEMENTS' ? 'bg-white/20 text-white shadow-inner border-b-2 border-emerald-400' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
           >
             Bảng tin
           </button>
           <button
             onClick={() => setViewMode("STATS_RR")}
-            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'STATS_RR' ? 'bg-white text-[#005E2E]' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
+            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'STATS_RR' ? 'bg-white/20 text-white shadow-inner border-b-2 border-emerald-400' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
           >
             Thống kê (Vòng tròn)
           </button>
           <button
             onClick={() => setViewMode("STATS_KO")}
-            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'STATS_KO' ? 'bg-white text-[#005E2E]' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
+            className={`px-4 py-2 rounded text-sm font-medium transition ${viewMode === 'STATS_KO' ? 'bg-white/20 text-white shadow-inner border-b-2 border-emerald-400' : 'bg-transparent text-white border border-white/30 hover:bg-white/10'}`}
           >
             Thống kê (Knockout)
           </button>
@@ -106,13 +106,13 @@ export function LeaguePage() {
       {viewMode === "MANAGER" ? (
         <LeagueManager />
       ) : (
-        <div className="rounded-2xl border border-white/15 bg-[#005E2E]/32 p-5 shadow-lg">
+        <div className="rounded-2xl border border-white/15 bg-[#0C5E2A] p-5 shadow-lg">
           <div className="mb-6">
             <label className="block text-sm font-semibold text-white mb-2">Chọn giải đấu:</label>
             <select
               value={selectedLeagueId || ""}
               onChange={(e) => setSelectedLeagueId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full max-w-md rounded-lg border border-white/20 bg-black/30 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 [&>option]:bg-[#005E2E] [&>option]:text-white"
+              className="w-full max-w-md rounded-lg border border-white/20 bg-[#0C5E2A] px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 [&>option]:bg-[#0C5E2A] [&>option]:text-white"
             >
               <option value="">-- Chọn giải đấu --</option>
               {leagues.map(l => (

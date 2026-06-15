@@ -290,7 +290,7 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                         {onSelectLeague && (
                           <button
                             onClick={() => onSelectLeague(league)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600/90 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600/90 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
                           >
                             <Trophy size={12} />
                             Lịch & Bảng đấu
@@ -305,7 +305,7 @@ export function LeagueManager({ onSelectLeague }: LeagueManagerProps) {
                         </button>
                         <button
                           onClick={() => handleOpenEditModal(league)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-sky-600/90 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-500"
+                          className="inline-flex items-center gap-1 rounded-lg bg-white/10 border border-white/20 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/20"
                         >
                           <Pencil size={12} />
                           Sửa

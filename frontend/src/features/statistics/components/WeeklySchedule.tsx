@@ -48,12 +48,12 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({
   };
 
   return (
-    <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Lịch Thi Đấu</h3>
+    <div className="w-full bg-[#0C5E2A] rounded-lg shadow border border-white/10">
+      <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">Lịch Thi Đấu</h3>
         {rounds.length > 0 && (
           <select 
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+            className="bg-black/30 border border-white/20 text-white text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 [&>option]:bg-[#005E2E] [&>option]:text-white"
             value={selectedRound}
             onChange={(e) => setSelectedRound(Number(e.target.value))}
           >
@@ -66,31 +66,31 @@ export const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({
 
       <div className="p-6 space-y-4">
         {matchesForRound.length === 0 ? (
-          <p className="text-center text-gray-500">Chưa có lịch thi đấu cho vòng này.</p>
+          <p className="text-center text-white/50">Chưa có lịch thi đấu cho vòng này.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {matchesForRound.map(match => (
-              <div key={match.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col justify-center items-center relative overflow-hidden">
+              <div key={match.id} className="border border-white/10 bg-white/5 rounded-lg p-4 flex flex-col justify-center items-center relative overflow-hidden">
                 {match.status === 'COMPLETED' && (
-                   <span className="absolute top-0 right-0 bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-bl-lg">
+                   <span className="absolute top-0 right-0 bg-emerald-500/15 text-emerald-400 text-xs font-medium px-2 py-1 rounded-bl-lg">
                      Đã kết thúc
                    </span>
                 )}
                 
-                <div className="text-sm text-gray-500 mb-2">Trận {match.id}</div>
+                <div className="text-sm text-white/50 mb-2">Trận {match.id}</div>
                 
                 <div className="flex w-full justify-between items-center">
-                  <div className="flex-1 text-right font-semibold text-gray-900 dark:text-white truncate pr-4">
+                  <div className="flex-1 text-right font-semibold text-white truncate pr-4">
                     {getTeamName(match.hostTeamId)}
                   </div>
                   
-                  <div className="flex-shrink-0 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded text-xl font-bold min-w-[80px] text-center">
+                  <div className="flex-shrink-0 px-4 py-2 bg-black/30 rounded text-xl font-bold min-w-[80px] text-center text-white">
                     {match.status === 'COMPLETED' 
                       ? `${match.homeScore ?? 0} - ${match.awayScore ?? 0}` 
                       : 'VS'}
                   </div>
                   
-                  <div className="flex-1 text-left font-semibold text-gray-900 dark:text-white truncate pl-4">
+                  <div className="flex-1 text-left font-semibold text-white truncate pl-4">
                     {getTeamName(match.guestTeamId)}
                   </div>
                 </div>

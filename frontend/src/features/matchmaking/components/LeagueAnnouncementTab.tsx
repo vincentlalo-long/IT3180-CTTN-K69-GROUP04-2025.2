@@ -75,7 +75,7 @@ export const LeagueAnnouncementTab: React.FC<LeagueAnnouncementTabProps> = ({ le
   return (
     <div className="space-y-6">
       {isAdmin && (
-        <div className="bg-black/20 rounded-xl p-5 border border-white/10">
+        <div className="bg-[#0C5E2A] rounded-xl p-5 border border-white/10">
           {!showForm ? (
             <button
               onClick={() => setShowForm(true)}
@@ -103,7 +103,7 @@ export const LeagueAnnouncementTab: React.FC<LeagueAnnouncementTabProps> = ({ le
                   placeholder="Tiêu đề thông báo..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-white/20 bg-black/40 px-4 py-2.5 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-white/20 bg-[#0C5E2A]/70 px-4 py-2.5 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
               <div>
@@ -112,7 +112,7 @@ export const LeagueAnnouncementTab: React.FC<LeagueAnnouncementTabProps> = ({ le
                   rows={4}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full rounded-lg border border-white/20 bg-black/40 px-4 py-2.5 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                  className="w-full rounded-lg border border-white/20 bg-[#0C5E2A]/70 px-4 py-2.5 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
                 />
               </div>
               <div className="flex justify-end">
