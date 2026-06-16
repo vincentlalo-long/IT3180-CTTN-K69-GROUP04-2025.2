@@ -13,4 +13,13 @@ import lombok.Setter;
 public class TeamMemberResponse {
     private String email;
     private TeamMemberStatus status;
+    private Integer id;
+    private String username;
+
+    public TeamMemberResponse(String email, TeamMemberStatus status) {
+        this.email = email;
+        this.status = status;
+        this.id = null;
+        this.username = null;
+    }
 }

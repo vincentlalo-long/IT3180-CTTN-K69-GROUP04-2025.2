@@ -35,11 +35,17 @@ public class LeagueStandingListener {
         League league = leagueRepository.findById(event.getLeagueId()).orElse(null);
         if (league == null) return;
 
-        updateTeamStanding(league, event.getHomeTeamId(), event.getHomeScore(), event.getAwayScore());
-        updateTeamStanding(league, event.getAwayTeamId(), event.getAwayScore(), event.getHomeScore());
+        if (event.isUpdate() && event.getOldHomeScore() != null && event.getOldAwayScore() != null) {
+            log.info("Reverting old standings contribution: {} - {} for match {}", event.getOldHomeScore(), event.getOldAwayScore(), event.getMatchId());
+            updateTeamStanding(league, event.getHomeTeamId(), event.getOldHomeScore(), event.getOldAwayScore(), true);
+            updateTeamStanding(league, event.getAwayTeamId(), event.getOldAwayScore(), event.getOldHomeScore(), true);
+        }
+
+        updateTeamStanding(league, event.getHomeTeamId(), event.getHomeScore(), event.getAwayScore(), false);
+        updateTeamStanding(league, event.getAwayTeamId(), event.getAwayScore(), event.getHomeScore(), false);
     }
 
-    private void updateTeamStanding(League league, Long teamId, Integer goalsFor, Integer goalsAgainst) {
+    private void updateTeamStanding(League league, Long teamId, Integer goalsFor, Integer goalsAgainst, boolean isRevert) {
         if (teamId == null) return;
 
         LeagueStanding standing = leagueStandingRepository.findByLeagueIdAndTeamId(league.getId(), teamId)
@@ -54,19 +60,21 @@ public class LeagueStandingListener {
 
         if (standing == null) return;
 
-        standing.setPlayed(standing.getPlayed() + 1);
-        standing.setGoalsFor(standing.getGoalsFor() + goalsFor);
-        standing.setGoalsAgainst(standing.getGoalsAgainst() + goalsAgainst);
+        int factor = isRevert ? -1 : 1;
+
+        standing.setPlayed(standing.getPlayed() + factor);
+        standing.setGoalsFor(standing.getGoalsFor() + (goalsFor * factor));
+        standing.setGoalsAgainst(standing.getGoalsAgainst() + (goalsAgainst * factor));
         standing.setGoalDifference(standing.getGoalsFor() - standing.getGoalsAgainst());
 
         if (goalsFor > goalsAgainst) {
-            standing.setWon(standing.getWon() + 1);
-            standing.setPoints(standing.getPoints() + 3);
+            standing.setWon(standing.getWon() + factor);
+            standing.setPoints(standing.getPoints() + (3 * factor));
         } else if (goalsFor.equals(goalsAgainst)) {
-            standing.setDrawn(standing.getDrawn() + 1);
-            standing.setPoints(standing.getPoints() + 1);
+            standing.setDrawn(standing.getDrawn() + factor);
+            standing.setPoints(standing.getPoints() + factor);
         } else {
-            standing.setLost(standing.getLost() + 1);
+            standing.setLost(standing.getLost() + factor);
         }
 
         leagueStandingRepository.save(standing);
