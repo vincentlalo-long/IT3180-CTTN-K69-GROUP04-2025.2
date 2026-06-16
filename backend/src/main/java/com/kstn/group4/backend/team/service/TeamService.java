@@ -368,8 +368,23 @@ public class TeamService {
         List<String> memberEmails = orderedMembers.stream()
                 .map(member -> member.getId().getUserEmail())
                 .collect(Collectors.toList());
+
+        List<User> teamUsers = userRepository.findByTeamId(team.getId());
+        java.util.Map<String, User> emailToUserMap = teamUsers.stream()
+                .filter(u -> u.getEmail() != null)
+                .collect(Collectors.toMap(u -> u.getEmail().toLowerCase(), u -> u, (u1, u2) -> u1));
+
         List<TeamMemberResponse> memberDetails = orderedMembers.stream()
-                .map(member -> new TeamMemberResponse(member.getId().getUserEmail(), member.getStatus()))
+                .map(member -> {
+                    String email = member.getId().getUserEmail();
+                    User matchedUser = emailToUserMap.get(email.toLowerCase());
+                    TeamMemberResponse resp = new TeamMemberResponse(email, member.getStatus());
+                    if (matchedUser != null) {
+                        resp.setId(matchedUser.getId());
+                        resp.setUsername(matchedUser.getUsername());
+                    }
+                    return resp;
+                })
                 .collect(Collectors.toList());
 
         return new TeamResponse(
