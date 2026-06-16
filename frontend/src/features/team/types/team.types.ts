@@ -6,6 +6,8 @@ export type TeamMemberStatus = "INVITED" | "ACTIVE" | "REQUESTED";
 export interface TeamMember {
   email: string;
   status: TeamMemberStatus;
+  id?: number;
+  username?: string;
 }
 
 export interface Team {

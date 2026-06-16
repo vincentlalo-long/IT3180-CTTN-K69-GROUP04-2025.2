@@ -12,6 +12,12 @@ import java.util.List;
 @Repository
 public interface PlayerMatchStatisticRepository extends JpaRepository<PlayerMatchStatistic, Long> {
     
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM PlayerMatchStatistic p WHERE p.match.id = :matchId")
+    void deleteByMatchId(@org.springframework.data.repository.query.Param("matchId") Integer matchId);
+
+    List<PlayerMatchStatistic> findByMatchId(Integer matchId);
+    
     @Query("SELECT new com.kstn.group4.backend.statistics.dto.TopPlayerStatDto(p.id, p.username, t.id, t.name, CAST(SUM(s.goals) AS integer)) " +
            "FROM PlayerMatchStatistic s " +
            "JOIN s.player p " +

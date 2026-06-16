@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuthContext } from "../../auth/hooks/useAuthContext";
 import { leagueRegistrationApi } from "../api/leagueRegistrationApi";
+import { generateLeagueSchedule } from "../api/league.api";
 import type { LeagueRegistration, RegistrationStatus } from "../types/league.types";
 import { getMyTeam } from "../../team/api/teamApi";
 import type { Team } from "../../team/types/team.types";
@@ -92,7 +93,13 @@ export const LeagueRegistrationComponent: React.FC<LeagueRegistrationProps> = ({
     setIsFinalizing(true);
     try {
       await leagueRegistrationApi.finalizeRegistration(leagueId);
-      alert("Chốt danh sách đội thành công! Giải đấu đã bắt đầu.");
+      try {
+        await generateLeagueSchedule(leagueId);
+        alert("Chốt danh sách đội và tự động xếp lịch thi đấu thành công! Giải đấu đã bắt đầu.");
+      } catch (err) {
+        console.error("Lỗi khi tự động xếp lịch thi đấu", err);
+        alert("Chốt danh sách đội thành công! Tuy nhiên xảy ra lỗi khi tự động xếp lịch thi đấu (có thể giải đã được xếp lịch trước đó).");
+      }
       if (onStatusChange) onStatusChange();
     } catch {
       alert("Lỗi khi chốt danh sách đội.");

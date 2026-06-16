@@ -176,4 +176,64 @@ public class LeagueStandingIntegrationTest {
         assertThat(assists.get(0).getPlayerName()).isEqualTo("player2");
         assertThat(assists.get(0).getTotalValue()).isEqualTo(1);
     }
+
+    @Test
+    void testUpdateMatchResult_UpdatesStandingsAndStatsCorrectlyWithoutDuplicates() {
+        // 1. Submit result: Team A wins 2-1 against Team B
+        MatchResultSubmitRequest request1 = new MatchResultSubmitRequest();
+        request1.setHomeScore(2);
+        request1.setAwayScore(1);
+        
+        PlayerStatDto p1Stat1 = new PlayerStatDto(player1.getId(), teamA.getId(), 2, 0);
+        PlayerStatDto p2Stat1 = new PlayerStatDto(player2.getId(), teamB.getId(), 1, 1);
+        request1.setPlayerStats(List.of(p1Stat1, p2Stat1));
+
+        matchService.submitMatchResult(testMatch.getId(), request1);
+
+        // 2. Update result of the same match: Team B wins 3-1 against Team A (swap scores)
+        MatchResultSubmitRequest request2 = new MatchResultSubmitRequest();
+        request2.setHomeScore(1);
+        request2.setAwayScore(3);
+        
+        PlayerStatDto p1Stat2 = new PlayerStatDto(player1.getId(), teamA.getId(), 1, 0);
+        PlayerStatDto p2Stat2 = new PlayerStatDto(player2.getId(), teamB.getId(), 3, 0);
+        request2.setPlayerStats(List.of(p1Stat2, p2Stat2));
+
+        matchService.submitMatchResult(testMatch.getId(), request2);
+
+        // Assert 1: Standings updated correctly (old scores reverted, new scores applied)
+        List<LeagueStandingResponse> standings = leagueService.getLeagueStandings(testLeague.getId());
+        assertThat(standings).hasSize(2);
+        
+        // Team B should now be first (3 points, won 1, lost 0, played 1)
+        LeagueStandingResponse first = standings.get(0);
+        assertThat(first.getTeamName()).isEqualTo("Team B");
+        assertThat(first.getPlayed()).isEqualTo(1);
+        assertThat(first.getWon()).isEqualTo(1);
+        assertThat(first.getPoints()).isEqualTo(3);
+        assertThat(first.getGoalsFor()).isEqualTo(3);
+        assertThat(first.getGoalsAgainst()).isEqualTo(1);
+        assertThat(first.getGoalDifference()).isEqualTo(2);
+
+        // Team A should now be second (0 points, won 0, lost 1, played 1)
+        LeagueStandingResponse second = standings.get(1);
+        assertThat(second.getTeamName()).isEqualTo("Team A");
+        assertThat(second.getPlayed()).isEqualTo(1);
+        assertThat(second.getLost()).isEqualTo(1);
+        assertThat(second.getPoints()).isEqualTo(0);
+        assertThat(second.getGoalsFor()).isEqualTo(1);
+        assertThat(second.getGoalsAgainst()).isEqualTo(3);
+        assertThat(second.getGoalDifference()).isEqualTo(-2);
+
+        // Assert 2: Player stats are replaced completely (no duplicates)
+        List<TopPlayerStatDto> scorers = leagueService.getTopScorers(testLeague.getId());
+        assertThat(scorers).isNotEmpty();
+        // player2 should be first with 3 goals (from second submission, not 1 + 3 = 4)
+        assertThat(scorers.get(0).getPlayerName()).isEqualTo("player2");
+        assertThat(scorers.get(0).getTotalValue()).isEqualTo(3);
+        
+        // player1 should be second with 1 goal (from second submission, not 2 + 1 = 3)
+        assertThat(scorers.get(1).getPlayerName()).isEqualTo("player1");
+        assertThat(scorers.get(1).getTotalValue()).isEqualTo(1);
+    }
 }

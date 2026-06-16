@@ -74,10 +74,17 @@ public class MatchService {
             throw new BusinessException("Trận đấu ở trạng thái " + match.getStatus() + " không thể nộp kết quả");
         }
 
+        boolean isUpdate = match.getStatus() == MatchStatus.COMPLETED;
+        Integer oldHomeScore = match.getHomeScore();
+        Integer oldAwayScore = match.getAwayScore();
+
         match.setHomeScore(request.getHomeScore());
         match.setAwayScore(request.getAwayScore());
         match.setStatus(MatchStatus.COMPLETED);
         matchRepository.save(match);
+
+        // Delete old player statistics for this match first to prevent duplicates
+        playerMatchStatisticRepository.deleteByMatchId(matchId);
 
         // Save player statistics
         if (request.getPlayerStats() != null && !request.getPlayerStats().isEmpty()) {
@@ -104,7 +111,10 @@ public class MatchService {
                 match.getHostTeam().getId(),
                 match.getGuestTeam() != null ? match.getGuestTeam().getId() : null,
                 match.getHomeScore(),
-                match.getAwayScore()
+                match.getAwayScore(),
+                oldHomeScore,
+                oldAwayScore,
+                isUpdate
         ));
 
         // Log activity
