@@ -169,6 +169,24 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle AuthenticationException - 401 Unauthorized
+     * Occurs when authentication fails (bad credentials, etc.)
+     */
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthenticationException(
+            org.springframework.security.core.AuthenticationException ex,
+            WebRequest request
+    ) {
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Thông tin xác thực không hợp lệ",
+                "UNAUTHORIZED",
+                request.getDescription(false)
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    /**
      * Handle generic RuntimeException - 500 Internal Server Error
      */
     @ExceptionHandler(RuntimeException.class)
