@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -28,6 +31,14 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
             "LEFT JOIN FETCH p.venue " +
             "WHERE b.id = :id")
     Optional<Booking> findByIdWithDetails(@Param("id") Integer id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Booking b " +
+            "LEFT JOIN FETCH b.player " +
+            "LEFT JOIN FETCH b.pitch p " +
+            "LEFT JOIN FETCH p.venue " +
+            "WHERE b.id = :id")
+    Optional<Booking> findByIdWithDetailsForUpdate(@Param("id") Integer id);
 
     /**
      * Search bookings by filters (date, status, pitchId) with pagination.
