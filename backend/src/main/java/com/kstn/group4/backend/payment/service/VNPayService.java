@@ -226,7 +226,7 @@ public class VNPayService {
 
         List<Booking> bookings = new ArrayList<>();
         for (Integer id : bookingIds) {
-            Booking b = bookingRepository.findByIdWithDetails(id).orElse(null);
+            Booking b = bookingRepository.findByIdWithDetailsForUpdate(id).orElse(null);
             if (b == null) {
                 log.warn("Cannot settle payment because booking {} was not found", id);
                 return false;
