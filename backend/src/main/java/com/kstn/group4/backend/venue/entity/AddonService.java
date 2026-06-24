@@ -27,12 +27,22 @@ public class AddonService {
     @JoinColumn(name = "pitch_id")
     private Pitch pitch;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private Venue venue;
+
     @Column(name = "name")
     private String name;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "price")
     private BigDecimal price;
 
     @Column(name = "unit")
     private String unit;
+
+    @Column(name = "status")
+    private String status = "ACTIVE";
 }

@@ -2,13 +2,19 @@ package com.kstn.group4.backend.booking.controller;
 
 import com.kstn.group4.backend.booking.dto.player.CreateBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.PlayerBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RecurringBookingRequest;
+import com.kstn.group4.backend.booking.dto.player.RecurringBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RescheduleBookingRequest;
 import com.kstn.group4.backend.booking.service.BookingService;
+import com.kstn.group4.backend.booking.service.InvoicePdfService;
 import com.kstn.group4.backend.config.security.services.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,10 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/player/bookings")
-@PreAuthorize("hasAuthority('PLAYER')")
+@PreAuthorize("hasAnyAuthority('PLAYER', 'ROLE_PLAYER')")
 public class PlayerBookingController {
 
 	private final BookingService bookingService;
+	private final InvoicePdfService invoicePdfService;
 
 	@PostMapping
 	public ResponseEntity<PlayerBookingResponse> createBooking(
@@ -37,6 +44,16 @@ public class PlayerBookingController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
+	@PostMapping("/recurring")
+	public ResponseEntity<RecurringBookingResponse> createRecurringBooking(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@Valid @RequestBody RecurringBookingRequest request
+	) {
+		RecurringBookingResponse response = bookingService.createRecurringBooking(principal.getId(), request);
+		HttpStatus status = response.createdCount() > 0 ? HttpStatus.CREATED : HttpStatus.OK;
+		return ResponseEntity.status(status).body(response);
+	}
+
 	@PatchMapping("/{bookingId}/cancel")
 	public ResponseEntity<Void> cancelBooking(
 			@AuthenticationPrincipal UserPrincipal principal,
@@ -44,6 +61,24 @@ public class PlayerBookingController {
 	) {
 		bookingService.cancelBooking(bookingId, principal.getId());
 		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/{bookingId}/cancel-unpaid")
+	public ResponseEntity<Void> cancelUnpaidBooking(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@PathVariable Integer bookingId
+	) {
+		bookingService.cancelUnpaidBooking(bookingId, principal.getId());
+		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("/{bookingId}/reschedule")
+	public ResponseEntity<PlayerBookingResponse> rescheduleBooking(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@PathVariable Integer bookingId,
+			@Valid @RequestBody RescheduleBookingRequest request
+	) {
+		return ResponseEntity.ok(bookingService.rescheduleBooking(bookingId, principal.getId(), request));
 	}
 
 	@GetMapping
@@ -60,5 +95,17 @@ public class PlayerBookingController {
 			@PathVariable Integer bookingId
 	) {
 		return ResponseEntity.ok(bookingService.getMyBooking(bookingId, principal.getId()));
+	}
+
+	@GetMapping(value = "/{bookingId}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	public ResponseEntity<byte[]> exportMyInvoice(
+			@AuthenticationPrincipal UserPrincipal principal,
+			@PathVariable Integer bookingId
+	) {
+		byte[] pdf = invoicePdfService.createPlayerInvoicePdf(bookingId, principal.getId());
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + bookingId + ".pdf")
+				.contentType(MediaType.APPLICATION_PDF)
+				.body(pdf);
 	}
 }

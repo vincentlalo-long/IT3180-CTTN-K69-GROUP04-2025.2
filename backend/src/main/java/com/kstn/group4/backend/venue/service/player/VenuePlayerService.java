@@ -1,24 +1,31 @@
 package com.kstn.group4.backend.venue.service.player;
 
 import com.kstn.group4.backend.booking.entity.Booking;
+import com.kstn.group4.backend.booking.entity.BookingStatus;
 import com.kstn.group4.backend.booking.repository.BookingRepository;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
+import com.kstn.group4.backend.venue.dto.ServiceItemResponse;
 import com.kstn.group4.backend.venue.dto.player.PitchAvailability;
 import com.kstn.group4.backend.venue.dto.player.PitchSlotsResponse;
 import com.kstn.group4.backend.venue.dto.player.SlotDetailResponse;
 import com.kstn.group4.backend.venue.dto.player.SlotStatus;
 import com.kstn.group4.backend.venue.dto.player.VenueAvailabilityResponse;
 import com.kstn.group4.backend.venue.dto.player.VenueResponseDTO;
+import com.kstn.group4.backend.venue.entity.AddonService;
 import com.kstn.group4.backend.venue.entity.Pitch;
 import com.kstn.group4.backend.venue.entity.PriceRule;
 import com.kstn.group4.backend.venue.entity.TimeSlot;
 import com.kstn.group4.backend.venue.entity.Venue;
+import com.kstn.group4.backend.venue.repository.AddonServiceRepository;
 import com.kstn.group4.backend.venue.repository.PitchRepository;
+import com.kstn.group4.backend.venue.repository.PitchReviewRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
 import com.kstn.group4.backend.venue.repository.VenueRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +44,28 @@ public class VenuePlayerService {
     private final PitchRepository pitchRepository;
     private final BookingRepository bookingRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final AddonServiceRepository addonServiceRepository;
+    private final PitchReviewRepository pitchReviewRepository;
 
     public Page<VenueResponseDTO> getActiveVenues(Pageable pageable) {
         return venueRepository.findActiveVenuesForPlayer(pageable)
                 .map(this::toVenueResponseDTO);
+    }
+
+    public Page<VenueResponseDTO> searchVenuesByLocation(
+            Double lat, Double lng, Double radius,
+            Double minLat, Double maxLat, Double minLng, Double maxLng,
+            Pageable pageable
+    ) {
+        if (minLat != null && maxLat != null && minLng != null && maxLng != null) {
+            return venueRepository.findVenuesInBoundingBox(minLat, maxLat, minLng, maxLng, pageable)
+                    .map(this::toVenueResponseDTO);
+        } else if (lat != null && lng != null) {
+            Double searchRadius = (radius != null) ? radius : 5.0;
+            return venueRepository.findVenuesWithinRadius(lat, lng, searchRadius, pageable)
+                    .map(this::toVenueResponseDTO);
+        }
+        return getActiveVenues(pageable);
     }
 
     public VenueAvailabilityResponse getAvailability(Integer venueId, LocalDate date) {
@@ -102,7 +127,8 @@ public class VenuePlayerService {
                 .filter(timeSlot -> timeSlot.getIsActive() == null || timeSlot.getIsActive())
                 .map(timeSlot -> {
                     Booking booking = slotBookingMap.get(timeSlot.getId());
-                    boolean isAvailable = booking == null;
+                    String status = resolveSlotStatus(booking);
+                    boolean isAvailable = "AVAILABLE".equals(status);
 
                     // Apply filter
                     if ("available".equals(filterLower) && !isAvailable) {
@@ -112,7 +138,7 @@ public class VenuePlayerService {
                         return null;
                     }
 
-                    BigDecimal price = findPrice(priceRules, timeSlot.getSlotNumber(), isWeekend, pitch.getBasePrice());
+                    BigDecimal price = findPrice(priceRules, timeSlot, isWeekend, pitch.getBasePrice());
 
                     return new SlotDetailResponse(
                             timeSlot.getId(),
@@ -120,7 +146,7 @@ public class VenuePlayerService {
                             timeSlot.getStartTime(),
                             timeSlot.getEndTime(),
                             price,
-                            isAvailable
+                            status
                     );
                 })
                 .filter(slot -> slot != null)
@@ -133,6 +159,16 @@ public class VenuePlayerService {
                 isWeekend,
                 slots
         );
+    }
+
+    public List<ServiceItemResponse> getActiveServices(Integer venueId) {
+        if (!venueRepository.existsById(venueId)) {
+            throw new ResourceNotFoundException("Khong tim thay cum san voi ID: " + venueId, "Venue");
+        }
+
+        return addonServiceRepository.findActiveByVenueIdIncludingPitch(venueId, "ACTIVE").stream()
+                .map(this::toServiceResponse)
+                .toList();
     }
 
     /**
@@ -152,8 +188,8 @@ public class VenuePlayerService {
                 .filter(timeSlot -> timeSlot.getIsActive() == null || timeSlot.getIsActive())
                 .map(timeSlot -> {
                     Booking booking = slotBookingMap.get(timeSlot.getId());
-                    String status = booking != null ? "BOOKED" : "AVAILABLE";
-                    BigDecimal price = findPrice(priceRules, timeSlot.getSlotNumber(), weekend, pitch.getBasePrice());
+                    String status = resolveSlotStatus(booking);
+                    BigDecimal price = findPrice(priceRules, timeSlot, weekend, pitch.getBasePrice());
 
                     return new SlotStatus(
                             timeSlot.getId(),
@@ -190,17 +226,58 @@ public class VenuePlayerService {
         return lookup;
     }
 
+    private String resolveSlotStatus(Booking booking) {
+        if (booking == null) {
+            return "AVAILABLE";
+        }
+        if (booking.getStatus() == BookingStatus.PENDING || booking.getStatus() == BookingStatus.RESERVED) {
+            return "PENDING";
+        }
+        return "BOOKED";
+    }
+
+    private ServiceItemResponse toServiceResponse(AddonService service) {
+        return new ServiceItemResponse(
+                service.getId(),
+                resolveServiceVenueId(service),
+                service.getName(),
+                service.getDescription(),
+                service.getPrice(),
+                service.getUnit(),
+                service.getStatus()
+        );
+    }
+
+    private Integer resolveServiceVenueId(AddonService service) {
+        if (service.getVenue() != null) {
+            return service.getVenue().getId();
+        }
+        if (service.getPitch() != null && service.getPitch().getVenue() != null) {
+            return service.getPitch().getVenue().getId();
+        }
+        return null;
+    }
+
     private BigDecimal findPrice(
             List<PriceRule> priceRules,
-            Integer slotNumber,
+            TimeSlot timeSlot,
             boolean weekend,
             BigDecimal basePrice
     ) {
-        return priceRules.stream()
-                .filter(rule -> slotNumber.equals(rule.getSlotNumber()) && weekend == Boolean.TRUE.equals(rule.getIsWeekend()))
-                .map(PriceRule::getPrice)
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+
+        BigDecimal coefficient = priceRules.stream()
+                .filter(rule -> timeSlot.getSlotNumber().equals(rule.getSlotNumber()) && weekend == Boolean.TRUE.equals(rule.getIsWeekend()))
+                .map(PriceRule::getCoefficient)
                 .findFirst()
-                .orElse(basePrice);
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (weekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+        return basePrice != null ? basePrice.multiply(coefficient).setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
     }
 
 
@@ -216,13 +293,20 @@ public class VenuePlayerService {
                 .map(Pitch::getBasePrice)
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
+        Double averageRating = pitchReviewRepository.averageRatingByVenueId(venue.getId());
+        Long reviewCount = pitchReviewRepository.countByVenueId(venue.getId());
+        double normalizedRating = averageRating == null ? 0.0 : Math.round(averageRating * 10.0) / 10.0;
 
         return new VenueResponseDTO(
                 venue.getId(),
                 venue.getName(),
                 venue.getAddress(),
                 venue.getImageUrl(),
-                minPrice
+                minPrice,
+                venue.getLatitude(),
+                venue.getLongitude(),
+                normalizedRating,
+                reviewCount == null ? 0L : reviewCount
         );
     }
 }

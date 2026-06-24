@@ -1,9 +1,11 @@
 package com.kstn.group4.backend.venue.repository;
 
 import com.kstn.group4.backend.venue.entity.Pitch;
+import com.kstn.group4.backend.venue.entity.PitchType;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,7 +15,35 @@ import org.springframework.data.repository.query.Param;
 
 public interface PitchRepository extends JpaRepository<Pitch, Integer> {
 
+    /**
+     * Find the first available (unbooked) pitch in a venue with a specific type for a given date and time slot.
+     * Uses NOT EXISTS to exclude pitches that already have a non-cancelled booking for that slot/date.
+     */
+    @Query("SELECT p FROM Pitch p WHERE p.venue.id = :venueId " +
+            "AND p.pitchType = :pitchType " +
+            "AND p.isActive = true " +
+            "AND NOT EXISTS (" +
+            "  SELECT b FROM com.kstn.group4.backend.booking.entity.Booking b " +
+            "  WHERE b.pitch.id = p.id " +
+            "  AND b.bookingDate = :bookingDate " +
+            "  AND b.timeSlot.id = :timeSlotId " +
+            "  AND b.status <> com.kstn.group4.backend.booking.entity.BookingStatus.CANCELLED" +
+            ") ORDER BY p.id ASC")
+    List<Pitch> findAvailablePitches(
+            @Param("venueId") Integer venueId,
+            @Param("pitchType") PitchType pitchType,
+            @Param("bookingDate") LocalDate bookingDate,
+            @Param("timeSlotId") Integer timeSlotId);
+
+    boolean existsByVenueIdAndPitchTypeAndIsActiveTrue(Integer venueId, PitchType pitchType);
+
     List<Pitch> findByVenueId(Integer venueId);
+
+    @Query(
+        value = "SELECT p FROM Pitch p LEFT JOIN FETCH p.venue WHERE p.venue.id = :venueId",
+        countQuery = "SELECT COUNT(p) FROM Pitch p WHERE p.venue.id = :venueId"
+    )
+    Page<Pitch> findByVenueIdWithVenue(@Param("venueId") Integer venueId, Pageable pageable);
 
     Page<Pitch> findByVenueId(Integer venueId, Pageable pageable);
 
@@ -22,6 +52,9 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
         Optional<Pitch> findByIdAndVenueManagerId(Integer id, Integer managerId);
 
         long countByVenueId(Integer venueId);
+
+    @Query("SELECT p.venue.id, COUNT(p) FROM Pitch p WHERE p.venue.id IN :venueIds GROUP BY p.venue.id")
+    List<Object[]> countPitchesGroupByVenueIds(@Param("venueIds") List<Integer> venueIds);
 
     List<Pitch> findByVenueIdAndIsActiveTrue(Integer venueId);
 
@@ -49,7 +82,10 @@ public interface PitchRepository extends JpaRepository<Pitch, Integer> {
             "ts.id as timeSlotId, ts.slot_number as slotNumber, ts.start_time as startTime, ts.end_time as endTime, ts.is_active as isActive, " +
             "b.status as bookingStatus, u.username as customerName, u.phone_number as customerPhone, " +
             "bp.paid_amount as depositAmount, " +
-            "pr.price as price " +
+            "(p.base_price * COALESCE(pr.coefficient, 1.0 + " +
+            "    CASE WHEN :isWeekend = true THEN 0.2 ELSE 0.0 END + " +
+            "    CASE WHEN ts.start_time >= '17:00:00' AND ts.start_time < '22:00:00' THEN 0.3 ELSE 0.0 END" +
+            ")) as price " +
             "FROM pitches p " +
             "JOIN venues v ON p.venue_id = v.id " +
             "CROSS JOIN time_slots ts " +

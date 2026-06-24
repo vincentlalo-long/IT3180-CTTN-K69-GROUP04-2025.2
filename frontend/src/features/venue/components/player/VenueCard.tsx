@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Star } from "lucide-react";
 
 import fieldImage from "../../../../assets/images/Old_Trafford.jpg";
 import logoFootball from "../../../../assets/images/logo-ball.jpg";
@@ -7,14 +8,16 @@ import { formatMoney } from "@/features/booking/utils/booking.utils";
 
 interface VenueCardProps {
   data: VenueItem;
+  bookingDate?: string;
 }
 
-export function VenueCard({ data }: VenueCardProps) {
+export function VenueCard({ data, bookingDate }: VenueCardProps) {
   const navigate = useNavigate();
+  const bookingUrl = bookingDate ? `/booking/${data.id}?date=${bookingDate}` : `/booking/${data.id}`;
 
   return (
     <button
-      onClick={() => navigate(`/booking/${data.id}`)}
+      onClick={() => navigate(bookingUrl)}
       className="group overflow-hidden rounded-2xl border-2 border-black/60 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition hover:scale-[1.01] hover:brightness-95 text-left w-full"
     >
       <div
@@ -56,6 +59,12 @@ export function VenueCard({ data }: VenueCardProps) {
               {data.address}
             </p>
             <p className="text-[10px] text-gray-400 font-bold">{data.openTime}</p>
+            <p className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
+              <Star size={12} className={data.reviewCount ? "fill-current" : ""} />
+              {data.reviewCount
+                ? `${(data.averageRating ?? 0).toFixed(1)} (${data.reviewCount})`
+                : "Chưa có đánh giá"}
+            </p>
           </div>
         </div>
       </div>

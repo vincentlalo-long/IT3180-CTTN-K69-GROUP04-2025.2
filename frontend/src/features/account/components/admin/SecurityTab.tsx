@@ -26,7 +26,8 @@ export function SecurityTab() {
             updateField("currentPassword", event.target.value)
           }
           placeholder="Nhập mật khẩu cũ"
-          className="text-base"
+          containerClassName="h-[50px] rounded-xl border border-white/10 bg-[#126827] focus-within:border-[#84e30f] focus-within:ring-1 focus-within:ring-[#84e30f]"
+          className="text-base text-white placeholder:text-white/30"
         />
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -37,7 +38,8 @@ export function SecurityTab() {
             value={securityForm.newPassword}
             onChange={(event) => updateField("newPassword", event.target.value)}
             placeholder="Nhập mật khẩu mới"
-            className="text-base"
+            containerClassName="h-[50px] rounded-xl border border-white/10 bg-[#126827] focus-within:border-[#84e30f] focus-within:ring-1 focus-within:ring-[#84e30f]"
+            className="text-base text-white placeholder:text-white/30"
           />
           <TextInput
             id="security-confirm-password"
@@ -48,7 +50,8 @@ export function SecurityTab() {
               updateField("confirmPassword", event.target.value)
             }
             placeholder="Nhập lại mật khẩu mới"
-            className="text-base"
+            containerClassName="h-[50px] rounded-xl border border-white/10 bg-[#126827] focus-within:border-[#84e30f] focus-within:ring-1 focus-within:ring-[#84e30f]"
+            className="text-base text-white placeholder:text-white/30"
           />
         </div>
 

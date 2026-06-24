@@ -1,15 +1,22 @@
 import type { AdminBookingSummaryResponse } from "../../api/bookingApi";
 import { formatCompactPrice } from "../../utils/booking.utils";
+import { Download } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
-  BOOKED: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận cọc",
+  BOOKED: "Đã đặt",
+  RESERVED: "Chờ xác nhận",
+  PENDING: "Giữ chỗ",
+  PENDING_PAYMENT: "Chờ thanh toán",
+  CONFIRMED: "Đã đặt",
   PLAYING: "Đang đá",
   CANCELLED: "Đã hủy",
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  BOOKED: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
+  BOOKED: "border border-lime-100/85 bg-lime-300/45 text-[#123915]",
+  RESERVED: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
+  PENDING: "border border-amber-100/75 bg-amber-300/30 text-amber-50",
+  PENDING_PAYMENT: "border border-orange-100/75 bg-orange-300/30 text-orange-50",
   CONFIRMED: "border border-lime-100/85 bg-lime-300/45 text-[#123915]",
   PLAYING: "border border-sky-100/75 bg-sky-300/30 text-sky-50",
   CANCELLED: "border border-rose-100/80 bg-rose-400/35 text-rose-50",
@@ -19,6 +26,8 @@ interface OrderManagementTableProps {
   orders: AdminBookingSummaryResponse[];
   onConfirmDeposit: (id: number) => void;
   onCancelOrder: (id: number) => void;
+  onSettleBooking: (order: AdminBookingSummaryResponse) => void;
+  onDownloadInvoice: (id: number) => void;
 }
 
 function formatTime(time: string): string {
@@ -36,6 +45,8 @@ export function OrderManagementTable({
   orders,
   onConfirmDeposit,
   onCancelOrder,
+  onSettleBooking,
+  onDownloadInvoice,
 }: OrderManagementTableProps) {
   return (
     <table className="min-w-[980px] w-full border-separate [border-spacing:0_8px] text-sm">
@@ -69,9 +80,14 @@ export function OrderManagementTable({
             "border border-white/40 bg-white/15 text-white/80";
 
           const shiftLabel = `${formatTime(order.startTime)} - ${formatTime(order.endTime)}, ${formatDate(order.bookingDate)}`;
-          const isBooked = order.status === "BOOKED";
+          const canConfirm =
+            order.status === "RESERVED" ||
+            order.status === "PENDING";
+          const canSettle =
+            order.status === "BOOKED" ||
+            order.status === "PLAYING";
           const isCancelled = order.status === "CANCELLED";
-          const disableCancel = isCancelled;
+          const disableCancel = isCancelled || order.status === "PLAYING" || order.status === "COMPLETED";
 
           const rowToneClass =
             index % 2 === 0 ? "bg-[#0d5a2f]/60" : "bg-[#0a4d29]/60";
@@ -121,17 +137,34 @@ export function OrderManagementTable({
                 className={`${cellBaseClass} ${rowToneClass} ${rowHoverClass} rounded-r-lg border-r border-white/15`}
               >
                 <div className="flex items-center gap-2">
-                  {isBooked ? (
+                  {canConfirm ? (
                     <button
                       type="button"
                       onClick={() => onConfirmDeposit(order.id)}
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                     >
-                      Xác nhận cọc
+                      Xác nhận đơn
+                    </button>
+                  ) : canSettle ? (
+                    <button
+                      type="button"
+                      onClick={() => onSettleBooking(order)}
+                      className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                    >
+                      Chốt hoá đơn
                     </button>
                   ) : (
                     <span className="text-xs text-white/40">-</span>
                   )}
+
+                  <button
+                    type="button"
+                    title="Tải hóa đơn PDF"
+                    onClick={() => onDownloadInvoice(order.id)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+                  >
+                    <Download size={14} />
+                  </button>
 
                   <button
                     type="button"

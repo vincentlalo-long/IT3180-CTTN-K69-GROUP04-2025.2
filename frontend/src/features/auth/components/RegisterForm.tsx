@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 
 import { Button } from "../../../shared/components/Button";
 import { TextInput } from "../../../shared/components/Input";
+import eyeIcon from "../../../assets/icons/eye.svg";
+import eyeOffIcon from "../../../assets/icons/eye-off.svg";
 
 export interface RegisterSubmitPayload {
   fullName: string;
@@ -42,6 +44,8 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
   });
   const [errors, setErrors] = useState<RegisterFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -145,7 +149,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="mx-auto flex w-full max-w-[399px] flex-col gap-[22px]">
+      <div className="mx-auto flex w-full max-w-[399px] flex-col gap-3.5">
         <TextInput
           id="fullName"
           label="Họ tên"
@@ -171,24 +175,54 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
           id="password"
           label="Mật khẩu"
           name="password"
-          type="password"
+          type={isPasswordVisible ? "text" : "password"}
           value={values.password}
           onChange={handleChange}
           placeholder="Mật khẩu"
           autoComplete="new-password"
           error={errors.password}
+          rightAdornment={
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible((current) => !current)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 cursor-pointer"
+              aria-label={isPasswordVisible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            >
+              <img
+                src={isPasswordVisible ? eyeOffIcon : eyeIcon}
+                alt=""
+                aria-hidden="true"
+                className="h-5 w-5"
+              />
+            </button>
+          }
         />
 
         <TextInput
           id="confirmPassword"
           label="Xác nhận mật khẩu"
           name="confirmPassword"
-          type="password"
+          type={isConfirmPasswordVisible ? "text" : "password"}
           value={values.confirmPassword}
           onChange={handleChange}
           placeholder="Xác nhận mật khẩu"
           autoComplete="new-password"
           error={errors.confirmPassword}
+          rightAdornment={
+            <button
+              type="button"
+              onClick={() => setIsConfirmPasswordVisible((current) => !current)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 transition hover:bg-white/15 cursor-pointer"
+              aria-label={isConfirmPasswordVisible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            >
+              <img
+                src={isConfirmPasswordVisible ? eyeOffIcon : eyeIcon}
+                alt=""
+                aria-hidden="true"
+                className="h-5 w-5"
+              />
+            </button>
+          }
         />
 
         <div className="mt-1">

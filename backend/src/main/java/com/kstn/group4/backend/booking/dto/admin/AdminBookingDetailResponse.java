@@ -11,6 +11,7 @@ import java.util.List;
 public record AdminBookingDetailResponse(
         // 1. THÔNG TIN CƠ BẢN (Giống Summary)
         Integer id,
+        Integer venueId,
         String venueName,
         String pitchName,
         LocalDate bookingDate,

@@ -45,9 +45,8 @@ public record SlotDetailResponse(
         
         /**
          * Availability status of this slot on the requested date.
-         * true = available for booking
-         * false = already booked or closed
+         * AVAILABLE = selectable, PENDING/BOOKED = not selectable.
          */
-        Boolean isAvailable
+        String status
 ) {
 }

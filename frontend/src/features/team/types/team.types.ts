@@ -1,22 +1,26 @@
-export type TeamStatus = "Active" | "Warning" | "Banned";
-export type MatchResult = "Thắng" | "Thua" | "Hủy kèo";
+import type { MatchSkillLevel } from "../../matchmaking/types/matchmaking.types";
 
-export interface RecentMatch {
-  opponent: string;
-  result: MatchResult;
-  score: string;
-  playedAt: string;
+export type TeamStatus = "PENDING" | "APPROVED" | "REJECTED" | "BANNED";
+export type TeamMemberStatus = "INVITED" | "ACTIVE" | "REQUESTED";
+
+export interface TeamMember {
+  email: string;
+  status: TeamMemberStatus;
+  id?: number;
+  username?: string;
 }
 
 export interface Team {
-  id: string;
-  logoUrl: string;
-  teamName: string;
+  id: number;
+  name: string;
+  captainId: number;
   captainName: string;
-  phone: string;
-  reputation: number;
+  description: string;
+  reputationScore: number;
   status: TeamStatus;
-  joinedAt: string;
-  members: string[];
-  recentMatches: RecentMatch[];
+  skillLevel?: MatchSkillLevel;
+  bannedUntil?: string;
+  createdAt: string;
+  memberEmails: string[];
+  members?: TeamMember[];
 }

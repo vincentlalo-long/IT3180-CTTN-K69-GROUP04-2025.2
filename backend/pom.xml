@@ -28,11 +28,17 @@
     </scm>
     <properties>
         <java.version>25</java.version>
+        <lombok.version>1.18.44</lombok.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
         <dependency>
@@ -80,6 +86,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
@@ -104,6 +116,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -131,6 +144,12 @@
             <artifactId>spring-boot-starter-webservices-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -158,10 +177,12 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
+                            <proc>full</proc>
                             <annotationProcessorPaths>
                                 <path>
                                     <groupId>org.projectlombok</groupId>
                                     <artifactId>lombok</artifactId>
+                                    <version>${lombok.version}</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>
@@ -173,10 +194,12 @@
                             <goal>testCompile</goal>
                         </goals>
                         <configuration>
+                            <proc>full</proc>
                             <annotationProcessorPaths>
                                 <path>
                                     <groupId>org.projectlombok</groupId>
                                     <artifactId>lombok</artifactId>
+                                    <version>${lombok.version}</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>

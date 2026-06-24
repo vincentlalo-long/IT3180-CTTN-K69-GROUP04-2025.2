@@ -1,63 +1,46 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/shared/api/apiClient";
-import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
+import type { PlayerProfileInfo } from "../types/account.types";
+import { useAuthContext } from "@/features/auth/hooks/useAuthContext";
 
-type ProfileEventListener = () => void;
-const listeners: ProfileEventListener[] = [];
-
-export function emitProfileEvent() {
-  listeners.forEach((fn) => fn());
-}
-
-export function subscribeProfileEvent(fn: ProfileEventListener) {
-  listeners.push(fn);
-  return () => {
-    const idx = listeners.indexOf(fn);
-    if (idx !== -1) listeners.splice(idx, 1);
-  };
-}
-
-export interface PlayerProfileInfo {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  avatarUrl?: string;
-  role?: string;
+// Giữ các stubs sự kiện để tránh lỗi biên dịch nếu có chỗ chưa cập nhật
+export function emitProfileEvent() {}
+export function subscribeProfileEvent() {
+  return () => {};
 }
 
 export function usePlayerProfile() {
-  const [userInfo, setUserInfo] = useState<PlayerProfileInfo | null>(null);
-  const [loadingUser, setLoadingUser] = useState(false);
-  const [userError, setUserError] = useState<string | null>(null);
+  const { user } = useAuthContext();
 
-  const fetchUser = useCallback(() => {
-    setLoadingUser(true);
-    setUserError(null);
-    apiClient
-      .get("/user/profile")
-      .then((res) => {
-        setUserInfo(res.data);
-        setLoadingUser(false);
-      })
-      .catch((err) => {
-        logApiError("usePlayerProfile.fetchUser", err);
-        setUserError(getApiErrorMessage(err, "Không thể tải thông tin tài khoản."));
-        setLoadingUser(false);
-      });
-  }, []);
+  const {
+    data: userInfo,
+    isLoading: loadingUser,
+    error,
+    refetch,
+  } = useQuery<PlayerProfileInfo>({
+    queryKey: ["playerProfile", user?.email],
+    queryFn: async () => {
+      const res = await apiClient.get("/users/me");
+      const dto = res.data;
+      return {
+        id: dto.id,
+        username: dto.username,
+        email: dto.email,
+        phoneNumber: dto.phoneNumber,
+        avatarUrl: dto.avatarUrl,
+        role: dto.role,
+        teamId: dto.teamId,
+        membershipPoints: dto.membershipPoints ?? 0,
+        walletBalance: dto.walletBalance ?? 0,
+        createdAt: dto.createdAt,
+      };
+    },
+    enabled: !!user?.token,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Effect 1: fetch lần đầu khi mount
-  useEffect(() => {
-    fetchUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const userError =
+    error instanceof Error ? error.message : error ? String(error) : null;
 
-  // Effect 2: subscribe event emitter
-  useEffect(() => {
-    const unsub = subscribeProfileEvent(fetchUser);
-    return unsub;
-  }, [fetchUser]);
-
-  return { userInfo, loadingUser, userError, refetch: fetchUser };
+  return { userInfo, loadingUser, userError, refetch };
 }

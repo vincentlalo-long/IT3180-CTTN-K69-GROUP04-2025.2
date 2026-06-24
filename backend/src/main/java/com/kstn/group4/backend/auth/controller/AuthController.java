@@ -1,9 +1,6 @@
 package com.kstn.group4.backend.auth.controller;
 
-import com.kstn.group4.backend.auth.dto.AuthResponse;
-import com.kstn.group4.backend.auth.dto.JwtResponse;
-import com.kstn.group4.backend.auth.dto.LoginRequest;
-import com.kstn.group4.backend.auth.dto.RegisterRequest;
+import com.kstn.group4.backend.auth.dto.*;
 import com.kstn.group4.backend.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,5 +27,25 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<JwtResponse> authenticateGoogleUser(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(authService.loginWithGoogle(request.idToken()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<AuthResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<AuthResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<AuthResponse> logout() {
+        return ResponseEntity.ok(new AuthResponse(true, "Đăng xuất thành công"));
     }
 }

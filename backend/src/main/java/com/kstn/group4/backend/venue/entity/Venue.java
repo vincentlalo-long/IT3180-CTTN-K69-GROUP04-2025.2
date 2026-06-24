@@ -46,7 +46,14 @@ public class Venue {
     @Column(name = "close_time", nullable = false)
     private LocalTime closeTime = LocalTime.of(23, 0);
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     // One venue contains multiple pitches.
     @OneToMany(mappedBy = "venue", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 25)
     private List<Pitch> pitches = new ArrayList<>();
 }

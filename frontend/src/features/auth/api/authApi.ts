@@ -78,3 +78,48 @@ export async function refreshToken(
     throw new Error(getApiErrorMessage(error));
   }
 }
+
+export async function logoutUser(): Promise<void> {
+  try {
+    await apiClient.post(`${AUTH_API_PREFIX}/logout`);
+  } catch (error) {
+    console.error("Logout API failed:", error);
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  try {
+    await apiClient.post(`${AUTH_API_PREFIX}/forgot-password`, { email });
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  try {
+    await apiClient.post(`${AUTH_API_PREFIX}/reset-password`, {
+      token,
+      newPassword,
+    });
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+export async function loginWithGoogle(
+  idToken: string,
+): Promise<JwtResponse> {
+  try {
+    const response = await apiClient.post<JwtResponse>(
+      `${AUTH_API_PREFIX}/google`,
+      { idToken },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error));
+  }
+}

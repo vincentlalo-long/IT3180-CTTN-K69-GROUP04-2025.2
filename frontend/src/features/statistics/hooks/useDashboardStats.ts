@@ -3,37 +3,30 @@ import { useEffect, useMemo, useState } from "react";
 
 import { apiClient } from "@/shared/api/apiClient";
 import { getApiErrorMessage, logApiError } from "@/shared/utils/apiError";
+import type {
+  DashboardStatCard,
+  DashboardStatsResponse,
+  RecentOrderDto,
+} from "../types/statistics.types";
 import {
   formatCurrency,
-  formatVacancyRate,
   resolveDashboardFacilityId,
 } from "../utils/statistics.utils";
 
-export interface DashboardStatsResponse {
-  totalRevenue: number;
-  totalBookings: number;
-  activeFields: number;
-  uniqueCustomers: number;
-  vacancyRate: string | number;
-}
-
-export interface RecentOrderDto {
-  id: string;
-  customerName: string;
-  fieldName: string;
-  bookingTime: string;
-  price: number;
-  status: string;
-}
-
 async function getDashboardStats(
   facilityId: string | "ALL",
+  timeRange: string,
+  startDate?: string,
+  endDate?: string,
 ): Promise<DashboardStatsResponse> {
   const { data } = await apiClient.get<DashboardStatsResponse>(
     "/admin/dashboard/stats",
     {
       params: {
         facilityId,
+        timeRange,
+        startDate,
+        endDate,
       },
     },
   );
@@ -43,12 +36,18 @@ async function getDashboardStats(
 
 async function getRecentOrders(
   facilityId: string | "ALL",
+  timeRange: string,
+  startDate?: string,
+  endDate?: string,
 ): Promise<RecentOrderDto[]> {
   const { data } = await apiClient.get<RecentOrderDto[]>(
     "/admin/dashboard/recent-orders",
     {
       params: {
         facilityId,
+        timeRange,
+        startDate,
+        endDate,
       },
     },
   );
@@ -56,20 +55,13 @@ async function getRecentOrders(
   return data;
 }
 
-interface DashboardStatCard {
-  title: string;
-  value: string;
-  icon: typeof ChartColumn;
-  trend: {
-    value: string;
-    direction: "up" | "down";
-  };
-}
-
 export function useDashboardStats(
   selectedFacilityId: string,
-  apiFacilityId?: string,
-  selectedFacilityName?: string,
+  apiFacilityId: string | undefined,
+  selectedFacilityName: string | undefined,
+  timeRange: string,
+  startDate?: string,
+  endDate?: string,
 ) {
   const [dashboardStats, setDashboardStats] =
     useState<DashboardStatsResponse | null>(null);
@@ -95,16 +87,16 @@ export function useDashboardStats(
 
       try {
         const [statsResponse, recentOrdersResponse] = await Promise.all([
-          getDashboardStats(dashboardFacilityId),
-          getRecentOrders(dashboardFacilityId),
+          getDashboardStats(dashboardFacilityId, timeRange, startDate, endDate),
+          getRecentOrders(dashboardFacilityId, timeRange, startDate, endDate),
         ]);
 
         if (!isActive) {
           return;
         }
 
-        setDashboardStats(statsResponse as DashboardStatsResponse);
-        setRecentOrders(recentOrdersResponse as RecentOrderDto[]);
+        setDashboardStats(statsResponse);
+        setRecentOrders(recentOrdersResponse);
       } catch (error: unknown) {
         if (!isActive) {
           return;
@@ -116,6 +108,9 @@ export function useDashboardStats(
         );
         logApiError("useDashboardStats.fetchDashboardData", error, {
           dashboardFacilityId,
+          timeRange,
+          startDate,
+          endDate,
         });
         setErrorMessage(message);
         setDashboardStats(null);
@@ -132,7 +127,7 @@ export function useDashboardStats(
     return () => {
       isActive = false;
     };
-  }, [dashboardFacilityId]);
+  }, [dashboardFacilityId, timeRange, startDate, endDate]);
 
   const isAllFacilities = selectedFacilityId === "all";
 
@@ -166,8 +161,8 @@ export function useDashboardStats(
         value: dashboardStats.totalBookings.toString(),
         icon: CalendarCheck2,
         trend: {
-          value: `${dashboardStats.activeFields} sân đang hoạt động`,
-          direction: "up",
+          value: `${dashboardStats.canceledBookings} đơn đã hủy`,
+          direction: "down",
         },
       },
       {
@@ -180,18 +175,19 @@ export function useDashboardStats(
         },
       },
       {
-        title: "Tỷ lệ trống sân",
-        value: formatVacancyRate(dashboardStats.vacancyRate),
+        title: "Tỷ lệ lấp đầy",
+        value: `${dashboardStats.occupancyRate}%`,
         icon: CircleDashed,
         trend: {
-          value: `${dashboardStats.activeFields} sân đang theo dõi`,
-          direction: "down",
+          value: "Tỷ lệ sử dụng thực tế",
+          direction: "up",
         },
       },
     ];
   }, [dashboardStats, isAllFacilities, selectedFacilityName]);
 
   return {
+    dashboardStats,
     statCards,
     recentOrders,
     isLoading,
@@ -199,5 +195,3 @@ export function useDashboardStats(
     facilityLabel,
   };
 }
-
-export type { DashboardStatCard };

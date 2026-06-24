@@ -9,42 +9,39 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="w-full min-h-screen bg-auth-shell">
-      <div className="mx-auto min-h-screen w-full max-w-[1536px] px-3 py-3 sm:px-5 sm:py-5">
-        <div className="mx-auto grid min-h-[calc(100vh-24px)] w-full overflow-hidden rounded-auth-panel border border-white/15 bg-black/25 shadow-auth-shell backdrop-blur-[1px] lg:grid-cols-[minmax(0,1fr)_minmax(370px,655px)]">
-          <section className="relative hidden min-h-[340px] lg:block">
-            <img
-              src={authBackground}
-              alt=""
-              aria-hidden="true"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/50" />
-          </section>
+    <div className="relative w-full min-h-screen flex items-center justify-center p-4 sm:p-6 bg-auth-shell overflow-hidden">
+      {/* Background Image overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 pointer-events-none"
+        style={{ backgroundImage: `url(${authBackground})` }}
+      />
+      {/* Radial overlay to keep the glowing green theme */}
+      <div
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_18%_18%,rgba(8,130,70,0.45),transparent_40%),radial-gradient(circle_at_86%_82%,rgba(11,78,43,0.5),transparent_45%)]"
+      />
 
-          <section className="relative flex w-full flex-col bg-gradient-to-b from-auth-panel-start to-auth-panel-end px-[24px] py-[24px] sm:px-[40px] sm:py-[34px] lg:px-[50px] lg:py-[46px]">
-            <header className="flex items-center gap-4 sm:gap-6">
-              <img
-                src={mixifootFigure}
-                alt="MIXIFOOT figure"
-                className="h-[86px] w-[95px] rounded-md object-cover sm:h-[114px] sm:w-[126px]"
-              />
-              <div className="flex flex-col gap-1">
-                <p className="font-display text-[40px] font-normal leading-none text-white sm:text-[48px]">
-                  Công ty AMIXI
-                </p>
-                <p className="font-display text-[100px] font-normal leading-none text-white sm:text-[120px]">
-                  MIXIFOOT
-                </p>
-              </div>
-            </header>
+      <div className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-auth-panel border border-white/10 bg-black/40 shadow-auth-shell backdrop-blur-md px-6 py-8 sm:px-9 sm:py-9 flex flex-col gap-5">
+        <header className="flex items-center justify-center gap-3.5 text-left">
+          <img
+            src={mixifootFigure}
+            alt="MIXIFOOT figure"
+            className="h-[60px] w-[66px] rounded-md object-cover flex-shrink-0"
+          />
+          <div className="flex flex-col">
+            <p className="font-body text-[13px] font-bold tracking-wider leading-none text-white/60 uppercase">
+              Công ty AMIXI
+            </p>
+            <p className="font-display text-[48px] font-normal leading-none text-white tracking-widest mt-1">
+              MIXIFOOT
+            </p>
+          </div>
+        </header>
 
-            <div className="mt-8 flex flex-1 items-start sm:mt-10 lg:mt-12">
-              {children}
-            </div>
-          </section>
+        <div className="w-full">
+          {children}
         </div>
       </div>
     </div>
   );
 }
+

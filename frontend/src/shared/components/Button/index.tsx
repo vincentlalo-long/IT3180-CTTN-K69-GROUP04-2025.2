@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "outline";
+type ButtonVariant = "primary" | "outline" | "outline-green";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -40,8 +40,11 @@ export function Button({
         "ring-offset-2 ring-offset-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55",
         variant === "primary"
           ? "bg-gradient-to-r from-auth-accent-start to-auth-accent-end shadow-auth-glow hover:brightness-110"
-          : "border-4 border-white/95 bg-transparent hover:bg-white/12",
+          : variant === "outline-green"
+          ? "border border-auth-accent-end/40 bg-auth-accent-end/5 text-emerald-300 hover:bg-auth-accent-end/15 hover:border-auth-accent-end/60 hover:text-emerald-200"
+          : "border border-white/20 bg-white/[0.02] hover:bg-white/8 text-white/90",
         isDisabled ? "cursor-not-allowed opacity-75" : "cursor-pointer",
+
         className,
       )}
       disabled={isDisabled}

@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
@@ -112,6 +113,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            WebRequest request
+    ) {
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Request body is invalid",
+                "VALIDATION_ERROR",
+                request.getDescription(false)
+        );
+        response.put("fields", fieldErrors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     /**
      * Handle ForbiddenException - 403 Forbidden
      */
@@ -136,6 +157,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.security.core.userdetails.UsernameNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleUsernameNotFoundException(
             org.springframework.security.core.userdetails.UsernameNotFoundException ex,
+            WebRequest request
+    ) {
+        Map<String, Object> response = buildErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Thông tin xác thực không hợp lệ",
+                "UNAUTHORIZED",
+                request.getDescription(false)
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    /**
+     * Handle AuthenticationException - 401 Unauthorized
+     * Occurs when authentication fails (bad credentials, etc.)
+     */
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthenticationException(
+            org.springframework.security.core.AuthenticationException ex,
             WebRequest request
     ) {
         Map<String, Object> response = buildErrorResponse(

@@ -54,7 +54,29 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     List<GrantedAuthority> authorities = Arrays.stream(authoritiesFromToken.split(","))
                             .map(String::trim)
                             .map(SimpleGrantedAuthority::new)
-                            .collect(Collectors.toList());
+                            .collect(Collectors.toCollection(java.util.ArrayList::new));
+
+                    boolean hasAdmin = authorities.stream()
+                            .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
+                    if (hasAdmin) {
+                        if (authorities.stream().noneMatch(a -> a.getAuthority().equals("ADMIN"))) {
+                            authorities.add(new SimpleGrantedAuthority("ADMIN"));
+                        }
+                        if (authorities.stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                        }
+                    }
+
+                    boolean hasPlayer = authorities.stream()
+                            .anyMatch(a -> a.getAuthority().equals("PLAYER") || a.getAuthority().equals("ROLE_PLAYER"));
+                    if (hasPlayer) {
+                        if (authorities.stream().noneMatch(a -> a.getAuthority().equals("PLAYER"))) {
+                            authorities.add(new SimpleGrantedAuthority("PLAYER"));
+                        }
+                        if (authorities.stream().noneMatch(a -> a.getAuthority().equals("ROLE_PLAYER"))) {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_PLAYER"));
+                        }
+                    }
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
@@ -65,7 +87,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                     System.out.println("✅ [AuthTokenFilter] Authentication set successfully");
                     System.out.println("   - Email: " + email);
                     System.out.println("   - Authorities: " + authorities);
-                    System.out.println("   - Has ADMIN: " + authorities.stream().anyMatch(a -> a.getAuthority().equals("ADMIN")));
+                    System.out.println("   - Has ADMIN: " + hasAdmin);
                 } else {
                     System.out.println("❌ [AuthTokenFilter] Token validation failed");
                 }

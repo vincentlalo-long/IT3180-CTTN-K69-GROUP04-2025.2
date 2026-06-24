@@ -1,4 +1,4 @@
-import type { RecentOrderDto } from "../../hooks/useDashboardStats";
+import type { RecentOrderDto } from "../../types/statistics.types";
 import { formatCurrency } from "../../utils/statistics.utils";
 
 interface RecentOrderListProps {

@@ -1,10 +1,24 @@
 spring:
+  config:
+    import: "optional:file:.env[.properties]"
   application:
     name: football-system
 
   threads:
     virtual:
       enabled: true
+
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
   datasource:
     url: jdbc:mysql://localhost:3306/football_booking?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -25,13 +39,13 @@ spring:
   docker:
     compose:
       enabled: true
-      file: ./compose.yaml
+      file: ./docker-compose.yml
       lifecycle-management: start_and_stop
       wait-for-services: true
 
   sql:
     init:
-      mode: always
+      mode: ${SPRING_SQL_INIT_MODE:never}
       schema-locations: classpath:schema.sql
       data-locations: classpath:seed.sql
       continue-on-error: true
@@ -52,6 +66,16 @@ application:
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+    password-reset:
+      expiration-minutes: 15
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:97945693765-5v8geqt8u5kduun9gcocajshjgeoofpl.apps.googleusercontent.com}
+
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE:5Z9DS56R}
+  hash-secret: ${VNPAY_HASH_SECRET:3P1J6YGGFFHS7B7SGOSL5JRRSZLQMDAI}
+  payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/vnpay-return}
 
 logging:
   level:

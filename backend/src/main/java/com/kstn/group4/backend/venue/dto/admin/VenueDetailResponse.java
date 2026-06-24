@@ -12,6 +12,8 @@ public record VenueDetailResponse(
         Integer managerId,
         LocalTime openTime,
         LocalTime closeTime,
+        Double latitude,
+        Double longitude,
         List<PitchSummaryResponse> pitches
 ) {
     public record PitchSummaryResponse(

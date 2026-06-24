@@ -7,7 +7,13 @@ interface SelectedSlotsBarProps {
   isSubmitting?: boolean;
   disableSubmit?: boolean;
   submitLabel?: string;
+  fieldTotal?: number;
+  serviceTotal?: number;
+  totalPrice?: number;
 }
+
+const formatCurrency = (amount: number) =>
+  `${amount.toLocaleString("vi-VN")} VND`;
 
 export function SelectedSlotsBar({
   selectedSlots,
@@ -15,12 +21,15 @@ export function SelectedSlotsBar({
   onSubmit,
   isSubmitting = false,
   disableSubmit = false,
-  submitLabel = "Dat san",
+  submitLabel = "Đặt sân",
+  fieldTotal = 0,
+  serviceTotal = 0,
+  totalPrice = 0,
 }: SelectedSlotsBarProps) {
   if (!selectedSlots.length) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-        Chua chon khung gio nao.
+        Chưa chọn khung giờ nào.
       </div>
     );
   }
@@ -29,13 +38,20 @@ export function SelectedSlotsBar({
     <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center dark:border-slate-700 dark:bg-slate-800">
       <div>
         <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
-          Da chon {selectedSlots.length} khung gio
+          Đã chọn {selectedSlots.length} khung giờ
         </p>
         <p className="text-xs text-gray-500 dark:text-slate-400">
           {selectedSlots
             .map((slot) => `${slot.startTime}-${slot.endTime}`)
             .join(", ")}
         </p>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-slate-400">
+          <span>Tiền sân: {formatCurrency(fieldTotal)}</span>
+          <span>Dịch vụ: {formatCurrency(serviceTotal)}</span>
+          <span className="font-semibold text-gray-900 dark:text-slate-100">
+            Tổng: {formatCurrency(totalPrice)}
+          </span>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -44,7 +60,7 @@ export function SelectedSlotsBar({
           onClick={onClear}
           disabled={isSubmitting}
         >
-          Xoa
+          Xóa
         </button>
         <button
           type="button"
@@ -52,7 +68,7 @@ export function SelectedSlotsBar({
           onClick={onSubmit}
           disabled={disableSubmit || isSubmitting}
         >
-          {isSubmitting ? "Dang xu ly..." : submitLabel}
+          {isSubmitting ? "Đang xử lý..." : submitLabel}
         </button>
       </div>
     </div>

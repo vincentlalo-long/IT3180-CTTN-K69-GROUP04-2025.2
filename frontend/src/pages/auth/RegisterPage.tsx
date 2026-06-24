@@ -28,6 +28,7 @@ export function RegisterPage() {
         type: data.type,
         role: data.role || "PLAYER",
         email: data.email || payload.emailOrPhone,
+        userId: data.id?.toString(),
         username: data.username || payload.fullName,
       });
     }
@@ -35,27 +36,26 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full flex flex-col gap-8">
-        <div className="space-y-2">
-          <h1 className="font-display text-[32px] font-normal text-white">
+      <div className="w-full flex flex-col gap-4">
+        <div className="space-y-1.5 text-center">
+          <h1 className="font-body text-[26px] font-bold text-white">
             Đăng ký tài khoản
           </h1>
-          <p className="text-auth-placeholder text-sm">
+          <p className="text-auth-placeholder text-xs text-white/70">
             Tạo tài khoản mới để bắt đầu sử dụng MIXIFOOT
           </p>
         </div>
 
         <RegisterForm onSubmit={handleRegister} />
 
-        <p className="text-center text-sm text-white/85">
-          Đã có tài khoản?{" "}
+        <div className="mt-2">
           <Link
             to="/login"
-            className="text-auth-link text-white font-medium hover:text-white/80 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/55"
+            className="flex h-[48px] w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.01] text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 transition duration-200"
           >
-            Đăng nhập
+            Đã có tài khoản? Đăng nhập
           </Link>
-        </p>
+        </div>
       </div>
     </AuthLayout>
   );

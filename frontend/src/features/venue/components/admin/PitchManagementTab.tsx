@@ -1,9 +1,10 @@
 import { UploadCloud, Plus, Pencil, Trash2, Save, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useVenueContext } from "../../hooks/useVenueContext";
 import { useVenueForm } from "../../hooks/useVenueForm";
 import { usePitchManagementForm } from "../../hooks/usePitchManagementForm";
+import { ServiceManagementPanel } from "./ServiceManagementPanel";
 import { getApiErrorMessage } from "../../../../shared/utils/apiError";
 import { Button } from "../../../../shared/components/Button";
 import {
@@ -45,9 +46,11 @@ export function PitchManagementTab() {
 
   const currentVenue = facilities.find((f) => f.id === selectedVenueId) ?? null;
 
-  const existingVenueForForm = currentVenue
-    ? { name: currentVenue.name, address: currentVenue.address, imageUrl: null }
-    : null;
+  const existingVenueForForm = useMemo(() => {
+    return currentVenue
+      ? { name: currentVenue.name, address: currentVenue.address, imageUrl: null }
+      : null;
+  }, [currentVenue]);
 
   const venueForm = useVenueForm({
     mode: venueFormMode,
@@ -453,6 +456,10 @@ export function PitchManagementTab() {
             </div>
           )}
         </section>
+      )}
+
+      {selectedVenueId && venueFormMode === null && pitchFormMode === null && (
+        <ServiceManagementPanel venueId={Number(selectedVenueId)} />
       )}
 
       {/* ═══════════ SECTION 3: FORM SÂN CON ═══════════ */}

@@ -5,26 +5,41 @@ import com.kstn.group4.backend.booking.dto.admin.AdminBookingSummaryResponse;
 import com.kstn.group4.backend.booking.dto.admin.AdminUpdateBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.CreateBookingRequest;
 import com.kstn.group4.backend.booking.dto.player.PlayerBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RecurringBookingRequest;
+import com.kstn.group4.backend.booking.dto.player.RecurringBookingResponse;
+import com.kstn.group4.backend.booking.dto.player.RescheduleBookingRequest;
 import com.kstn.group4.backend.booking.entity.Booking;
+import com.kstn.group4.backend.booking.entity.BookingServiceItem;
 import com.kstn.group4.backend.booking.entity.BookingStatus;
 import com.kstn.group4.backend.booking.repository.BookingRepository;
+import com.kstn.group4.backend.booking.repository.BookingServiceItemRepository;
 import com.kstn.group4.backend.exception.BusinessException;
 import com.kstn.group4.backend.exception.ForbiddenException;
 import com.kstn.group4.backend.exception.ResourceConflictException;
 import com.kstn.group4.backend.exception.ResourceNotFoundException;
+import com.kstn.group4.backend.notification.event.BookingStatusChangedEvent;
 import com.kstn.group4.backend.user.entity.User;
 import com.kstn.group4.backend.user.repository.UserRepository;
+import com.kstn.group4.backend.wallet.service.WalletService;
+import com.kstn.group4.backend.venue.entity.AddonService;
 import com.kstn.group4.backend.venue.entity.Pitch;
 import com.kstn.group4.backend.venue.entity.PriceRule;
 import com.kstn.group4.backend.venue.entity.TimeSlot;
+import com.kstn.group4.backend.venue.repository.AddonServiceRepository;
 import com.kstn.group4.backend.venue.repository.PitchRepository;
+import com.kstn.group4.backend.venue.repository.PitchReviewRepository;
 import com.kstn.group4.backend.venue.repository.PriceRuleRepository;
 import com.kstn.group4.backend.venue.repository.TimeSlotRepository;
+import com.kstn.group4.backend.activitylog.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -32,7 +47,10 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 @Service
@@ -40,11 +58,20 @@ import java.util.List;
 @Transactional
 public class BookingService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingService.class);
+
     private final BookingRepository bookingRepository;
+    private final BookingServiceItemRepository bookingServiceItemRepository;
     private final UserRepository userRepository;
     private final PitchRepository pitchRepository;
+    private final PitchReviewRepository pitchReviewRepository;
     private final PriceRuleRepository priceRuleRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final AddonServiceRepository addonServiceRepository;
+    private final ActivityLogService activityLogService;
+    private final BookingPaymentService bookingPaymentService;
+    private final WalletService walletService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ==================== ADMIN METHODS ====================
 
@@ -58,7 +85,7 @@ public class BookingService {
     public Page<AdminBookingSummaryResponse> searchAllBookingsForAdmin(
             LocalDate date,
             String status,
-            Integer pitchId,
+            Integer venueId,
             Pageable pageable
     ) {
         BookingStatus bookingStatus = null;
@@ -67,7 +94,7 @@ public class BookingService {
                 bookingStatus = BookingStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
                 throw new BusinessException(
-                        "Trạng thái tìm kiếm không hợp lệ: " + status + ". Các trạng thái hợp lệ: RESERVED, CANCELLED, PLAYING",
+                        "Trạng thái tìm kiếm không hợp lệ: " + status + ". Các trạng thái hợp lệ: " + java.util.Arrays.toString(BookingStatus.values()),
                         "INVALID_SEARCH_STATUS"
                 );
             }
@@ -76,7 +103,7 @@ public class BookingService {
         Page<Booking> bookings = bookingRepository.searchByFilters(
                 date,
                 bookingStatus,
-                pitchId,
+                venueId,
                 pageable
         );
 
@@ -109,14 +136,141 @@ public class BookingService {
 
         try {
             BookingStatus newStatus = BookingStatus.valueOf(statusString.toUpperCase());
+            BookingStatus oldStatus = booking.getStatus();
+            
+            // Handle pricing logic on cancellation
+            if (newStatus == BookingStatus.CANCELLED && oldStatus != BookingStatus.CANCELLED) {
+                if (booking.getPricingMode() != com.kstn.group4.backend.booking.entity.PricingMode.MANUAL) {
+                    BigDecimal deposit = calculateDepositAmount(booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO);
+                    booking.setTotalPrice(deposit);
+                }
+                
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                Integer adminId = null;
+                String adminName = "System";
+                if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+                    adminId = principal.getId();
+                    adminName = principal.getAppUsername();
+                }
+                activityLogService.log(adminId, adminName, "CANCEL_BOOKING", "BOOKING", bookingId.toString(), "Hủy đơn đặt sân", null, null);
+            }
+            // Log confirm booking
+            if (newStatus == BookingStatus.BOOKED && oldStatus != BookingStatus.BOOKED) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                Integer adminId = null;
+                String adminName = "System";
+                if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+                    adminId = principal.getId();
+                    adminName = principal.getAppUsername();
+                }
+                activityLogService.log(adminId, adminName, "CONFIRM_BOOKING", "BOOKING", bookingId.toString(), "Duyệt đơn đặt sân", null, null);
+            }
+            
             booking.setStatus(newStatus);
             bookingRepository.save(booking);
+            publishBookingStatusChanged(booking, oldStatus, newStatus);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(
-                    "Trạng thái không hợp lệ: " + statusString + ". Các trạng thái hợp lệ: RESERVED, CANCELLED, PLAYING",
+                    "Trạng thái không hợp lệ: " + statusString + ". Các trạng thái hợp lệ: " + java.util.Arrays.toString(BookingStatus.values()),
                     "INVALID_BOOKING_STATUS"
             );
         }
+    }
+
+    /**
+     * Override booking price by admin.
+     * Changes pricing mode to MANUAL so future automatic recalculations ignore it.
+     */
+    @Transactional
+    public void overrideBookingPrice(Integer bookingId, BigDecimal newPrice) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt sân với ID: " + bookingId, "Booking"));
+
+        booking.setTotalPrice(newPrice);
+        booking.setPricingMode(com.kstn.group4.backend.booking.entity.PricingMode.MANUAL);
+        bookingRepository.save(booking);
+    }
+
+    /**
+     * Chốt hóa đơn: thêm dịch vụ phát sinh, cập nhật tổng tiền, chuyển trạng thái COMPLETED.
+     */
+    @Transactional
+    public AdminBookingDetailResponse settleBooking(Integer bookingId, com.kstn.group4.backend.booking.dto.admin.SettleBookingRequest request) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt sân với ID: " + bookingId, "Booking"));
+
+        if (booking.getStatus() != BookingStatus.BOOKED && booking.getStatus() != BookingStatus.PLAYING) {
+            throw new BusinessException(
+                    "Chỉ có thể chốt hóa đơn cho đơn ở trạng thái 'Đã đặt' hoặc 'Đang đá'",
+                    "INVALID_SETTLE_STATUS"
+            );
+        }
+
+        // Thêm dịch vụ phát sinh mới
+        BigDecimal newServicesTotal = BigDecimal.ZERO;
+        if (request.services() != null && !request.services().isEmpty()) {
+            for (var svcReq : request.services()) {
+                if (svcReq.quantity() == null || svcReq.quantity() <= 0) continue;
+
+                AddonService service = addonServiceRepository.findById(svcReq.serviceId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy dịch vụ", "Service"));
+
+                BookingServiceItem item = new BookingServiceItem();
+                item.setBooking(booking);
+                item.setService(service);
+                item.setQuantity(svcReq.quantity());
+                item.setPriceAtBooking(service.getPrice());
+                bookingServiceItemRepository.save(item);
+
+                newServicesTotal = newServicesTotal.add(
+                        service.getPrice().multiply(BigDecimal.valueOf(svcReq.quantity()))
+                );
+            }
+        }
+
+        // Cập nhật tổng tiền = tiền sân gốc + dịch vụ cũ + dịch vụ mới phát sinh
+        BigDecimal paidBeforeSettle = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
+        BigDecimal currentTotal = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal updatedTotal = currentTotal.add(newServicesTotal);
+        booking.setTotalPrice(updatedTotal);
+
+        BigDecimal remainingAmount = updatedTotal.subtract(paidBeforeSettle).setScale(2, RoundingMode.HALF_UP);
+        if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) {
+            remainingAmount = BigDecimal.ZERO;
+        }
+
+        String paymentMethod = request.paymentMethod() != null ? request.paymentMethod().trim().toUpperCase() : "";
+        User payer = booking.getPlayer();
+        if (remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
+            if (payer == null || payer.getId() == null) {
+                throw new BusinessException("Cannot settle booking without a player", "INVALID_SETTLE_PAYER");
+            }
+            if ("WALLET".equals(paymentMethod)) {
+                payer = walletService.debit(payer.getId(), remainingAmount);
+            }
+            bookingPaymentService.recordPaidPayment(booking, payer, remainingAmount, paymentMethod);
+        }
+
+        // Chuyển trạng thái sang COMPLETED
+        BookingStatus oldStatus = booking.getStatus();
+        booking.setStatus(BookingStatus.COMPLETED);
+        bookingRepository.save(booking);
+
+        // Ghi activity log
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Integer adminId = null;
+        String adminName = "System";
+        if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+            adminId = principal.getId();
+            adminName = principal.getAppUsername();
+        }
+        activityLogService.log(adminId, adminName, "SETTLE_BOOKING", "BOOKING",
+                bookingId.toString(), "Chốt hóa đơn đơn đặt sân #" + bookingId + " — " + request.paymentMethod(), null, null);
+
+        publishBookingStatusChanged(booking, oldStatus, BookingStatus.COMPLETED);
+
+        return toAdminDetailResponse(booking);
     }
 
     // ==================== MAPPER METHODS (Private) ====================
@@ -150,7 +304,15 @@ public class BookingService {
                 : "N/A";
 
         BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
-        BigDecimal depositAmount = totalPrice.divide(new BigDecimal("2"), RoundingMode.HALF_UP);
+        BigDecimal depositAmount = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
+
+        if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
+                && booking.getPointsRedeemedAt() == null) {
+            status = "PENDING_PAYMENT";
+            depositAmount = BigDecimal.ZERO;
+        } else if (booking.getStatus() == BookingStatus.CANCELLED && booking.getPointsRedeemedAt() == null) {
+            depositAmount = BigDecimal.ZERO;
+        }
 
         return AdminBookingSummaryResponse.builder()
                 .id(booking.getId())
@@ -190,6 +352,11 @@ public class BookingService {
                 ? booking.getPitch().getVenue().getName()
                 : "N/A";
 
+        Integer venueId = booking.getPitch() != null
+                && booking.getPitch().getVenue() != null
+                ? booking.getPitch().getVenue().getId()
+                : null;
+
         String pitchName = booking.getPitch() != null && booking.getPitch().getName() != null
                 ? booking.getPitch().getName()
                 : "N/A";
@@ -202,15 +369,27 @@ public class BookingService {
                 ? booking.getTotalPrice()
                 : BigDecimal.ZERO;
 
-        BigDecimal depositAmount = BigDecimal.ZERO;
+        BigDecimal depositAmount = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
+        String paymentStatus = resolvePaymentStatus(depositAmount, totalPrice);
+
+        if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
+                && booking.getPointsRedeemedAt() == null) {
+            status = "PENDING_PAYMENT";
+        }
 
         String adminNote = null;
-        String paymentStatus = "UNPAID";
 
-        List<AdminBookingDetailResponse.AddonServiceItem> addOns = new ArrayList<>();
+        List<AdminBookingDetailResponse.AddonServiceItem> addOns = bookingServiceItemRepository.findByBookingId(booking.getId()).stream()
+                .map(item -> new AdminBookingDetailResponse.AddonServiceItem(
+                        item.getService() != null ? item.getService().getName() : "N/A",
+                        item.getQuantity(),
+                        item.getPriceAtBooking()
+                ))
+                .toList();
 
         return AdminBookingDetailResponse.builder()
                 .id(booking.getId())
+                .venueId(venueId)
                 .venueName(venueName)
                 .pitchName(pitchName)
                 .bookingDate(booking.getBookingDate())
@@ -254,6 +433,11 @@ public class BookingService {
             throw new BusinessException("Ngày đặt sân không được để trống", "INVALID_BOOKING_DATE");
         }
 
+        // Chặn đặt sân ngày quá khứ
+        if (request.getBookingDate().isBefore(LocalDate.now())) {
+            throw new BusinessException("Không thể đặt sân cho ngày trong quá khứ", "PAST_BOOKING_DATE");
+        }
+
         // ==================== STEP 1: Lock Pitch with PESSIMISTIC_WRITE ====================
         Pitch pitch = pitchRepository.findByIdForUpdate(request.getPitchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + request.getPitchId(), "Pitch"));
@@ -272,6 +456,13 @@ public class BookingService {
             throw new BusinessException("Nằm ngoài giờ mở cửa của sân", "OUT_OF_OPERATING_HOURS");
         }
 
+        // Chặn ca đã qua giờ đá trong ngày hôm nay
+        if (request.getBookingDate().equals(LocalDate.now())) {
+            if (timeSlot.getStartTime().isBefore(LocalTime.now())) {
+                throw new BusinessException("Ca đá này hôm nay đã trôi qua, vui lòng chọn ca khác", "PAST_TIME_SLOT");
+            }
+        }
+
         // ==================== STEP 4: Check Slot Not Already Booked ====================
         // Backed by UNIQUE(booking_date, pitch_id, time_slot_id) at DB level
         boolean alreadyBooked = bookingRepository.existsByPitchIdAndTimeSlotIdAndBookingDate(
@@ -281,18 +472,44 @@ public class BookingService {
         );
 
         if (alreadyBooked) {
+            LOGGER.warn(
+                    "BOOKING_RACE status=FAILED reason=ALREADY_BOOKED playerId={} pitchId={} timeSlotId={} bookingDate={}",
+                    playerId,
+                    request.getPitchId(),
+                    request.getTimeSlotId(),
+                    request.getBookingDate()
+            );
             throw new ResourceConflictException("Ca đặt sân này đã được đặt. Vui lòng chọn ca khác");
         }
 
         // ==================== STEP 5: Lookup Pricing ====================
         boolean isWeekend = isWeekend(request.getBookingDate());
-        BigDecimal totalPrice = priceRuleRepository
+        
+        // Golden hours: 17:00 to 22:00
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+        
+        BigDecimal coefficient = priceRuleRepository
                 .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), isWeekend)
-                .map(PriceRule::getPrice)
-                .orElseGet(pitch::getBasePrice);
-        if (totalPrice == null) {
-            throw new BusinessException("Chua co gia cho ca nay", "PRICE_NOT_SET");
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (isWeekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+        
+        if (pitch.getBasePrice() == null) {
+            throw new BusinessException("Chưa có giá cơ bản cho sân này", "BASE_PRICE_NOT_SET");
         }
+        
+        BigDecimal fieldPrice = pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+
+        List<BookingServiceItem> serviceItems = buildServiceItems(request, pitch);
+        BigDecimal servicesTotal = serviceItems.stream()
+                .map(item -> item.getPriceAtBooking().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPrice = fieldPrice.add(servicesTotal);
 
         BigDecimal depositAmount = calculateDepositAmount(totalPrice);
 
@@ -307,8 +524,111 @@ public class BookingService {
         booking.setStatus(BookingStatus.RESERVED);
         booking.setTotalPrice(totalPrice);
 
-        Booking savedBooking = bookingRepository.save(booking);
-        return toPlayerBookingResponse(savedBooking, depositAmount);
+        try {
+            Booking savedBooking = bookingRepository.save(booking);
+            for (BookingServiceItem serviceItem : serviceItems) {
+                serviceItem.setBooking(savedBooking);
+            }
+            bookingServiceItemRepository.saveAll(serviceItems);
+
+            return toPlayerBookingResponse(savedBooking, depositAmount);
+        } catch (DataIntegrityViolationException ex) {
+            LOGGER.warn(
+                    "BOOKING_RACE status=FAILED reason=UNIQUE_CONSTRAINT playerId={} pitchId={} timeSlotId={} bookingDate={}",
+                    playerId,
+                    request.getPitchId(),
+                    request.getTimeSlotId(),
+                    request.getBookingDate()
+            );
+            throw new ResourceConflictException("Ca đặt sân này đã được đặt. Vui lòng chọn ca khác");
+        }
+    }
+
+    @Transactional
+    public RecurringBookingResponse createRecurringBooking(Integer playerId, RecurringBookingRequest request) {
+        User player = userRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + playerId, "User"));
+
+        List<LocalDate> targetDates = generateRecurringDates(request);
+
+        Pitch pitch = pitchRepository.findByIdForUpdate(request.getPitchId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + request.getPitchId(), "Pitch"));
+
+        if (pitch.getVenue() == null) {
+            throw new ResourceNotFoundException("Sân chưa được gán vào cụm sân", "Venue");
+        }
+
+        TimeSlot timeSlot = timeSlotRepository.findById(request.getTimeSlotId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca đặt sân với ID: " + request.getTimeSlotId(), "TimeSlot"));
+
+        if (timeSlot.getStartTime().isBefore(pitch.getVenue().getOpenTime())
+                || timeSlot.getEndTime().isAfter(pitch.getVenue().getCloseTime())) {
+            throw new BusinessException("Nằm ngoài giờ mở cửa của sân", "OUT_OF_OPERATING_HOURS");
+        }
+
+        if (pitch.getBasePrice() == null) {
+            throw new BusinessException("Chưa có giá cơ bản cho sân này", "BASE_PRICE_NOT_SET");
+        }
+
+        List<RecurringBookingResponse.SkippedOccurrence> skippedOccurrences = new ArrayList<>();
+        List<LocalDate> availableDates = new ArrayList<>();
+
+        for (LocalDate targetDate : targetDates) {
+            boolean alreadyBooked = bookingRepository.existsByPitchIdAndTimeSlotIdAndBookingDate(
+                    pitch.getId(),
+                    timeSlot.getId(),
+                    targetDate
+            );
+
+            if (alreadyBooked) {
+                skippedOccurrences.add(toSkippedOccurrence(pitch, timeSlot, targetDate));
+            } else {
+                availableDates.add(targetDate);
+            }
+        }
+
+        boolean skipConflicts = request.getSkipConflicts() == null || request.getSkipConflicts();
+        if (!skippedOccurrences.isEmpty() && !skipConflicts) {
+            return buildRecurringResponse(
+                    targetDates.size(),
+                    List.of(),
+                    skippedOccurrences,
+                    "Có lịch bị trùng. Không tạo booking nào trong chuỗi định kỳ."
+            );
+        }
+
+        List<PlayerBookingResponse> createdBookings = new ArrayList<>();
+        for (LocalDate targetDate : availableDates) {
+            try {
+                createdBookings.add(createBookingForDate(
+                        playerId,
+                        player,
+                        pitch,
+                        timeSlot,
+                        targetDate,
+                        request.getServices()
+                ));
+            } catch (ResourceConflictException ex) {
+                skippedOccurrences.add(toSkippedOccurrence(pitch, timeSlot, targetDate));
+            }
+        }
+
+        String message;
+        if (createdBookings.isEmpty() && !skippedOccurrences.isEmpty()) {
+            message = "Không tạo booking nào vì tất cả ngày đã bị trùng lịch.";
+        } else if (!skippedOccurrences.isEmpty()) {
+            message = "Đã tạo " + createdBookings.size() + " booking, bỏ qua "
+                    + skippedOccurrences.size() + " ngày bị trùng lịch.";
+        } else {
+            message = "Đã tạo " + createdBookings.size() + " booking định kỳ.";
+        }
+
+        return buildRecurringResponse(
+                targetDates.size(),
+                createdBookings,
+                skippedOccurrences,
+                message
+        );
     }
 
     /**
@@ -335,8 +655,91 @@ public class BookingService {
             throw new BusinessException("Chỉ có thể hủy đơn ở trạng thái PENDING/BOOKED", "INVALID_CANCELLATION_STATE");
         }
 
+        if (booking.getPricingMode() != com.kstn.group4.backend.booking.entity.PricingMode.MANUAL) {
+            BigDecimal deposit = calculateDepositAmount(booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO);
+            booking.setTotalPrice(deposit);
+        }
+
+        BookingStatus oldStatus = booking.getStatus();
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+        publishBookingStatusChanged(booking, oldStatus, BookingStatus.CANCELLED);
+    }
+
+    @Transactional
+    public void cancelUnpaidBooking(Integer bookingId, Integer playerId) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt sân với ID: " + bookingId, "Booking"));
+
+        if (booking.getPlayer() == null || !booking.getPlayer().getId().equals(playerId)) {
+            throw new ForbiddenException("Bạn không có quyền hủy đơn đặt sân này");
+        }
+
+        if (booking.getStatus() == BookingStatus.RESERVED && booking.getPointsRedeemedAt() == null) {
+            BookingStatus oldStatus = booking.getStatus();
+            booking.setStatus(BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
+            publishBookingStatusChanged(booking, oldStatus, BookingStatus.CANCELLED);
+        }
+    }
+
+    @Transactional
+    public PlayerBookingResponse rescheduleBooking(Integer bookingId, Integer playerId, RescheduleBookingRequest request) {
+        Booking booking = bookingRepository.findByIdWithDetails(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don dat san voi ID: " + bookingId, "Booking"));
+
+        if (booking.getPlayer() == null || !booking.getPlayer().getId().equals(playerId)) {
+            throw new ForbiddenException("Ban khong co quyen doi lich don dat san nay");
+        }
+
+        LocalDateTime currentStart = LocalDateTime.of(booking.getBookingDate(), booking.getStartTime());
+        if (Duration.between(LocalDateTime.now(), currentStart).toHours() < 24) {
+            throw new BusinessException("Chi duoc doi lich truoc 24 tieng", "RESCHEDULE_TOO_LATE");
+        }
+
+        if (booking.getStatus() != BookingStatus.RESERVED || booking.getPointsRedeemedAt() != null) {
+            throw new BusinessException("Chi co the doi lich don dang giu san va chua thanh toan coc", "INVALID_RESCHEDULE_STATE");
+        }
+
+        Pitch pitch = booking.getPitch();
+        if (pitch == null || pitch.getVenue() == null) {
+            throw new ResourceNotFoundException("San chua duoc gan vao cum san", "Venue");
+        }
+
+        TimeSlot timeSlot = timeSlotRepository.findById(request.timeSlotId())
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ca dat san voi ID: " + request.timeSlotId(), "TimeSlot"));
+
+        if (timeSlot.getStartTime().isBefore(pitch.getVenue().getOpenTime())
+                || timeSlot.getEndTime().isAfter(pitch.getVenue().getCloseTime())) {
+            throw new BusinessException("Nam ngoai gio mo cua cua san", "OUT_OF_OPERATING_HOURS");
+        }
+
+        if (request.bookingDate().equals(LocalDate.now()) && timeSlot.getStartTime().isBefore(LocalTime.now())) {
+            throw new BusinessException("Ca da nay hom nay da troi qua, vui long chon ca khac", "PAST_TIME_SLOT");
+        }
+
+        boolean alreadyBooked = bookingRepository.existsByPitchIdAndTimeSlotIdAndBookingDateExcludingBooking(
+                booking.getId(),
+                pitch.getId(),
+                timeSlot.getId(),
+                request.bookingDate()
+        );
+        if (alreadyBooked) {
+            throw new ResourceConflictException("Ca dat san nay da duoc dat. Vui long chon ca khac");
+        }
+
+        BigDecimal fieldPrice = calculateFieldPrice(pitch, timeSlot, request.bookingDate());
+        BigDecimal servicesTotal = bookingServiceItemRepository.findByBookingId(booking.getId()).stream()
+                .map(item -> item.getPriceAtBooking().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        booking.setTimeSlot(timeSlot);
+        booking.setBookingDate(request.bookingDate());
+        booking.setStartTime(timeSlot.getStartTime());
+        booking.setEndTime(timeSlot.getEndTime());
+        booking.setTotalPrice(fieldPrice.add(servicesTotal));
+
+        return toPlayerBookingResponse(bookingRepository.save(booking));
     }
 
     /**
@@ -366,8 +769,13 @@ public class BookingService {
     }
 
     private PlayerBookingResponse toPlayerBookingResponse(Booking booking) {
-        BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
-        BigDecimal depositAmount = calculateDepositAmount(totalPrice);
+        BigDecimal depositAmount = bookingPaymentService.getPaidAmountWithLegacyFallback(booking);
+        if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
+                && booking.getPointsRedeemedAt() == null) {
+            depositAmount = BigDecimal.ZERO;
+        } else if (booking.getStatus() == BookingStatus.CANCELLED && booking.getPointsRedeemedAt() == null) {
+            depositAmount = BigDecimal.ZERO;
+        }
         return toPlayerBookingResponse(booking, depositAmount);
     }
 
@@ -377,6 +785,10 @@ public class BookingService {
                 : "N/A";
 
         String status = booking.getStatus() != null ? booking.getStatus().name() : "N/A";
+        if ((booking.getStatus() == BookingStatus.RESERVED || booking.getStatus() == BookingStatus.PENDING)
+                && booking.getPointsRedeemedAt() == null) {
+            status = "PENDING_PAYMENT";
+        }
         BigDecimal totalPrice = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
 
         return new PlayerBookingResponse(
@@ -388,8 +800,261 @@ public class BookingService {
                 booking.getEndTime(),
                 totalPrice,
                 depositAmount,
-                status
+                status,
+                booking.getId() != null && pitchReviewRepository.existsByBookingId(booking.getId())
         );
+    }
+
+    private PlayerBookingResponse createBookingForDate(
+            Integer playerId,
+            User player,
+            Pitch pitch,
+            TimeSlot timeSlot,
+            LocalDate bookingDate,
+            List<CreateBookingRequest.ServiceRequest> services
+    ) {
+        boolean alreadyBooked = bookingRepository.existsByPitchIdAndTimeSlotIdAndBookingDate(
+                pitch.getId(),
+                timeSlot.getId(),
+                bookingDate
+        );
+
+        if (alreadyBooked) {
+            LOGGER.warn(
+                    "BOOKING_RACE status=FAILED reason=ALREADY_BOOKED playerId={} pitchId={} timeSlotId={} bookingDate={}",
+                    playerId,
+                    pitch.getId(),
+                    timeSlot.getId(),
+                    bookingDate
+            );
+            throw new ResourceConflictException("Ca đặt sân này đã được đặt. Vui lòng chọn ca khác");
+        }
+
+        boolean isWeekend = isWeekend(bookingDate);
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+
+        BigDecimal coefficient = priceRuleRepository
+                .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), isWeekend)
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (isWeekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+
+        BigDecimal fieldPrice = pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+        List<BookingServiceItem> serviceItems = buildServiceItems(services, pitch);
+        BigDecimal servicesTotal = serviceItems.stream()
+                .map(item -> item.getPriceAtBooking().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPrice = fieldPrice.add(servicesTotal);
+        BigDecimal depositAmount = calculateDepositAmount(totalPrice);
+
+        Booking booking = new Booking();
+        booking.setPlayer(player);
+        booking.setPitch(pitch);
+        booking.setTimeSlot(timeSlot);
+        booking.setBookingDate(bookingDate);
+        booking.setStartTime(timeSlot.getStartTime());
+        booking.setEndTime(timeSlot.getEndTime());
+        booking.setStatus(BookingStatus.RESERVED);
+        booking.setTotalPrice(totalPrice);
+
+        try {
+            Booking savedBooking = bookingRepository.save(booking);
+            for (BookingServiceItem serviceItem : serviceItems) {
+                serviceItem.setBooking(savedBooking);
+            }
+            bookingServiceItemRepository.saveAll(serviceItems);
+
+            return toPlayerBookingResponse(savedBooking, depositAmount);
+        } catch (DataIntegrityViolationException ex) {
+            LOGGER.warn(
+                    "BOOKING_RACE status=FAILED reason=UNIQUE_CONSTRAINT playerId={} pitchId={} timeSlotId={} bookingDate={}",
+                    playerId,
+                    pitch.getId(),
+                    timeSlot.getId(),
+                    bookingDate
+            );
+            throw new ResourceConflictException("Ca đặt sân này đã được đặt. Vui lòng chọn ca khác");
+        }
+    }
+
+    private List<LocalDate> generateRecurringDates(RecurringBookingRequest request) {
+        if (request.getStartDate() == null) {
+            throw new BusinessException("Ngày bắt đầu không được để trống", "INVALID_RECURRING_START_DATE");
+        }
+
+        RecurringBookingRequest.RecurrenceType recurrenceType = request.getRecurrenceType() != null
+                ? request.getRecurrenceType()
+                : RecurringBookingRequest.RecurrenceType.WEEKLY;
+
+        List<LocalDate> dates = switch (recurrenceType) {
+            case WEEKLY -> generateWeeklyRecurringDates(request);
+            case MONTHLY -> generateMonthlyRecurringDates(request);
+        };
+
+        if (dates.isEmpty()) {
+            throw new BusinessException("Không có ngày đặt sân nào phù hợp với cấu hình lặp lại", "EMPTY_RECURRING_DATES");
+        }
+
+        return new ArrayList<>(new LinkedHashSet<>(dates));
+    }
+
+    private List<LocalDate> generateWeeklyRecurringDates(RecurringBookingRequest request) {
+        if (request.getDaysOfWeek() == null || request.getDaysOfWeek().isEmpty()) {
+            throw new BusinessException("Chọn ít nhất một thứ trong tuần", "INVALID_RECURRING_DAYS");
+        }
+        if (request.getNumberOfWeeks() == null || request.getNumberOfWeeks() < 1) {
+            throw new BusinessException("Số tuần lặp lại phải lớn hơn 0", "INVALID_RECURRING_WEEKS");
+        }
+
+        LocalDate endDate = request.getStartDate().plusWeeks(request.getNumberOfWeeks()).minusDays(1);
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate cursor = request.getStartDate();
+        while (!cursor.isAfter(endDate)) {
+            if (request.getDaysOfWeek().contains(cursor.getDayOfWeek())) {
+                dates.add(cursor);
+            }
+            cursor = cursor.plusDays(1);
+        }
+        return dates;
+    }
+
+    private List<LocalDate> generateMonthlyRecurringDates(RecurringBookingRequest request) {
+        if (request.getNumberOfMonths() == null || request.getNumberOfMonths() < 1) {
+            throw new BusinessException("Số tháng lặp lại phải lớn hơn 0", "INVALID_RECURRING_MONTHS");
+        }
+
+        int targetDay = request.getDayOfMonth() != null
+                ? request.getDayOfMonth()
+                : request.getStartDate().getDayOfMonth();
+        List<LocalDate> dates = new ArrayList<>();
+
+        for (int index = 0; index < request.getNumberOfMonths(); index++) {
+            YearMonth month = YearMonth.from(request.getStartDate().plusMonths(index));
+            LocalDate date = month.atDay(Math.min(targetDay, month.lengthOfMonth()));
+            if (!date.isBefore(request.getStartDate())) {
+                dates.add(date);
+            }
+        }
+        return dates;
+    }
+
+    private RecurringBookingResponse.SkippedOccurrence toSkippedOccurrence(
+            Pitch pitch,
+            TimeSlot timeSlot,
+            LocalDate bookingDate
+    ) {
+        return new RecurringBookingResponse.SkippedOccurrence(
+                bookingDate,
+                pitch.getId(),
+                timeSlot.getId(),
+                "SLOT_CONFLICT",
+                "Ca đặt sân đã bị trùng lịch"
+        );
+    }
+
+    private RecurringBookingResponse buildRecurringResponse(
+            int requestedCount,
+            List<PlayerBookingResponse> createdBookings,
+            List<RecurringBookingResponse.SkippedOccurrence> skippedOccurrences,
+            String message
+    ) {
+        BigDecimal totalPrice = createdBookings.stream()
+                .map(PlayerBookingResponse::totalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalDepositAmount = createdBookings.stream()
+                .map(PlayerBookingResponse::depositAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new RecurringBookingResponse(
+                requestedCount,
+                createdBookings.size(),
+                skippedOccurrences.size(),
+                totalPrice,
+                totalDepositAmount,
+                createdBookings,
+                skippedOccurrences,
+                message
+        );
+    }
+
+    private List<BookingServiceItem> buildServiceItems(CreateBookingRequest request, Pitch pitch) {
+        return buildServiceItems(request.getServices(), pitch);
+    }
+
+    private List<BookingServiceItem> buildServiceItems(
+            List<CreateBookingRequest.ServiceRequest> services,
+            Pitch pitch
+    ) {
+        if (services == null || services.isEmpty()) {
+            return List.of();
+        }
+
+        List<BookingServiceItem> items = new ArrayList<>();
+        for (CreateBookingRequest.ServiceRequest serviceRequest : services) {
+            if (serviceRequest.getQuantity() == null || serviceRequest.getQuantity() <= 0) {
+                throw new BusinessException("Số lượng dịch vụ phải lớn hơn 0", "INVALID_SERVICE_QUANTITY");
+            }
+
+            AddonService service = addonServiceRepository.findById(serviceRequest.getServiceId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy dịch vụ với ID: " + serviceRequest.getServiceId(), "Service"));
+
+            if (!isServiceAvailableForPitch(service, pitch)) {
+                throw new BusinessException("Dịch vụ không thuộc cụm sân đã chọn", "SERVICE_VENUE_MISMATCH");
+            }
+            if (service.getPrice() == null) {
+                throw new BusinessException("Dịch vụ chưa có giá", "SERVICE_PRICE_NOT_SET");
+            }
+            if (service.getStatus() != null && !"ACTIVE".equalsIgnoreCase(service.getStatus())) {
+                throw new BusinessException("Dịch vụ không còn kinh doanh", "SERVICE_NOT_ACTIVE");
+            }
+
+            BookingServiceItem item = new BookingServiceItem();
+            item.setService(service);
+            item.setQuantity(serviceRequest.getQuantity());
+            item.setPriceAtBooking(service.getPrice());
+            items.add(item);
+        }
+        return items;
+    }
+
+    private boolean isServiceAvailableForPitch(AddonService service, Pitch pitch) {
+        Integer pitchVenueId = pitch.getVenue() != null ? pitch.getVenue().getId() : null;
+        if (pitchVenueId == null) {
+            return false;
+        }
+        if (service.getVenue() != null && pitchVenueId.equals(service.getVenue().getId())) {
+            return true;
+        }
+        return service.getPitch() != null
+                && service.getPitch().getVenue() != null
+                && pitchVenueId.equals(service.getPitch().getVenue().getId());
+    }
+
+    private BigDecimal calculateFieldPrice(Pitch pitch, TimeSlot timeSlot, LocalDate bookingDate) {
+        boolean weekend = isWeekend(bookingDate);
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+
+        BigDecimal coefficient = priceRuleRepository
+                .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), weekend)
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (weekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+
+        if (pitch.getBasePrice() == null) {
+            throw new BusinessException("Chua co gia co ban cho san nay", "BASE_PRICE_NOT_SET");
+        }
+
+        return pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
     }
 
     private boolean isWeekend(LocalDate date) {
@@ -399,5 +1064,77 @@ public class BookingService {
 
     private BigDecimal calculateDepositAmount(BigDecimal totalPrice) {
         return totalPrice.multiply(BigDecimal.valueOf(0.5)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String resolvePaymentStatus(BigDecimal paidAmount, BigDecimal totalPrice) {
+        BigDecimal paid = paidAmount != null ? paidAmount : BigDecimal.ZERO;
+        BigDecimal total = totalPrice != null ? totalPrice : BigDecimal.ZERO;
+        if (total.compareTo(BigDecimal.ZERO) > 0 && paid.compareTo(total) >= 0) {
+            return "PAID";
+        }
+        if (paid.compareTo(BigDecimal.ZERO) > 0) {
+            return "PARTIAL";
+        }
+        return "UNPAID";
+    }
+
+    public void publishBookingStatusChanged(Booking booking, BookingStatus oldStatus, BookingStatus newStatus) {
+        if (booking.getPlayer() == null || oldStatus == newStatus) {
+            return;
+        }
+
+        String pitchName = booking.getPitch() != null && booking.getPitch().getName() != null
+                ? booking.getPitch().getName()
+                : "N/A";
+
+        eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                booking.getId(),
+                booking.getPlayer().getId(),
+                oldStatus,
+                newStatus,
+                pitchName,
+                booking.getBookingDate(),
+                booking.getStartTime()
+        ));
+    }
+
+    @Transactional
+    public Booking createMatchAutoBooking(Integer playerId, Integer pitchId, Integer timeSlotId, LocalDate bookingDate) {
+        User player = userRepository.findById(playerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng", "User"));
+        Pitch pitch = pitchRepository.findByIdForUpdate(pitchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân", "Pitch"));
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca", "TimeSlot"));
+
+        // Tận dụng logic tính toán hệ số giá (Weekend, Golden Hour) có sẵn
+        boolean isWeekend = isWeekend(bookingDate);
+        LocalTime startTime = timeSlot.getStartTime();
+        boolean isGoldenHour = !startTime.isBefore(LocalTime.of(17, 0)) && startTime.isBefore(LocalTime.of(22, 0));
+        
+        BigDecimal coefficient = priceRuleRepository
+                .findByPitchIdAndSlotNumberAndIsWeekend(pitch.getId(), timeSlot.getSlotNumber(), isWeekend)
+                .map(PriceRule::getCoefficient)
+                .orElseGet(() -> {
+                    BigDecimal coeff = BigDecimal.ONE;
+                    if (isWeekend) coeff = coeff.add(new BigDecimal("0.2"));
+                    if (isGoldenHour) coeff = coeff.add(new BigDecimal("0.3"));
+                    return coeff;
+                });
+
+        BigDecimal totalPrice = pitch.getBasePrice().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+
+        Booking booking = new Booking();
+        booking.setPlayer(player);
+        booking.setPitch(pitch);
+        booking.setTimeSlot(timeSlot);
+        booking.setBookingDate(bookingDate);
+        booking.setStartTime(timeSlot.getStartTime());
+        booking.setEndTime(timeSlot.getEndTime());
+        booking.setStatus(BookingStatus.RESERVED);
+        booking.setBookingType("MATCH_AUTO");
+        booking.setTotalPrice(totalPrice); // Lưu đúng tổng tiền tính được từ CSDL!
+
+        return bookingRepository.save(booking);
     }
 }

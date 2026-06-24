@@ -8,6 +8,10 @@ export interface VenueResponseDTO {
   address: string;
   imageUrl: string;
   minPrice: BigDecimal | number;
+  latitude?: number;
+  longitude?: number;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface VenueSummaryResponse {
@@ -17,6 +21,8 @@ export interface VenueSummaryResponse {
   openTime: string; // LocalTime as ISO string or time string (e.g., "08:00")
   closeTime: string; // LocalTime as ISO string or time string (e.g., "22:00")
   minPrice: BigDecimal | number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface VenueDetailResponse {
@@ -26,6 +32,8 @@ export interface VenueDetailResponse {
   description: string;
   openTime: string; // LocalTime
   closeTime: string; // LocalTime
+  latitude?: number;
+  longitude?: number;
 }
 
 // Admin DTOs
@@ -55,7 +63,7 @@ export interface SlotPriceResponse {
   weekendPrice: BigDecimal | number;
 }
 
-export type SlotBookingStatus = "AVAILABLE" | "BOOKED";
+export type SlotBookingStatus = "AVAILABLE" | "BOOKED" | "PENDING";
 
 export interface SlotStatusResponse {
   timeSlotId: number;
@@ -85,6 +93,16 @@ export interface VenueAvailabilityResponse {
   pitches: PitchAvailabilityResponse[];
 }
 
+export interface ServiceItemResponse {
+  id: number;
+  venueId: number;
+  name: string;
+  description?: string | null;
+  price: BigDecimal | number;
+  unit: string;
+  status: string;
+}
+
 // Mock/UI types (backward compatible)
 export interface Facility {
   id: string;
@@ -101,4 +119,28 @@ export interface VenueItem {
   address: string;
   openTime: string;
   minPrice?: number;
+  latitude?: number;
+  longitude?: number;
+  averageRating?: number;
+  reviewCount?: number;
+}
+
+export interface CreatePitchReviewRequest {
+  bookingId: number;
+  rating: number;
+  content: string;
+}
+
+export interface PitchReviewResponse {
+  id: number;
+  bookingId: number;
+  pitchId: number;
+  pitchName: string;
+  playerId: number;
+  playerName: string;
+  rating: number;
+  content: string;
+  rewardPoints: number;
+  memberPoints: number;
+  createdAt: string;
 }

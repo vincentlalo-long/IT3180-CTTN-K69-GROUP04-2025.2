@@ -1,6 +1,7 @@
 package com.kstn.group4.backend.user.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +32,7 @@ public class User {
     private LocalDateTime createdAt;
 
     @Column(name = "team_id")
-    private Integer teamId;
+    private Long teamId;
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
@@ -39,8 +40,15 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "membership_points", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer membershipPoints = 0;
+
+    @Column(name = "wallet_balance", nullable = false, columnDefinition = "DECIMAL(38,2) DEFAULT 0")
+    private BigDecimal walletBalance = BigDecimal.ZERO;
+
     public User() {
         this.createdAt = LocalDateTime.now();
+        this.walletBalance = BigDecimal.ZERO;
     }
 
     public User(String username, String email, String password, String role) {
@@ -49,5 +57,6 @@ public class User {
         this.password = password;
         this.role = role;
         this.createdAt = LocalDateTime.now();
+        this.walletBalance = BigDecimal.ZERO;
     }
 }

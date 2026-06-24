@@ -74,7 +74,7 @@ export function useFieldSchedule() {
 
         setFieldScheduleRows(rows);
       } catch (err: unknown) {
-        const message = getApiErrorMessage(err, "Khong the lay lich san.");
+        const message = getApiErrorMessage(err, "Không thể lấy lịch sân.");
         logApiError("useFieldSchedule.fetchSchedules", err, {
           selectedFacilityId,
           selectedDate,

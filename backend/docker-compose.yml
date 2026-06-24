@@ -1,0 +1,40 @@
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: football-mysql-container
+    restart: always
+
+    environment:
+      MYSQL_DATABASE: football_booking
+      MYSQL_ROOT_PASSWORD: mixisql123@
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-pmixisql123@",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: football-mailhog-container
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+
+volumes:
+  mysql_data:

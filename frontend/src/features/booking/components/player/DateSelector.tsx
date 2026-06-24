@@ -1,7 +1,7 @@
-import { format } from "date-fns";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./DateSelector.css";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DateSelectorProps {
   selectedDate: Date;
@@ -26,29 +26,22 @@ export function DateSelector({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">
-          Chon ngay
-        </h3>
-        <span className="text-sm text-gray-500 dark:text-slate-400">
-          {format(selectedDate, "dd/MM/yyyy")}
-        </span>
-      </div>
-      <div className="react-calendar-wrapper">
-        <Calendar
-          value={selectedDate}
-          onChange={handleChange as (value: unknown) => void}
-          minDate={minDate}
-          maxDate={maxDate}
-          tileDisabled={({ date }) => {
-            if (minDate && date < minDate) return true;
-            if (maxDate && date > maxDate) return true;
-            return false;
-          }}
-        />
-      </div>
+    <div className="react-calendar-wrapper w-full">
+      <Calendar
+        value={selectedDate}
+        onChange={handleChange as (value: unknown) => void}
+        minDate={minDate}
+        maxDate={maxDate}
+        prev2Label={null}
+        next2Label={null}
+        prevLabel={<ChevronLeft size={18} className="mx-auto text-slate-600 hover:text-slate-900" />}
+        nextLabel={<ChevronRight size={18} className="mx-auto text-slate-600 hover:text-slate-900" />}
+        tileDisabled={({ date }) => {
+          if (minDate && date < minDate) return true;
+          if (maxDate && date > maxDate) return true;
+          return false;
+        }}
+      />
     </div>
   );
 }
-

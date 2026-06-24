@@ -6,11 +6,16 @@ import com.kstn.group4.backend.booking.dto.admin.AdminUpdateBookingRequest;
 import com.kstn.group4.backend.booking.dto.admin.PitchScheduleDto;
 import com.kstn.group4.backend.booking.service.BookingAdminService;
 import com.kstn.group4.backend.booking.service.BookingService;
+import com.kstn.group4.backend.booking.service.InvoicePdfService;
+import com.kstn.group4.backend.venue.dto.ServiceItemResponse;
+import com.kstn.group4.backend.venue.service.admin.AddonServiceManagementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +26,13 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/bookings")
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
 public class AdminBookingController {
 
     private final BookingService bookingService;
     private final BookingAdminService bookingAdminService;
+    private final AddonServiceManagementService addonServiceManagementService;
+    private final InvoicePdfService invoicePdfService;
 
     @GetMapping("/schedules")
     public ResponseEntity<List<PitchScheduleDto>> getPitchSchedules(
@@ -42,10 +49,10 @@ public class AdminBookingController {
     public ResponseEntity<Page<AdminBookingSummaryResponse>> getAllBookings(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) Integer pitchId,
+            @RequestParam(required = false) Integer venueId,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(bookingService.searchAllBookingsForAdmin(date, status, pitchId, pageable));
+        return ResponseEntity.ok(bookingService.searchAllBookingsForAdmin(date, status, venueId, pageable));
     }
 
     /**
@@ -54,6 +61,15 @@ public class AdminBookingController {
     @GetMapping("/{id}")
     public ResponseEntity<AdminBookingDetailResponse> getBookingDetail(@PathVariable("id") Integer bookingId) {
         return ResponseEntity.ok(bookingService.getBookingDetailForAdmin(bookingId));
+    }
+
+    @GetMapping(value = "/{id}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportInvoice(@PathVariable("id") Integer bookingId) {
+        byte[] pdf = invoicePdfService.createAdminInvoicePdf(bookingId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + bookingId + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     /**
@@ -67,5 +83,43 @@ public class AdminBookingController {
         // Truyền cả object request vào, không truyền request.status()
         bookingService.updateBookingStatus(bookingId, request); 
         return ResponseEntity.ok().build();
-}
+    }
+
+    /**
+     * Override booking price manually
+     */
+    @PutMapping("/{id}/price")
+    public ResponseEntity<Void> overrideBookingPrice(
+            @PathVariable("id") Integer bookingId,
+            @Valid @RequestBody com.kstn.group4.backend.booking.dto.admin.AdminOverridePriceRequest request
+    ) {
+        bookingService.overrideBookingPrice(bookingId, request.newPrice());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Chốt hóa đơn: thêm dịch vụ phát sinh, thanh toán nốt, hoàn thành ca đá
+     */
+    @PostMapping("/{id}/settle")
+    public ResponseEntity<com.kstn.group4.backend.booking.dto.admin.AdminBookingDetailResponse> settleBooking(
+            @PathVariable("id") Integer bookingId,
+            @Valid @RequestBody com.kstn.group4.backend.booking.dto.admin.SettleBookingRequest request
+    ) {
+        return ResponseEntity.ok(bookingService.settleBooking(bookingId, request));
+    }
+
+    /**
+     * Lấy danh sách dịch vụ ACTIVE của cụm sân mà booking này thuộc về.
+     * Dùng cho modal chốt hóa đơn — không cần check quyền sở hữu cụm sân.
+     */
+    @GetMapping("/{id}/available-services")
+    public ResponseEntity<List<ServiceItemResponse>> getAvailableServices(
+            @PathVariable("id") Integer bookingId
+    ) {
+        AdminBookingDetailResponse detail = bookingService.getBookingDetailForAdmin(bookingId);
+        if (detail.venueId() == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(addonServiceManagementService.getActiveServicesForVenue(detail.venueId()));
+    }
 }

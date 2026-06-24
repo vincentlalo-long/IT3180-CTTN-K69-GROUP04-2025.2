@@ -1,0 +1,97 @@
+package com.kstn.group4.backend.match.repository;
+
+import com.kstn.group4.backend.match.entity.Match;
+import com.kstn.group4.backend.match.enums.MatchSkillLevel;
+import com.kstn.group4.backend.match.enums.MatchStatus;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import java.util.Optional;
+import java.time.LocalDateTime;
+
+@Repository
+public interface MatchRepository extends JpaRepository<Match, Integer> {
+
+    @Query("SELECT m FROM Match m " +
+           "LEFT JOIN FETCH m.venue " +
+           "LEFT JOIN FETCH m.hostTeam " +
+           "LEFT JOIN FETCH m.guestTeam " +
+           "LEFT JOIN FETCH m.timeSlot " +
+           "WHERE m.status = 'OPEN' " +
+           "AND (:venueId IS NULL OR m.venue.id = :venueId) " +
+           "AND (:skillLevel IS NULL OR m.skillLevel = :skillLevel)")
+    List<Match> findOpenMatches(
+        @Param("venueId") Integer venueId,
+        @Param("skillLevel") MatchSkillLevel skillLevel
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM Match m WHERE m.id = :id")
+    Optional<Match> findByIdForUpdate(@Param("id") Integer id);
+
+    List<Match> findByStatus(MatchStatus status);
+
+    @Query("SELECT m FROM Match m " +
+           "LEFT JOIN FETCH m.venue " +
+           "LEFT JOIN FETCH m.timeSlot " +
+           "LEFT JOIN FETCH m.hostTeam " +
+           "LEFT JOIN FETCH m.guestTeam " +
+           "WHERE m.hostTeam.id = :teamId OR m.guestTeam.id = :teamId")
+    List<Match> findByHostOrGuestTeamId(@Param("teamId") Long teamId);
+
+    @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam", "timeSlot"})
+    List<Match> findByLeagueId(Integer leagueId);
+
+    @Query("SELECT m FROM Match m " +
+           "LEFT JOIN FETCH m.venue " +
+           "LEFT JOIN FETCH m.hostTeam " +
+           "LEFT JOIN FETCH m.guestTeam " +
+           "LEFT JOIN FETCH m.timeSlot " +
+           "WHERE m.league.id = :leagueId " +
+           "AND ((m.hostTeam.id = :team1Id AND m.guestTeam.id = :team2Id) " +
+           "OR (m.hostTeam.id = :team2Id AND m.guestTeam.id = :team1Id)) " +
+           "ORDER BY m.matchTime DESC")
+    List<Match> findHeadToHeadMatches(
+            @Param("leagueId") Integer leagueId,
+            @Param("team1Id") Long team1Id,
+            @Param("team2Id") Long team2Id
+    );
+
+    @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})
+    List<Match> findByVenueId(Integer venueId);
+
+    @Query("SELECT m FROM Match m WHERE m.status = com.kstn.group4.backend.match.enums.MatchStatus.OPEN " +
+           "AND m.venue.id = :venueId " +
+           "AND m.timeSlot.id = :timeSlotId " +
+           "AND m.pitchType = :pitchType " +
+           "AND m.matchTime BETWEEN :startDateTime AND :endDateTime")
+    List<Match> findOpenMatchesToAutoCancel(
+            @Param("venueId") Integer venueId,
+            @Param("timeSlotId") Integer timeSlotId,
+            @Param("pitchType") Integer pitchType,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
+    );
+
+    @Query("SELECT m FROM Match m WHERE m.status = com.kstn.group4.backend.match.enums.MatchStatus.SCHEDULED " +
+           "AND m.venue.id = :venueId " +
+           "AND m.timeSlot.id = :timeSlotId " +
+           "AND m.hostTeam.captain.id = :captainId " +
+           "AND m.matchTime BETWEEN :startDateTime AND :endDateTime")
+    List<Match> findScheduledMatchesForBooking(
+            @Param("venueId") Integer venueId,
+            @Param("timeSlotId") Integer timeSlotId,
+            @Param("captainId") Integer captainId,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
+    );
+
+    @Override
+    @EntityGraph(attributePaths = {"venue", "hostTeam", "guestTeam"})
+    List<Match> findAll();
+}

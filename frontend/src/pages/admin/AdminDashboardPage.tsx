@@ -1,4 +1,9 @@
+import { useState } from "react";
+
+import { ActivityLogTable } from "../../features/activitylog";
 import {
+  FilterBar,
+  PitchPerformanceChart,
   RecentOrderList,
   StatCard,
   useDashboardStats,
@@ -10,17 +15,34 @@ export function AdminDashboardPage() {
     selectedVenue: selectedFacility,
     selectedVenueId: selectedFacilityId,
   } = useFacilityContext();
-  const { statCards, recentOrders, isLoading, errorMessage, facilityLabel } =
-    useDashboardStats(
-      selectedFacilityId,
-      selectedFacility?.apiFacilityId,
-      selectedFacility?.name,
-    );
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [timeRange, setTimeRange] = useState("TODAY");
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
+
+  const {
+    dashboardStats,
+    statCards,
+    recentOrders,
+    isLoading,
+    errorMessage,
+    facilityLabel,
+  } = useDashboardStats(
+    selectedFacilityId,
+    selectedFacility?.apiFacilityId,
+    selectedFacility?.name,
+    timeRange,
+    startDate,
+    endDate,
+  );
+
   const shouldShowEmptyStats =
     !isLoading && !errorMessage && statCards.length === 0;
 
   return (
     <section className="space-y-6 lg:space-y-8">
+      {/* Top Banner (Status info) */}
       <div className="rounded-2xl border border-white/15 bg-[#005E2E]/35 px-5 py-3 text-sm text-white/90">
         <div className="flex items-center gap-2">
           {isLoading ? (
@@ -30,6 +52,17 @@ export function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Filter Bar */}
+      <FilterBar
+        timeRange={timeRange}
+        setTimeRange={setTimeRange}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+      />
+
+      {/* Error Message */}
       {errorMessage ? (
         <div className="rounded-2xl border border-red-400/30 bg-red-500/15 px-5 py-3 text-sm text-red-50">
           <div className="flex items-center gap-2">
@@ -41,6 +74,7 @@ export function AdminDashboardPage() {
         </div>
       ) : null}
 
+      {/* 4 Stat Cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, index) => (
@@ -70,25 +104,27 @@ export function AdminDashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[2fr_1fr]">
-        <div className="rounded-2xl border border-white/15 bg-[#005E2E]/45 p-6 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.55)]">
-          <h2 className="text-base font-semibold text-admin-text-primary">
-            Đơn hàng gần nhất
-          </h2>
-          <div className="mt-4 min-h-[320px] rounded-xl border border-white/15 bg-[#005E2E]/35 p-4">
-            <RecentOrderList
-              recentOrders={recentOrders}
-              isLoading={isLoading}
-            />
-          </div>
-        </div>
+      {/* Pitch Performance Chart */}
+      <div className="grid gap-6">
+        <PitchPerformanceChart
+          pitchPerformances={dashboardStats?.pitchPerformances ?? []}
+          isLoading={isLoading}
+        />
+      </div>
 
-        <div className="rounded-2xl border border-white/15 bg-[#005E2E]/45 p-6 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.55)]">
-          <h2 className="text-base font-semibold text-admin-text-primary">
-            Biểu đồ hiệu suất sân
-          </h2>
-          <div className="mt-4 h-[320px] rounded-xl border-2 border-dashed border-white/25 bg-[#005E2E]/35" />
+      {/* Recent Orders List */}
+      <div className="rounded-2xl border border-white/15 bg-[#005E2E]/45 p-6 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.55)]">
+        <h2 className="text-base font-semibold text-admin-text-primary mb-4">
+          Đơn hàng gần nhất
+        </h2>
+        <div className="min-h-[200px]">
+          <RecentOrderList recentOrders={recentOrders} isLoading={isLoading} />
         </div>
+      </div>
+
+      {/* Activity Log List */}
+      <div className="grid gap-6">
+        <ActivityLogTable />
       </div>
     </section>
   );

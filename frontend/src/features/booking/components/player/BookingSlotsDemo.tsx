@@ -70,7 +70,7 @@ export function BookingSlotsDemo({
 
       {loading && (
         <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-          Dang tai khung gio...
+          Đang tải khung giờ...
         </div>
       )}
 
@@ -82,14 +82,14 @@ export function BookingSlotsDemo({
 
       {!loading && !error && !pitch && (
         <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-          Khong tim thay san phu hop.
+          Không tìm thấy sân phù hợp.
         </div>
       )}
 
       {!loading && !error && pitch && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
-            Dang xem: <span className="font-semibold text-gray-900">{pitch.pitchName}</span>
+            Đang xem: <span className="font-semibold text-gray-900">{pitch.pitchName}</span>
           </div>
           <SlotsGrid slots={slotItems} onSlotToggle={handleSlotToggle} />
         </div>
@@ -98,7 +98,7 @@ export function BookingSlotsDemo({
       <SelectedSlotsBar
         selectedSlots={selectedSlots}
         onClear={clearSlots}
-        onSubmit={() => window.alert("Gui yeu cau dat san")}
+        onSubmit={() => window.alert("Gửi yêu cầu đặt sân")}
       />
       <p className="text-xs text-gray-400">
         Du lieu lay tu API /player/venues/{venueId}/availability. Thay doi venueId, pitchId neu can.

@@ -13,6 +13,7 @@ public record PlayerBookingResponse(
 	LocalTime endTime,
 	BigDecimal totalPrice,
 	BigDecimal depositAmount,
-	String status
+	String status,
+	Boolean reviewed
 ) {
 }

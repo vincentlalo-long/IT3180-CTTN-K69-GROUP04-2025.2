@@ -3,12 +3,18 @@ import {
   OrderManagementTable,
   useOrderManagement,
 } from "../../features/booking";
+import { SettleInvoiceModal } from "../../features/booking/components/admin/SettleInvoiceModal";
 
 export function OrdersPage() {
   const {
     visibleOrders,
     handleConfirmDeposit,
     handleCancelOrder,
+    handleOpenSettle,
+    handleCloseSettle,
+    handleSettled,
+    handleDownloadInvoice,
+    settleOrder,
     selectedFacilityId,
     selectedFacility,
     isLoading,
@@ -53,6 +59,8 @@ export function OrdersPage() {
               orders={visibleOrders}
               onConfirmDeposit={handleConfirmDeposit}
               onCancelOrder={handleCancelOrder}
+              onSettleBooking={handleOpenSettle}
+              onDownloadInvoice={handleDownloadInvoice}
             />
           </div>
         ) : null}
@@ -63,6 +71,15 @@ export function OrdersPage() {
           </div>
         ) : null}
       </div>
+
+      {settleOrder ? (
+        <SettleInvoiceModal
+          bookingId={settleOrder.id}
+          venueName={settleOrder.venueName}
+          onClose={handleCloseSettle}
+          onSettled={handleSettled}
+        />
+      ) : null}
     </section>
   );
 }

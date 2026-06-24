@@ -70,10 +70,12 @@ export function FieldSchedulePage() {
       ) : null}
 
       {shouldShowTable ? (
-        <FieldScheduleTable
-          rows={fieldScheduleRows}
-          onSlotClick={handleClickSlot}
-        />
+        <div className="w-full overflow-x-auto">
+          <FieldScheduleTable
+            rows={fieldScheduleRows}
+            onSlotClick={handleClickSlot}
+          />
+        </div>
       ) : null}
     </section>
   );

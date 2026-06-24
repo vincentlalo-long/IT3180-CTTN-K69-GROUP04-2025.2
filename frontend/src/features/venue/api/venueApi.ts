@@ -1,10 +1,13 @@
 import apiClient from "@/shared/api/apiClient";
 import { logApiError } from "@/shared/utils/apiError";
 import type {
+  ServiceItemResponse,
   VenueAvailabilityResponse,
   VenueResponseDTO,
   AdminVenueResponseDTO,
   PitchDetailResponse,
+  CreatePitchReviewRequest,
+  PitchReviewResponse,
 } from "@/features/venue/types/venue.types";
 
 export interface SpringPageResponse<T> {
@@ -151,6 +154,69 @@ export const deletePitch = async (pitchId: number): Promise<void> => {
   }
 };
 
+export interface ServiceItemPayload {
+  name: string;
+  description?: string | null;
+  price: number;
+  unit: string;
+  status?: string;
+}
+
+export const fetchAdminVenueServices = async (
+  venueId: number,
+): Promise<ServiceItemResponse[]> => {
+  try {
+    const response = await apiClient.get<ServiceItemResponse[]>(
+      `/admin/venues/${venueId}/services`,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("fetchAdminVenueServices", error, { venueId });
+    throw error;
+  }
+};
+
+export const createAdminVenueService = async (
+  venueId: number,
+  payload: ServiceItemPayload,
+): Promise<ServiceItemResponse> => {
+  try {
+    const response = await apiClient.post<ServiceItemResponse>(
+      `/admin/venues/${venueId}/services`,
+      payload,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("createAdminVenueService", error, { venueId });
+    throw error;
+  }
+};
+
+export const updateAdminVenueService = async (
+  serviceId: number,
+  payload: ServiceItemPayload,
+): Promise<ServiceItemResponse> => {
+  try {
+    const response = await apiClient.put<ServiceItemResponse>(
+      `/admin/services/${serviceId}`,
+      payload,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("updateAdminVenueService", error, { serviceId });
+    throw error;
+  }
+};
+
+export const deleteAdminVenueService = async (serviceId: number): Promise<void> => {
+  try {
+    await apiClient.delete(`/admin/services/${serviceId}`);
+  } catch (error) {
+    logApiError("deleteAdminVenueService", error, { serviceId });
+    throw error;
+  }
+};
+
 // ─── Player APIs ─────────────────────────────────────────────────────
 
 /**
@@ -181,6 +247,32 @@ export const getVenueAvailability = async (
     return response.data;
   } catch (error) {
     logApiError("getVenueAvailability", error, { venueId, date });
+    throw error;
+  }
+};
+
+export const getVenueServices = async (
+  venueId: number,
+): Promise<ServiceItemResponse[]> => {
+  try {
+    const response = await apiClient.get<ServiceItemResponse[]>(
+      `/player/venues/${venueId}/services`,
+    );
+    return response.data;
+  } catch (error) {
+    logApiError("getVenueServices", error, { venueId });
+    throw error;
+  }
+};
+
+export const createPitchReview = async (
+  payload: CreatePitchReviewRequest,
+): Promise<PitchReviewResponse> => {
+  try {
+    const response = await apiClient.post<PitchReviewResponse>("/player/reviews", payload);
+    return response.data;
+  } catch (error) {
+    logApiError("createPitchReview", error, { bookingId: payload.bookingId });
     throw error;
   }
 };

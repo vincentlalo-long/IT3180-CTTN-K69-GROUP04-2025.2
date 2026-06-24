@@ -12,6 +12,11 @@ import com.kstn.group4.backend.venue.entity.Venue;
 import com.kstn.group4.backend.venue.repository.PitchRepository;
 import com.kstn.group4.backend.venue.repository.PriceRuleRepository;
 import com.kstn.group4.backend.venue.repository.VenueRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Objects;
+import com.kstn.group4.backend.activitylog.service.ActivityLogService;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -35,14 +40,51 @@ public class PitchService {
     private final PitchRepository pitchRepository;
     private final VenueRepository venueRepository;
     private final PriceRuleRepository priceRuleRepository;
+    private final ActivityLogService activityLogService;
+
+    private void logPitchActivity(String actionType, String targetId, String description, String oldValue, String newValue) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Integer adminId = null;
+        String adminName = "System";
+        if (auth != null && auth.getPrincipal() instanceof com.kstn.group4.backend.config.security.services.UserPrincipal principal) {
+            adminId = principal.getId();
+            adminName = principal.getAppUsername();
+        }
+        activityLogService.log(adminId, adminName, actionType, "PITCH", targetId, description, oldValue, newValue);
+    }
 
     @Transactional(readOnly = true)
     public Page<PitchDetailResponse> getPitchesByVenueForManager(Integer venueId, Integer managerId, Pageable pageable) {
         Venue venue = venueRepository.findById(venueId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cụm sân với ID: " + venueId, "Venue"));
 
-        return pitchRepository.findByVenueId(venue.getId(), pageable)
-            .map(pitch -> getPitchDetailForManager(pitch.getId(), managerId));
+        Page<Pitch> pitchesPage = pitchRepository.findByVenueIdWithVenue(venue.getId(), pageable);
+
+        List<Integer> pitchIds = pitchesPage.getContent().stream()
+            .map(Pitch::getId)
+            .toList();
+
+        Map<Integer, List<PriceRule>> rulesByPitchId = new HashMap<>();
+        if (!pitchIds.isEmpty()) {
+            List<PriceRule> allRules = priceRuleRepository.findByPitchIdInOrderBySlotNumberAscIsWeekendAsc(pitchIds);
+            for (PriceRule rule : allRules) {
+                rulesByPitchId.computeIfAbsent(rule.getPitch().getId(), k -> new ArrayList<>()).add(rule);
+            }
+        }
+
+        return pitchesPage.map(pitch -> {
+            List<PriceRule> rules = rulesByPitchId.getOrDefault(pitch.getId(), List.of());
+            return new PitchDetailResponse(
+                pitch.getId(),
+                pitch.getName(),
+                pitch.getPitchType(),
+                pitch.getIsActive(),
+                pitch.getVenue() != null ? pitch.getVenue().getId() : null,
+                pitch.getVenue() != null ? pitch.getVenue().getName() : null,
+                pitch.getBasePrice(),
+                toSlotPriceTable(rules, pitch.getBasePrice())
+            );
+        });
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +102,7 @@ public class PitchService {
             pitch.getVenue() != null ? pitch.getVenue().getId() : null,
             pitch.getVenue() != null ? pitch.getVenue().getName() : null,
             pitch.getBasePrice(),
-            toSlotPriceTable(rules)
+            toSlotPriceTable(rules, pitch.getBasePrice())
         );
     }
 
@@ -82,6 +124,7 @@ public class PitchService {
         }
 
         Pitch savedPitch = pitchRepository.save(pitch);
+        logPitchActivity("CREATE_PITCH", savedPitch.getId().toString(), "Tạo sân con: " + savedPitch.getName(), null, null);
 
         // Cascade: Tạo PriceRule cho mỗi slot (weekday + weekend)
         savePriceRulesForPitch(savedPitch, request.slotPrices());
@@ -93,6 +136,12 @@ public class PitchService {
         Pitch pitch = pitchRepository.findById(pitchId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + pitchId, "Pitch"));
 
+        // 1. Lưu lại trạng thái CŨ trước khi sửa
+        String oldName = pitch.getName();
+        String oldType = pitch.getPitchType() != null ? pitch.getPitchType().name() : null;
+        Boolean oldIsActive = pitch.getIsActive();
+        BigDecimal oldPrice = pitch.getBasePrice();
+
         PitchType pitchType = parsePitchType(request.pitchType());
 
         pitch.setName(request.name());
@@ -103,7 +152,41 @@ public class PitchService {
             pitch.setBasePrice(request.slotPrices().get(0).weekdayPrice());
         }
 
+        // 2. Thu thập trạng thái MỚI
+        String newName = request.name();
+        String newType = request.pitchType();
+        Boolean newIsActive = request.isActive() != null ? request.isActive() : oldIsActive;
+        BigDecimal newPrice = (request.slotPrices() != null && !request.slotPrices().isEmpty()) 
+                                ? request.slotPrices().get(0).weekdayPrice() : oldPrice;
+
+        // 3. Xây dựng JSON diff
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> oldMap = new HashMap<>();
+        Map<String, Object> newMap = new HashMap<>();
+
+        if (!Objects.equals(oldName, newName)) { oldMap.put("name", oldName); newMap.put("name", newName); }
+        if (!Objects.equals(oldType, newType)) { oldMap.put("pitchType", oldType); newMap.put("pitchType", newType); }
+        if (!Objects.equals(oldIsActive, newIsActive)) { oldMap.put("isActive", oldIsActive); newMap.put("isActive", newIsActive); }
+        if (oldPrice != null && newPrice != null && oldPrice.compareTo(newPrice) != 0) {
+            oldMap.put("basePrice", oldPrice); newMap.put("basePrice", newPrice);
+        }
+
+        String oldValJson = null;
+        String newValJson = null;
+        if (!oldMap.isEmpty()) {
+            try {
+                oldValJson = mapper.writeValueAsString(oldMap);
+                newValJson = mapper.writeValueAsString(newMap);
+            } catch (Exception e) {
+                // Ignore serialization exceptions
+            }
+        }
+
         Pitch updated = pitchRepository.save(pitch);
+
+        if (oldValJson != null) {
+            logPitchActivity("UPDATE_PITCH", pitchId.toString(), "Cập nhật thông tin sân con: " + newName, oldValJson, newValJson);
+        }
 
         // Xóa PriceRule cũ rồi tạo mới — orphanRemoval trên entity sẽ tự cleanup
         pitch.getPriceRules().clear();
@@ -118,6 +201,7 @@ public class PitchService {
         Pitch pitch = pitchRepository.findById(pitchId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + pitchId, "Pitch"));
         pitchRepository.delete(pitch);
+        logPitchActivity("DELETE_PITCH", pitchId.toString(), "Xóa sân con: " + pitch.getName(), null, null);
     }
 
     public PitchDetailResponse addPitchToVenue(Integer venueId, Pitch request) {
@@ -132,6 +216,7 @@ public class PitchService {
         pitch.setVenue(venue);
 
         Pitch savedPitch = pitchRepository.save(pitch);
+        logPitchActivity("CREATE_PITCH", savedPitch.getId().toString(), "Tạo sân con: " + savedPitch.getName(), null, null);
         return getPitchDetail(savedPitch.getId());
     }
 
@@ -143,18 +228,18 @@ public class PitchService {
             throw new BusinessException("Ngày thi đấu không được để trống", "INVALID_DATE");
         }
 
-        if (!pitchRepository.existsById(pitchId)) {
-            throw new ResourceNotFoundException("Không tìm thấy sân với ID: " + pitchId, "Pitch");
-        }
+        Pitch pitch = pitchRepository.findById(pitchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sân với ID: " + pitchId, "Pitch"));
 
         boolean isWeekend = isWeekend(date);
 
-        return priceRuleRepository.findByPitchIdAndSlotNumberAndIsWeekend(pitchId, slotNumber, isWeekend)
-                .map(PriceRule::getPrice)
+        BigDecimal coefficient = priceRuleRepository.findByPitchIdAndSlotNumberAndIsWeekend(pitchId, slotNumber, isWeekend)
+                .map(PriceRule::getCoefficient)
                 .orElseThrow(() -> new BusinessException(
                         "Không tìm thấy luật giá cho sân " + pitchId + ", ca " + slotNumber + ", ngày " + (isWeekend ? "cuối tuần" : "thường"),
                         "PRICE_RULE_NOT_FOUND"
                 ));
+        return pitch.getBasePrice() != null ? pitch.getBasePrice().multiply(coefficient) : BigDecimal.ZERO;
     }
 
     @Transactional(readOnly = true)
@@ -172,10 +257,10 @@ public class PitchService {
                 pitch.getVenue() != null ? pitch.getVenue().getId() : null,
                 pitch.getVenue() != null ? pitch.getVenue().getName() : null,
                 pitch.getBasePrice(),
-                toSlotPriceTable(rules)
+                toSlotPriceTable(rules, pitch.getBasePrice())
         );
     }
-
+  
     // ─── Private helpers ────────────────────────────────────────────────
 
     private void savePriceRulesForPitch(Pitch pitch, List<SlotPriceRequest> slotPrices) {
@@ -184,6 +269,10 @@ public class PitchService {
         }
 
         List<PriceRule> rulesToSave = new ArrayList<>();
+        BigDecimal basePrice = pitch.getBasePrice();
+        if (basePrice == null || basePrice.compareTo(BigDecimal.ZERO) <= 0) {
+            basePrice = BigDecimal.ONE;
+        }
 
         for (SlotPriceRequest slot : slotPrices) {
             if (slot.slotNumber() == null || slot.slotNumber() < MIN_SLOT || slot.slotNumber() > MAX_SLOT) {
@@ -196,7 +285,7 @@ public class PitchService {
                 weekdayRule.setPitch(pitch);
                 weekdayRule.setSlotNumber(slot.slotNumber());
                 weekdayRule.setIsWeekend(Boolean.FALSE);
-                weekdayRule.setPrice(slot.weekdayPrice());
+                weekdayRule.setCoefficient(slot.weekdayPrice().divide(basePrice, 2, java.math.RoundingMode.HALF_UP));
                 rulesToSave.add(weekdayRule);
             }
 
@@ -206,7 +295,7 @@ public class PitchService {
                 weekendRule.setPitch(pitch);
                 weekendRule.setSlotNumber(slot.slotNumber());
                 weekendRule.setIsWeekend(Boolean.TRUE);
-                weekendRule.setPrice(slot.weekendPrice());
+                weekendRule.setCoefficient(slot.weekendPrice().divide(basePrice, 2, java.math.RoundingMode.HALF_UP));
                 rulesToSave.add(weekendRule);
             }
         }
@@ -226,7 +315,7 @@ public class PitchService {
         };
     }
 
-    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules) {
+    private List<PitchDetailResponse.SlotPriceResponse> toSlotPriceTable(List<PriceRule> rules, BigDecimal basePrice) {
         List<PriceRule> safeRules = rules == null ? List.of() : rules.stream()
                 .sorted(Comparator.comparing(PriceRule::getSlotNumber).thenComparing(PriceRule::getIsWeekend))
                 .toList();
@@ -238,13 +327,15 @@ public class PitchService {
 
             BigDecimal weekdayPrice = safeRules.stream()
                     .filter(rule -> currentSlot == rule.getSlotNumber() && Boolean.FALSE.equals(rule.getIsWeekend()))
-                    .map(PriceRule::getPrice)
+                    .map(PriceRule::getCoefficient)
+                    .map(coeff -> basePrice != null ? basePrice.multiply(coeff) : null)
                     .findFirst()
                     .orElse(null);
 
             BigDecimal weekendPrice = safeRules.stream()
                     .filter(rule -> currentSlot == rule.getSlotNumber() && Boolean.TRUE.equals(rule.getIsWeekend()))
-                    .map(PriceRule::getPrice)
+                    .map(PriceRule::getCoefficient)
+                    .map(coeff -> basePrice != null ? basePrice.multiply(coeff) : null)
                     .findFirst()
                     .orElse(null);
 

@@ -1,7 +1,13 @@
-import { Bell, ChevronDown, Menu, Search, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, Menu, Search, Settings, LogOut, User as UserIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
+import { useAuthContext } from "../../features/auth/hooks/useAuthContext";
+import { logoutUser } from "../../features/auth/api/authApi";
 import { ALL_FACILITIES_ID } from "../../features/venue/model/VenueContext";
 import { useVenueContext as useFacilityContext } from "../../features/venue/hooks/useVenueContext";
+import { NotificationDropdown } from "../../shared/components/NotificationDropdown";
+import { LogoutConfirmModal } from "../../shared/components/LogoutConfirmModal";
 
 interface AdminTopBarProps {
   onMenuToggle?: () => void;
@@ -56,6 +62,23 @@ const resolveFacilityStatus = (
 };
 
 export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
+  const navigate = useNavigate();
+  const { user, logout } = useAuthContext();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
   const {
     facilities,
     selectedVenue: selectedFacility,
@@ -74,7 +97,7 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
   );
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/15 bg-gradient-to-r from-[#005E2E] to-[#29721D] px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-20 flex-shrink-0 border-b border-white/15 bg-gradient-to-r from-[#005E2E] to-[#29721D] px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -141,38 +164,100 @@ export function AdminTopBar({ onMenuToggle }: AdminTopBarProps) {
 
           <button
             type="button"
+            onClick={() => navigate("/admin/settings")}
             className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#005E2E]/45 text-admin-text-secondary transition hover:bg-white/12 hover:text-admin-icon-light lg:inline-flex"
             aria-label="Cài đặt"
           >
             <Settings size={18} />
           </button>
 
-          <button
-            type="button"
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#005E2E]/45 text-admin-text-secondary transition hover:bg-white/12 hover:text-admin-alert"
-            aria-label="Thông báo"
-          >
-            <Bell size={18} />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-admin-alert" />
-          </button>
+          <NotificationDropdown
+            buttonClassName="border-white/20 bg-[#005E2E]/45 text-admin-text-secondary hover:bg-white/12 hover:text-admin-alert"
+            panelClassName="bg-[#004f27]/95 backdrop-blur-md"
+            unreadBadgeClassName="bg-admin-alert text-[#005E2E]"
+          />
 
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-semibold text-admin-text-primary">
-                Admin MIXIFOOT
-              </p>
-              <p className="text-xs text-admin-text-secondary">
-                admin@mixifoot.vn
-              </p>
-            </div>
-            <img
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"
-              alt="Admin avatar"
-              className="h-10 w-10 rounded-full border-2 border-admin-surface-soft object-cover"
-            />
+          <div className="relative flex items-center gap-3" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+              className="flex items-center gap-3 text-left focus:outline-none group"
+            >
+              <div className="hidden text-right sm:block">
+                <p className="text-sm font-semibold text-admin-text-primary group-hover:text-white transition">
+                  {user?.username || "Admin MIXIFOOT"}
+                </p>
+                <p className="text-xs text-admin-text-secondary group-hover:text-white/80 transition">
+                  {user?.email || "admin@mixifoot.vn"}
+                </p>
+              </div>
+              <img
+                src={user?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80"}
+                alt="Admin avatar"
+                className="h-10 w-10 rounded-full border-2 border-white/20 object-cover group-hover:border-white/50 transition"
+              />
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute right-0 top-12 z-[999] w-52 rounded-xl border border-white/15 bg-[#004f27]/95 p-2 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    navigate("/admin/settings", { state: { tab: "profile" } });
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-left text-sm font-semibold text-white hover:bg-white/10 transition"
+                >
+                  <UserIcon size={16} />
+                  Thông tin cá nhân
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    navigate("/admin/settings", { state: { tab: "pitch-management" } });
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-left text-sm font-semibold text-white hover:bg-white/10 transition"
+                >
+                  <Settings size={16} />
+                  Quản lý sân bóng
+                </button>
+                <div className="my-1.5 border-t border-white/10" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    setIsLogoutModalOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-left text-sm font-semibold text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition"
+                >
+                  <LogOut size={16} />
+                  Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          try {
+            await logoutUser();
+          } catch (err) {
+            console.error("Admin logout failed:", err);
+          } finally {
+            setIsLoggingOut(false);
+            setIsLogoutModalOpen(false);
+            logout();
+            navigate("/");
+          }
+        }}
+        isLoading={isLoggingOut}
+      />
     </header>
   );
 }
